@@ -1,0 +1,1957 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --night: #06111c;
+  --panel: rgba(6, 15, 24, 0.83);
+  --gold: #f0be6d;
+  --muted: #b8b3aa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--night);
+  color: #f4eee1;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
+.site-shell {
+  isolation: isolate;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: clip;
+  perspective: 1800px;
+  background:
+    linear-gradient(180deg, rgba(2, 9, 16, 0.27) 0%, rgba(4, 13, 22, 0.88) 86%),
+    url('/nilea-hero.png') center 18% / cover fixed;
+}
+
+.site-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 72% 24%, rgba(191, 128, 57, 0.2), transparent 28%),
+    linear-gradient(90deg, rgba(3, 11, 18, 0.9) 0%, rgba(3, 11, 18, 0.38) 47%, rgba(3, 11, 18, 0.62) 100%);
+}
+
+.site-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px);
+  background-size: 100% 4px;
+  mix-blend-mode: soft-light;
+  opacity: .2;
+}
+
+.site-shell > div:not(.ambient-orbit) {
+  position: relative;
+  z-index: 1;
+}
+
+.site-shell > div:not(.ambient-orbit)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 0, rgba(239, 190, 110, .08) 1px, transparent 1px),
+    linear-gradient(180deg, transparent 0, rgba(239, 190, 110, .05) 1px, transparent 1px);
+  background-size: 25% 100%, 100% 120px;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,.7), transparent 84%);
+  opacity: .34;
+}
+
+.ambient-orbit {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  border: 1px solid rgba(241, 190, 108, .16);
+  border-radius: 999px;
+  transform: rotate(-20deg);
+  filter: drop-shadow(0 0 22px rgba(230, 165, 70, .15));
+}
+
+.ambient-orbit::after {
+  content: "";
+  position: absolute;
+  right: 15%;
+  top: -3px;
+  height: 6px;
+  width: 6px;
+  border-radius: 50%;
+  background: #f3c36f;
+  box-shadow: 0 0 18px 5px rgba(243, 195, 111, .35);
+}
+
+.orbit-a {
+  top: 26%;
+  right: -12%;
+  height: 340px;
+  width: 720px;
+  animation: orbit-drift 18s ease-in-out infinite alternate;
+}
+
+.orbit-b {
+  top: 54%;
+  left: -30%;
+  height: 260px;
+  width: 760px;
+  opacity: .45;
+  animation: orbit-drift 22s ease-in-out infinite alternate-reverse;
+}
+
+.glass-panel {
+  position: relative;
+  transform-style: preserve-3d;
+  background: linear-gradient(135deg, rgba(14, 25, 35, 0.88), rgba(5, 12, 20, 0.72));
+  border: 1px solid rgba(240, 190, 109, 0.34);
+  box-shadow: inset 0 1px rgba(255,255,255,.07), 0 22px 60px rgba(0,0,0,.22);
+  backdrop-filter: blur(12px);
+}
+
+.artifacts-3d {
+  background:
+    linear-gradient(90deg, rgba(5, 13, 21, .92) 0%, rgba(5, 13, 21, .74) 44%, rgba(5, 13, 21, .4) 100%),
+    url('/nilea-artifacts-3d.png') center / cover;
+}
+
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(108deg, rgba(255,255,255,.08), transparent 17%, transparent 67%, rgba(245,191,104,.07));
+  opacity: .7;
+}
+
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,.035);
+  border-radius: calc(18px - 5px);
+}
+
+.fine-border {
+  border-color: rgba(239, 185, 101, 0.34);
+}
+
+.text-glow {
+  text-shadow: 0 0 32px rgba(244, 187, 92, .18);
+}
+
+.hero-depth {
+  position: relative;
+  transform: translateZ(48px);
+  transform-style: preserve-3d;
+}
+
+.hero-depth::before {
+  content: "NILE / 01";
+  position: absolute;
+  top: -36px;
+  left: -2px;
+  font-size: 9px;
+  letter-spacing: .34em;
+  color: rgba(247, 199, 121, .34);
+  transform: translateZ(-22px) rotateX(12deg);
+}
+
+.hero-depth::after {
+  content: "";
+  position: absolute;
+  left: -24px;
+  bottom: -30px;
+  height: 1px;
+  width: 165px;
+  background: linear-gradient(90deg, rgba(243,192,109,.8), transparent);
+  transform: translateZ(-18px) rotateY(-22deg);
+}
+
+.section-cap {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 10px;
+  border: 1px solid rgba(238, 185, 101, .22);
+  border-radius: 999px;
+  background: rgba(5, 13, 21, .36);
+  box-shadow: inset 0 1px rgba(255,255,255,.07), 0 0 18px rgba(223,156,61,.06);
+}
+
+.section-cap::before {
+  content: "";
+  height: 5px;
+  width: 5px;
+  border-radius: 50%;
+  background: #efbd6c;
+  box-shadow: 0 0 10px #efbd6c;
+}
+
+.timeline-stage {
+  position: relative;
+  perspective: 1600px;
+  transform-style: preserve-3d;
+}
+
+.timeline-stage::before {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 30px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.42);
+  filter: blur(18px);
+  transform: rotateX(66deg) translateZ(-24px);
+}
+
+.timeline-stage::after {
+  content: "";
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  bottom: 31px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245,191,103,.54), transparent);
+  box-shadow: 0 0 14px rgba(243,181,80,.36);
+  transform: translateZ(4px);
+}
+
+.timeline-card {
+  transform-style: preserve-3d;
+  transition: transform 240ms ease, border-color 240ms ease, box-shadow 240ms ease, opacity 240ms ease;
+  animation: card-arrival 760ms cubic-bezier(.2,.75,.28,1) both;
+}
+
+.timeline-card:nth-child(2) { transform: translateY(10px); }
+.timeline-card:nth-child(3) { transform: translateY(18px); }
+.timeline-card:nth-child(4) { transform: translateY(8px); }
+.timeline-card:nth-child(5) { transform: translateY(14px); }
+
+.timeline-card > div:first-child {
+  transform: translateZ(25px);
+  transform-style: preserve-3d;
+  box-shadow: inset 0 1px rgba(255,255,255,.2), 0 18px 34px rgba(0,0,0,.32);
+}
+
+.timeline-card:hover {
+  transform: translateY(-11px) rotateX(1deg) rotateY(-1.2deg);
+  border-color: rgba(242, 190, 108, .82);
+}
+
+.timeline-card.active {
+  transform: translateY(-13px) rotateX(1deg) rotateY(-1deg);
+  border-color: rgba(246, 190, 92, .94);
+  box-shadow: 0 0 0 1px rgba(246,190,92,.14), 0 18px 42px rgba(0,0,0,.34), 0 0 35px rgba(220,154,61,.2);
+}
+
+.timeline-card.active::after {
+  content: "";
+  position: absolute;
+  bottom: -24px;
+  left: 50%;
+  height: 12px;
+  width: 12px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: #f4c777;
+  box-shadow: 0 0 0 5px rgba(244,199,119,.13), 0 0 22px #efb84e;
+  transform: translateX(-50%) translateZ(38px);
+}
+
+.timeline-card > span {
+  transform: translateZ(36px);
+  text-shadow: 0 3px 16px rgba(0,0,0,.75);
+}
+
+.waveform span {
+  display: block;
+  width: 2px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #f8d58c, #9d6c35);
+  opacity: .86;
+}
+
+.artifact-tile {
+  background-image: linear-gradient(180deg, rgba(5,12,18,.04), rgba(2,8,13,.9)), url('/nilea-artifacts.png');
+  background-size: 400% 100%;
+  background-repeat: no-repeat;
+}
+
+.artifact-tile:hover {
+  border-color: rgba(240,190,109,.8);
+  transform: translateY(-7px) rotateX(4deg) rotateY(-3deg);
+  box-shadow: 0 12px 22px rgba(0,0,0,.28), 0 0 18px rgba(225,160,67,.13);
+}
+
+.artifact-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(128deg, rgba(255,255,255,.2), transparent 23%, transparent 70%, rgba(236,176,88,.14));
+  opacity: .55;
+  transition: opacity 240ms ease;
+}
+
+.artifact-tile:hover::before { opacity: .9; }
+
+.audio-deck {
+  box-shadow: inset 0 1px rgba(255,255,255,.09), 0 12px 28px rgba(0,0,0,.22);
+  transform: translateZ(22px);
+}
+
+.cta-depth {
+  transform: translateZ(30px);
+  box-shadow: 0 10px 25px rgba(202,141,57,.24), inset 0 1px rgba(255,255,255,.48);
+}
+
+.modal-depth {
+  transform-style: preserve-3d;
+  box-shadow: 0 30px 100px rgba(0,0,0,.55), 0 0 0 1px rgba(239,184,95,.18), 0 0 60px rgba(214,146,52,.1);
+}
+
+.menu-popover {
+  animation: rise-in 180ms ease-out both;
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes orbit-drift {
+  from { transform: translate3d(-12px, -5px, 0) rotate(-20deg); }
+  to { transform: translate3d(22px, 14px, 0) rotate(-17deg); }
+}
+
+@keyframes card-arrival {
+  from { opacity: 0; transform: translate3d(0, 28px, -40px) rotateX(8deg); }
+  to { opacity: 1; }
+}
+
+@media (max-width: 900px) {
+  .site-shell {
+    background-attachment: scroll;
+    background-position: 61% 10%;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-shell::before {
+    background: linear-gradient(180deg, rgba(3, 11, 18, .45), rgba(3, 11, 18, .94) 82%);
+  }
+
+  .ambient-orbit { opacity: .35; }
+  .hero-depth { transform: translateZ(18px); }
+  .timeline-stage::before, .timeline-stage::after { left: 4%; right: 4%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Local Life & Dining page */
+.life-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #06111c;
+  color: #f4eee1;
+}
+
+.life-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 76% 12%, rgba(221, 149, 62, .16), transparent 24%),
+    linear-gradient(90deg, rgba(3, 11, 18, .5), transparent 48%, rgba(3, 11, 18, .42));
+  z-index: 0;
+}
+
+.life-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.life-shell > .z-50 {
+  z-index: 50;
+}
+
+.life-header {
+  border-bottom: 1px solid rgba(255,255,255,.14);
+  background: linear-gradient(180deg, rgba(4, 13, 22, .9), rgba(4, 13, 22, .55));
+  box-shadow: 0 18px 42px rgba(1, 8, 14, .22);
+}
+
+.life-hero {
+  position: relative;
+  min-height: 790px;
+  background:
+    linear-gradient(180deg, rgba(3, 10, 17, .05) 0%, rgba(3, 11, 18, .15) 42%, rgba(3, 11, 18, .94) 98%),
+    url('/nilea-local-life-hero.png') center 14% / cover;
+}
+
+.life-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(3, 11, 18, .82) 0%, rgba(3, 11, 18, .24) 44%, rgba(3, 11, 18, .12) 72%, rgba(3, 11, 18, .5) 100%),
+    linear-gradient(180deg, rgba(3, 10, 17, .16), transparent 37%);
+}
+
+.life-hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 220px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, #06111c 87%);
+}
+
+.life-hero-copy {
+  position: relative;
+  z-index: 2;
+  transform: translateZ(40px);
+}
+
+.life-hero-copy h1 {
+  text-shadow: 0 0 30px rgba(243, 185, 95, .16), 0 16px 42px rgba(0,0,0,.26);
+}
+
+.life-hero-copy h1::after {
+  content: "";
+  display: block;
+  width: 122px;
+  height: 1px;
+  margin-top: 18px;
+  background: linear-gradient(90deg, #edbd70, transparent);
+}
+
+.life-category-rail {
+  position: relative;
+  z-index: 3;
+  background: linear-gradient(135deg, rgba(9, 19, 29, .76), rgba(4, 12, 20, .52));
+  border: 1px solid rgba(244, 194, 111, .38);
+  box-shadow: inset 0 1px rgba(255,255,255,.1), 0 22px 58px rgba(0,0,0,.28);
+  backdrop-filter: blur(14px);
+  transform: perspective(1100px) rotateY(-5deg) rotateX(1deg);
+  transform-origin: right center;
+}
+
+.life-category-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.09);
+  color: rgba(247, 239, 224, .78);
+  transition: color 180ms ease, background 180ms ease, padding 180ms ease;
+}
+
+.life-category-item:last-child { border-bottom: 0; }
+.life-category-item:hover,
+.life-category-item.active {
+  color: #f4c979;
+  background: rgba(240, 183, 88, .08);
+  padding-left: 16px;
+}
+
+.life-filter-bar {
+  position: relative;
+  z-index: 4;
+  background: linear-gradient(135deg, rgba(10, 21, 31, .92), rgba(4, 11, 18, .82));
+  border: 1px solid rgba(241, 189, 104, .42);
+  box-shadow: inset 0 1px rgba(255,255,255,.1), 0 24px 50px rgba(0,0,0,.3);
+  backdrop-filter: blur(18px);
+  transform: translateY(-74px) perspective(1200px) rotateX(3deg);
+}
+
+.life-filter-control {
+  min-height: 48px;
+  border: 1px solid rgba(244, 195, 112, .3);
+  background: rgba(2, 8, 14, .35);
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.life-filter-control:hover,
+.life-filter-control:focus-visible {
+  border-color: rgba(244, 195, 112, .82);
+  background: rgba(244, 195, 112, .08);
+  transform: translateY(-2px);
+}
+
+.life-filter-button {
+  min-height: 48px;
+  background: linear-gradient(180deg, #f8d697, #d89443);
+  color: #20160c;
+  box-shadow: inset 0 1px rgba(255,255,255,.5), 0 9px 24px rgba(212, 145, 58, .22);
+  transition: filter 180ms ease, transform 180ms ease;
+}
+
+.life-filter-button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+}
+
+.life-section {
+  position: relative;
+}
+
+.life-section::before {
+  content: "";
+  position: absolute;
+  top: 12%;
+  right: -11%;
+  height: 380px;
+  width: 380px;
+  border: 1px solid rgba(241, 189, 104, .1);
+  border-radius: 50%;
+  transform: rotate(20deg) scaleX(1.7);
+  pointer-events: none;
+}
+
+.life-feature-card,
+.life-near-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(244, 195, 112, .34);
+  background-color: #0b1925;
+  box-shadow: 0 18px 32px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.12);
+  transform-style: preserve-3d;
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.life-feature-card {
+  min-height: 330px;
+  background-image: linear-gradient(180deg, rgba(4, 10, 16, .05) 28%, rgba(3, 9, 15, .92) 100%), url('/nilea-local-life-experiences.png');
+  background-size: 300% 100%;
+  background-repeat: no-repeat;
+}
+
+.life-feature-card:hover,
+.life-near-card:hover {
+  border-color: rgba(247, 202, 124, .82);
+  box-shadow: 0 26px 46px rgba(0,0,0,.38), 0 0 32px rgba(224, 157, 59, .11), inset 0 1px rgba(255,255,255,.18);
+  transform: translateY(-9px) rotateX(2deg) rotateY(-1.5deg);
+}
+
+.life-feature-card::after,
+.life-near-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(130deg, rgba(255,255,255,.18), transparent 21%, transparent 68%, rgba(240, 177, 84, .13));
+  opacity: .65;
+  transition: opacity 220ms ease;
+}
+
+.life-feature-card:hover::after,
+.life-near-card:hover::after { opacity: 1; }
+
+.life-feature-card .life-card-copy,
+.life-near-card .life-card-copy {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  transform: translateZ(28px);
+}
+
+.life-card-pill {
+  border: 1px solid rgba(245, 202, 124, .46);
+  background: rgba(5, 13, 20, .58);
+  box-shadow: inset 0 1px rgba(255,255,255,.1);
+  backdrop-filter: blur(8px);
+}
+
+.life-near-card {
+  min-height: 118px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.life-map-card {
+  position: relative;
+  min-height: 300px;
+  overflow: hidden;
+  border: 1px solid rgba(244, 195, 112, .32);
+  background:
+    linear-gradient(135deg, rgba(4, 12, 19, .64), rgba(4, 12, 19, .2)),
+    url('/nilea-local-life-map.png') center / cover;
+  box-shadow: inset 0 1px rgba(255,255,255,.1), 0 22px 42px rgba(0,0,0,.25);
+}
+
+.life-map-feature-stage {
+  min-height: 620px;
+}
+
+.life-map-feature-stage .life-feature-card {
+  min-height: 205px;
+}
+
+.life-map-features {
+  perspective: 1200px;
+}
+
+.life-map-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .52;
+  background:
+    linear-gradient(90deg, transparent 49.7%, rgba(245, 196, 112, .4) 50%, transparent 50.3%),
+    linear-gradient(0deg, transparent 49.7%, rgba(245, 196, 112, .28) 50%, transparent 50.3%);
+  background-size: 180px 180px;
+}
+
+.life-map-route {
+  position: absolute;
+  height: 76%;
+  width: 50%;
+  left: 30%;
+  top: 7%;
+  border: 1px solid rgba(247, 205, 127, .8);
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  transform: rotate(29deg) skewX(-10deg);
+  filter: drop-shadow(0 0 10px rgba(245, 190, 94, .6));
+}
+
+.life-pin {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  height: 31px;
+  width: 31px;
+  border: 2px solid #f3c273;
+  border-radius: 50% 50% 50% 0;
+  background: #071420;
+  color: #f3c273;
+  box-shadow: 0 0 0 6px rgba(243, 194, 115, .12), 0 0 22px rgba(243, 194, 115, .36);
+  transform: rotate(-45deg);
+}
+
+.life-pin svg { transform: rotate(45deg); }
+
+.life-pin.cairo { left: 20%; top: 62%; }
+.life-pin.aswan { left: 47%; top: 37%; }
+.life-pin.luxor { left: 72%; top: 59%; }
+
+.life-modal {
+  background:
+    linear-gradient(135deg, rgba(11, 24, 35, .95), rgba(3, 10, 17, .92)),
+    url('/nilea-local-life-hero.png') center / cover;
+  border: 1px solid rgba(244, 195, 112, .48);
+  box-shadow: 0 34px 100px rgba(0,0,0,.6), 0 0 60px rgba(222, 152, 55, .12);
+}
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+@media (max-width: 900px) {
+  .life-hero { min-height: 820px; background-position: 66% 14%; }
+  .life-category-rail { transform: none; }
+  .life-filter-bar { transform: translateY(-40px); }
+}
+
+@media (max-width: 640px) {
+  .life-hero { min-height: 930px; background-position: 58% 14%; }
+  .life-hero::before { background: linear-gradient(90deg, rgba(3, 11, 18, .88), rgba(3, 11, 18, .32) 74%, rgba(3, 11, 18, .55)); }
+  .life-filter-bar { transform: translateY(-22px); }
+  .life-feature-card { min-height: 290px; }
+  .life-map-card { min-height: 250px; }
+  .life-map-feature-stage { min-height: 1120px; }
+  .life-map-feature-stage .life-map-features { position: relative; inset: auto; margin-top: 350px; }
+  .life-map-feature-stage .life-feature-card { min-height: 235px; }
+}
+
+/* Stays & Hotels page */
+.hotel-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #06111c;
+  color: #f4eee1;
+}
+
+.hotel-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 78% 12%, rgba(221, 149, 62, .16), transparent 24%),
+    linear-gradient(90deg, rgba(3, 11, 18, .52), transparent 48%, rgba(3, 11, 18, .46));
+  z-index: 0;
+}
+
+.hotel-shell > * { position: relative; z-index: 1; }
+.hotel-shell > .z-50 { z-index: 50; }
+
+.hotel-header {
+  border-bottom: 1px solid rgba(255,255,255,.14);
+  background: linear-gradient(180deg, rgba(4, 13, 22, .92), rgba(4, 13, 22, .58));
+  box-shadow: 0 18px 42px rgba(1, 8, 14, .22);
+}
+
+.hotel-hero {
+  position: relative;
+  min-height: 690px;
+  background:
+    linear-gradient(180deg, rgba(3, 10, 17, .04) 0%, rgba(3, 11, 18, .12) 45%, rgba(3, 11, 18, .95) 98%),
+    url('/nilea-stays-hotels-hero.png') center 40% / cover;
+}
+
+.hotel-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(3, 11, 18, .86) 0%, rgba(3, 11, 18, .27) 45%, rgba(3, 11, 18, .08) 74%, rgba(3, 11, 18, .47) 100%),
+    linear-gradient(180deg, rgba(3, 10, 17, .18), transparent 38%);
+}
+
+.hotel-hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 190px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, #06111c 88%);
+}
+
+.hotel-hero-copy {
+  position: relative;
+  z-index: 2;
+  transform: translateZ(42px);
+}
+
+.hotel-hero-copy h1 {
+  text-shadow: 0 0 30px rgba(243, 185, 95, .16), 0 16px 42px rgba(0,0,0,.26);
+}
+
+.hotel-hero-copy h1::after {
+  content: "";
+  display: block;
+  width: 122px;
+  height: 1px;
+  margin-top: 18px;
+  background: linear-gradient(90deg, #edbd70, transparent);
+}
+
+.hotel-map-label {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border: 1px solid rgba(244, 195, 112, .55);
+  border-radius: 12px;
+  background: rgba(4, 12, 19, .78);
+  box-shadow: 0 0 24px rgba(245, 190, 94, .16), inset 0 1px rgba(255,255,255,.1);
+  color: #f4dfb2;
+  font-size: 11px;
+  backdrop-filter: blur(10px);
+  transform: translateZ(22px);
+}
+
+.hotel-map-dot {
+  height: 11px;
+  width: 11px;
+  border: 2px solid #f7d391;
+  border-radius: 50%;
+  background: #b87428;
+  box-shadow: 0 0 0 5px rgba(246, 195, 104, .15), 0 0 18px rgba(246, 195, 104, .72);
+}
+
+.luxor-label { right: 19%; top: 47%; }
+.cairo-label { right: 35%; top: 27%; opacity: .78; }
+.aswan-label { right: 48%; top: 37%; opacity: .68; }
+
+.hotel-search-panel {
+  position: relative;
+  z-index: 4;
+  background: linear-gradient(135deg, rgba(10, 21, 31, .94), rgba(4, 11, 18, .84));
+  border: 1px solid rgba(241, 189, 104, .46);
+  box-shadow: inset 0 1px rgba(255,255,255,.1), 0 24px 50px rgba(0,0,0,.34);
+  backdrop-filter: blur(18px);
+  transform: translateY(-72px) perspective(1200px) rotateX(3deg);
+}
+
+.hotel-search-control {
+  min-height: 62px;
+  border: 1px solid rgba(244, 195, 112, .28);
+  background: rgba(2, 8, 14, .35);
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.hotel-search-control:hover,
+.hotel-search-control:focus-visible {
+  border-color: rgba(244, 195, 112, .82);
+  background: rgba(244, 195, 112, .08);
+  transform: translateY(-2px);
+}
+
+.hotel-search-control small,
+.hotel-search-control strong { display: block; }
+.hotel-search-control small { margin-bottom: 3px; font-size: 9px; color: rgba(255,255,255,.46); }
+.hotel-search-control strong { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; color: rgba(255,255,255,.88); }
+
+.hotel-search-button,
+.hotel-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  background: linear-gradient(180deg, #f8d697, #d89443);
+  color: #20160c;
+  box-shadow: inset 0 1px rgba(255,255,255,.5), 0 9px 24px rgba(212, 145, 58, .22);
+  transition: filter 180ms ease, transform 180ms ease;
+}
+
+.hotel-search-button:hover,
+.hotel-primary-button:hover { filter: brightness(1.08); transform: translateY(-2px); }
+
+.hotel-results { position: relative; }
+
+.hotel-filter-row {
+  position: relative;
+  z-index: 3;
+  margin-top: -34px;
+  background: linear-gradient(135deg, rgba(10, 21, 31, .92), rgba(4, 11, 18, .8));
+  border: 1px solid rgba(241, 189, 104, .28);
+  box-shadow: inset 0 1px rgba(255,255,255,.08), 0 18px 38px rgba(0,0,0,.22);
+  backdrop-filter: blur(16px);
+}
+
+.hotel-filter-control,
+.hotel-sort-control {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(244, 195, 112, .3);
+  border-radius: 999px;
+  padding: 0 15px;
+  color: rgba(255,255,255,.82);
+  font-size: 11px;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+.hotel-filter-control span,
+.hotel-sort-control span { margin-left: 10px; color: rgba(255,255,255,.45); }
+.hotel-filter-control:hover,
+.hotel-filter-control.active,
+.hotel-sort-control:hover { border-color: rgba(244, 195, 112, .8); background: rgba(244, 195, 112, .08); color: #f4c577; }
+.hotel-sort-control { margin-left: auto; }
+
+.hotel-featured-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(360px, .94fr);
+  overflow: hidden;
+  border: 1px solid rgba(244, 195, 112, .42);
+  background: linear-gradient(135deg, rgba(12, 24, 35, .95), rgba(4, 12, 20, .86));
+  box-shadow: 0 24px 54px rgba(0,0,0,.3), inset 0 1px rgba(255,255,255,.1);
+  transform-style: preserve-3d;
+}
+
+.hotel-featured-media {
+  position: relative;
+  min-height: 360px;
+  background-position: center;
+  background-size: cover;
+}
+
+.hotel-featured-media::after,
+.hotel-card-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255,255,255,.16), transparent 24%, transparent 70%, rgba(240, 177, 84, .16));
+}
+
+.hotel-featured-badge {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 1;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: linear-gradient(180deg, #f6d58f, #df9a43);
+  color: #25180d;
+  font-size: 10px;
+  font-weight: 700;
+  box-shadow: 0 8px 22px rgba(211, 142, 43, .28);
+}
+
+.hotel-featured-content { padding: 30px 32px; }
+
+.hotel-amenity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  color: #f2c677;
+  text-align: center;
+}
+
+.hotel-amenity span { display: grid; place-items: center; height: 29px; width: 29px; }
+.hotel-amenity small { font-size: 9px; color: rgba(255,255,255,.72); }
+
+.hotel-secondary-button,
+.hotel-card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(244, 195, 112, .5);
+  color: #f4c577;
+  transition: background 180ms ease, transform 180ms ease, border-color 180ms ease;
+}
+
+.hotel-secondary-button:hover,
+.hotel-card-action:hover { border-color: #f4c577; background: rgba(244, 195, 112, .1); transform: translateY(-2px); }
+
+.hotel-card {
+  overflow: hidden;
+  border: 1px solid rgba(244, 195, 112, .3);
+  background: linear-gradient(135deg, rgba(13, 25, 36, .94), rgba(4, 12, 20, .86));
+  box-shadow: 0 18px 34px rgba(0,0,0,.24), inset 0 1px rgba(255,255,255,.08);
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.hotel-card:hover { border-color: rgba(247, 202, 124, .82); box-shadow: 0 26px 46px rgba(0,0,0,.38), 0 0 32px rgba(224, 157, 59, .1); transform: translateY(-8px) rotateX(2deg); }
+
+.hotel-card-media {
+  position: relative;
+  min-height: 170px;
+  background-position: center;
+  background-size: cover;
+}
+
+.hotel-heart {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  height: 31px;
+  width: 31px;
+  border: 1px solid rgba(255,255,255,.6);
+  border-radius: 50%;
+  background: rgba(4, 12, 19, .58);
+  color: white;
+  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.hotel-heart:hover,
+.hotel-heart.saved { background: #f4c577; color: #25180d; transform: scale(1.08); }
+.hotel-card-content { padding: 18px 18px 20px; }
+
+.hotel-modal {
+  background: linear-gradient(135deg, rgba(11, 24, 35, .97), rgba(3, 10, 17, .94));
+  border: 1px solid rgba(244, 195, 112, .48);
+  box-shadow: 0 34px 100px rgba(0,0,0,.6), 0 0 60px rgba(222, 152, 55, .12);
+}
+
+.hotel-modal-image { height: 210px; background-position: center; background-size: cover; border-bottom: 1px solid rgba(244, 195, 112, .26); }
+
+@media (max-width: 900px) {
+  .hotel-hero { min-height: 780px; background-position: 58% 40%; }
+  .hotel-map-label { transform: scale(.9); }
+  .hotel-featured-card { grid-template-columns: 1fr; }
+  .hotel-featured-media { min-height: 300px; }
+  .hotel-search-panel { transform: translateY(-46px); }
+}
+
+@media (max-width: 640px) {
+  .hotel-hero { min-height: 940px; background-position: 61% 42%; }
+  .hotel-hero::before { background: linear-gradient(90deg, rgba(3, 11, 18, .9), rgba(3, 11, 18, .32) 80%, rgba(3, 11, 18, .6)); }
+  .hotel-hero-copy h1 { font-size: 53px; }
+  .hotel-hero-copy h1 span { font-size: 36px; }
+  .hotel-map-label { display: none; }
+  .hotel-search-panel { transform: translateY(-25px); }
+  .hotel-filter-row { margin-top: -8px; }
+  .hotel-sort-control { margin-left: 0; }
+  .hotel-featured-content { padding: 24px 20px; }
+  .hotel-featured-media { min-height: 245px; }
+  .hotel-amenities { gap: 0; }
+  .hotel-amenity small { font-size: 8px; }
+  .hotel-card-media { min-height: 195px; }
+}
+
+/* Travel & Transport page */
+.transport-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #06111c;
+  color: #f4eee1;
+}
+
+.transport-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 76% 12%, rgba(221, 149, 62, .16), transparent 24%), linear-gradient(90deg, rgba(3, 11, 18, .54), transparent 48%, rgba(3, 11, 18, .46));
+  z-index: 0;
+}
+
+.transport-shell > * { position: relative; z-index: 1; }
+.transport-shell > .z-50 { z-index: 50; }
+
+.transport-header {
+  border-bottom: 1px solid rgba(255,255,255,.14);
+  background: linear-gradient(180deg, rgba(4, 13, 22, .92), rgba(4, 13, 22, .56));
+  box-shadow: 0 18px 42px rgba(1, 8, 14, .22);
+}
+
+.transport-hero {
+  position: relative;
+  min-height: 920px;
+  background:
+    linear-gradient(180deg, rgba(3, 10, 17, .1), rgba(3, 11, 18, .22) 48%, rgba(3, 11, 18, .96) 98%),
+    url('/nilea-transport-hero.png') center 30% / cover;
+}
+
+.transport-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(3, 11, 18, .88) 0%, rgba(3, 11, 18, .3) 45%, rgba(3, 11, 18, .1) 76%, rgba(3, 11, 18, .44) 100%);
+}
+
+.transport-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 270px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, #06111c 88%);
+}
+
+.transport-hero-copy { position: relative; z-index: 2; transform: translateZ(44px); }
+.transport-hero-copy h1 { text-shadow: 0 0 30px rgba(243, 185, 95, .16), 0 16px 42px rgba(0,0,0,.28); }
+.transport-hero-copy h1::after { content: ""; display: block; width: 122px; height: 1px; margin-top: 18px; background: linear-gradient(90deg, #edbd70, transparent); }
+
+.transport-search-panel {
+  position: relative;
+  z-index: 4;
+  max-width: 1000px;
+  background: linear-gradient(135deg, rgba(10, 21, 31, .95), rgba(4, 11, 18, .84));
+  border: 1px solid rgba(241, 189, 104, .46);
+  box-shadow: inset 0 1px rgba(255,255,255,.1), 0 24px 50px rgba(0,0,0,.34);
+  backdrop-filter: blur(18px);
+  transform: perspective(1200px) rotateX(3deg);
+}
+
+.transport-control {
+  min-height: 61px;
+  border: 1px solid rgba(244, 195, 112, .3);
+  background: rgba(2, 8, 14, .38);
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.transport-control:hover,
+.transport-control:focus-visible { border-color: rgba(244, 195, 112, .82); background: rgba(244, 195, 112, .08); transform: translateY(-2px); }
+.transport-control small,
+.transport-control strong { display: block; }
+.transport-control small { margin-bottom: 4px; font-size: 9px; color: rgba(255,255,255,.48); }
+.transport-control strong { display: flex; align-items: center; gap: 7px; overflow: hidden; font-size: 12px; font-weight: 400; color: rgba(255,255,255,.88); white-space: nowrap; }
+.transport-control strong span { margin-left: auto; color: rgba(255,255,255,.45); }
+
+.transport-swap {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  height: 32px;
+  width: 32px;
+  border: 1px solid rgba(244, 195, 112, .55);
+  color: #f4c577;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.transport-swap:hover { background: rgba(244, 195, 112, .12); transform: rotate(180deg); }
+
+.transport-search-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 49px;
+  background: linear-gradient(180deg, #f8d697, #d89443);
+  color: #20160c;
+  box-shadow: inset 0 1px rgba(255,255,255,.5), 0 9px 24px rgba(212, 145, 58, .22);
+  transition: filter 180ms ease, transform 180ms ease;
+}
+
+.transport-search-button:hover { filter: brightness(1.08); transform: translateY(-2px); }
+
+.transport-content { position: relative; z-index: 3; max-width: 1000px; }
+.transport-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,.18); }
+.transport-tab { position: relative; display: flex; min-width: 112px; flex: 1; flex-direction: column; align-items: center; gap: 8px; padding: 12px 9px 15px; color: rgba(255,255,255,.68); font-size: 11px; transition: color 180ms ease, transform 180ms ease; }
+.transport-tab:hover { color: #f5ca7d; transform: translateY(-2px); }
+.transport-tab.active { color: #f8cc78; }
+.transport-tab.active::after { content: ""; position: absolute; bottom: -1px; left: 13%; right: 13%; height: 2px; background: #efbd68; box-shadow: 0 0 14px rgba(239, 189, 104, .7); }
+
+.transport-route-list { display: grid; gap: 12px; }
+.transport-route-card { display: grid; grid-template-columns: 150px minmax(0, 1fr); min-height: 142px; overflow: hidden; border: 1px solid rgba(244, 195, 112, .34); border-radius: 15px; background: linear-gradient(135deg, rgba(8, 20, 31, .93), rgba(3, 11, 18, .85)); box-shadow: 0 18px 32px rgba(0,0,0,.25), inset 0 1px rgba(255,255,255,.08); transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease; }
+.transport-route-card:hover { border-color: rgba(247, 202, 124, .84); box-shadow: 0 25px 44px rgba(0,0,0,.38), 0 0 30px rgba(224, 157, 59, .1); transform: translateY(-6px) rotateX(1.5deg); }
+.transport-route-image { min-height: 142px; background-position: center; background-size: cover; }
+.transport-route-details { padding: 16px 17px; }
+.transport-route-details b { font-weight: 400; }
+.transport-select { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 7px 16px; background: linear-gradient(180deg, #f7d18c, #d99545); color: #21160b; font-size: 10px; font-weight: 700; box-shadow: 0 8px 16px rgba(211, 143, 46, .18); transition: filter 180ms ease, transform 180ms ease; }
+.group:hover .transport-select { filter: brightness(1.08); transform: translateX(3px); }
+
+.smart-route-panel {
+  position: relative;
+  min-height: 430px;
+  overflow: hidden;
+  border: 1px solid rgba(244, 195, 112, .4);
+  background: linear-gradient(90deg, rgba(5, 12, 19, .86), rgba(5, 12, 19, .52)), url('/nilea-transport-map.png') center / cover;
+  box-shadow: 0 22px 46px rgba(0,0,0,.3), inset 0 1px rgba(255,255,255,.1);
+}
+
+.smart-route-panel::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(135deg, rgba(255,255,255,.1), transparent 22%, transparent 67%, rgba(241, 181, 78, .14)); }
+.smart-sparkle { display: grid; place-items: center; height: 35px; width: 35px; border-radius: 50%; color: #f7ce83; background: rgba(235, 177, 74, .12); box-shadow: 0 0 22px rgba(240, 179, 77, .28); }
+.smart-route-line { position: absolute; top: 120px; bottom: 40px; left: 43px; width: 1px; background: linear-gradient(180deg, transparent, #f0bd67 12%, #f0bd67 86%, transparent); box-shadow: 0 0 12px rgba(240, 189, 103, .55); }
+.smart-node { position: absolute; left: 15px; display: flex; align-items: center; gap: 8px; color: #f3cd8d; font-family: Georgia, serif; font-size: 0; white-space: nowrap; }
+.smart-node::before { content: ""; height: 10px; width: 10px; border: 2px solid #f5ca78; border-radius: 50%; background: #071521; box-shadow: 0 0 0 5px rgba(245, 202, 120, .1), 0 0 16px rgba(245, 202, 120, .7); }
+.cairo-node { top: 0; }
+.luxor-node { top: 43%; }
+.aswan-node { bottom: 0; }
+
+.smart-route-item { position: relative; z-index: 1; display: grid; grid-template-columns: 58px minmax(0, 1fr) 17px; align-items: center; gap: 9px; min-height: 56px; border: 1px solid rgba(244, 195, 112, .26); border-radius: 12px; padding: 6px; background: rgba(5, 13, 20, .86); color: white; text-align: left; transition: background 180ms ease, border-color 180ms ease, transform 180ms ease; }
+.smart-route-item:hover { border-color: rgba(244, 195, 112, .74); background: rgba(244, 195, 112, .1); transform: translateX(4px); }
+.smart-route-thumb { height: 43px; width: 58px; border-radius: 8px; background-position: center; background-size: cover; }
+.smart-route-item strong, .smart-route-item small { display: block; }
+.smart-route-item strong { font-size: 11px; font-weight: 400; }
+.smart-route-item small { margin-top: 3px; color: rgba(255,255,255,.52); font-size: 9px; }
+.transport-notice { border: 1px solid rgba(244, 195, 112, .35); background: rgba(244, 195, 112, .08); }
+
+.transport-modal { border: 1px solid rgba(244, 195, 112, .48); background: linear-gradient(135deg, rgba(11, 24, 35, .97), rgba(3, 10, 17, .94)); box-shadow: 0 34px 100px rgba(0,0,0,.6), 0 0 60px rgba(222, 152, 55, .12); }
+.transport-modal-image { height: 210px; background-position: center; background-size: cover; border-bottom: 1px solid rgba(244, 195, 112, .24); }
+
+@media (max-width: 1050px) {
+  .transport-route-card { grid-template-columns: 125px minmax(0, 1fr); }
+  .transport-tab { min-width: 95px; }
+}
+
+@media (max-width: 900px) {
+  .transport-hero { min-height: 1100px; background-position: 62% 28%; }
+  .transport-route-card { grid-template-columns: 145px minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .transport-hero { min-height: 1420px; background-position: 62% 28%; }
+  .transport-hero::before { background: linear-gradient(90deg, rgba(3, 11, 18, .92), rgba(3, 11, 18, .32) 78%, rgba(3, 11, 18, .62)); }
+  .transport-hero-copy h1 { font-size: 53px; }
+  .transport-search-panel { margin-top: 30px; }
+  .transport-swap { margin: 0 auto; }
+  .transport-content { margin-top: 25px; }
+  .transport-tab { min-width: 100px; }
+  .transport-route-card { grid-template-columns: 1fr; }
+  .transport-route-image { min-height: 150px; }
+  .smart-route-panel { min-height: 500px; }
+}
+
+/* NILEA motion system — shared entrance, depth and interaction language */
+:root {
+  --motion-spring: cubic-bezier(.16, 1, .3, 1);
+  --motion-soft: cubic-bezier(.22, 1, .36, 1);
+}
+
+button,
+a {
+  transform-origin: center;
+}
+
+button:not(:disabled):active,
+a:active {
+  transform: translateY(1px) scale(.985);
+}
+
+.site-shell,
+.life-shell,
+.hotel-shell,
+.transport-shell {
+  animation: nilea-page-in 900ms var(--motion-soft) both;
+}
+
+.site-shell header,
+.life-header,
+.hotel-header,
+.transport-header {
+  animation: nilea-header-in 820ms var(--motion-spring) both;
+}
+
+.site-shell header > div > a:first-child,
+.life-header > div > a:first-child,
+.hotel-header > div > a:first-child,
+.transport-header > div > a:first-child {
+  transition: letter-spacing 400ms var(--motion-soft), color 220ms ease, text-shadow 220ms ease;
+}
+
+.site-shell header > div > a:first-child:hover,
+.life-header > div > a:first-child:hover,
+.hotel-header > div > a:first-child:hover,
+.transport-header > div > a:first-child:hover {
+  letter-spacing: .22em;
+  text-shadow: 0 0 22px rgba(244, 195, 112, .38);
+}
+
+.site-shell nav a,
+.life-header nav a,
+.hotel-header nav a,
+.transport-header nav a {
+  transition: color 220ms ease, transform 220ms var(--motion-spring), opacity 220ms ease;
+}
+
+.site-shell nav a:hover,
+.life-header nav a:hover,
+.hotel-header nav a:hover,
+.transport-header nav a:hover {
+  transform: translateY(-2px);
+}
+
+.site-shell header button,
+.life-header button,
+.hotel-header button,
+.transport-header button {
+  transition: transform 220ms var(--motion-spring), border-color 220ms ease, color 220ms ease, filter 220ms ease, background 220ms ease;
+}
+
+.site-shell header button:hover,
+.life-header header button:hover,
+.life-header > header button:hover,
+.hotel-header button:hover,
+.transport-header button:hover {
+  transform: translateY(-2px);
+}
+
+.site-shell #top {
+  animation: nilea-section-in 900ms var(--motion-spring) 100ms both;
+}
+
+.site-shell #journey {
+  animation: nilea-section-in 900ms var(--motion-spring) 240ms both;
+}
+
+.site-shell #artifacts {
+  animation: nilea-section-in 900ms var(--motion-spring) 380ms both;
+}
+
+.site-shell #guide,
+.life-shell #guide,
+.hotel-shell #guide,
+.transport-shell #guide {
+  animation: nilea-fade-in 900ms ease 640ms both;
+}
+
+.hero-depth > *,
+.life-hero-copy > *,
+.hotel-hero-copy > *,
+.transport-hero-copy > * {
+  animation: nilea-reveal-up 820ms var(--motion-spring) both;
+}
+
+.hero-depth > *:nth-child(1),
+.life-hero-copy > *:nth-child(1),
+.hotel-hero-copy > *:nth-child(1),
+.transport-hero-copy > *:nth-child(1) { animation-delay: 180ms; }
+
+.hero-depth > *:nth-child(2),
+.life-hero-copy > *:nth-child(2),
+.hotel-hero-copy > *:nth-child(2),
+.transport-hero-copy > *:nth-child(2) { animation-delay: 300ms; }
+
+.hero-depth > *:nth-child(3),
+.life-hero-copy > *:nth-child(3),
+.hotel-hero-copy > *:nth-child(3),
+.transport-hero-copy > *:nth-child(3) { animation-delay: 420ms; }
+
+.hero-depth > *:nth-child(4),
+.life-hero-copy > *:nth-child(4),
+.hotel-hero-copy > *:nth-child(4),
+.transport-hero-copy > *:nth-child(4) { animation-delay: 540ms; }
+
+.hero-depth > *:nth-child(5),
+.life-hero-copy > *:nth-child(5),
+.hotel-hero-copy > *:nth-child(5),
+.transport-hero-copy > *:nth-child(5) { animation-delay: 660ms; }
+
+.timeline-card,
+.artifact-tile,
+.life-feature-card,
+.life-near-card,
+.hotel-featured-card,
+.hotel-card,
+.transport-route-card,
+.smart-route-item {
+  will-change: transform;
+}
+
+.timeline-card > div:first-child,
+.artifact-tile,
+.life-feature-card,
+.life-near-card,
+.hotel-featured-card,
+.hotel-card,
+.transport-route-card,
+.smart-route-item,
+.smart-route-panel,
+.life-map-card {
+  transition-timing-function: var(--motion-spring);
+}
+
+.timeline-card > div:first-child {
+  transition: transform 600ms var(--motion-spring), filter 600ms ease, box-shadow 600ms ease;
+}
+
+.timeline-card:hover > div:first-child,
+.timeline-card.active > div:first-child {
+  transform: translateZ(36px) scale(1.035);
+  filter: saturate(1.08) brightness(1.05);
+}
+
+.timeline-card.active::after {
+  animation: nilea-beacon 2.4s ease-in-out infinite;
+}
+
+.artifact-tile {
+  animation: nilea-tile-in 720ms var(--motion-spring) both;
+}
+
+.artifact-tile:nth-child(1) { animation-delay: 420ms; }
+.artifact-tile:nth-child(2) { animation-delay: 500ms; }
+.artifact-tile:nth-child(3) { animation-delay: 580ms; }
+.artifact-tile:nth-child(4) { animation-delay: 660ms; }
+
+.artifact-tile:hover {
+  background-size: 430% 108%;
+  transition: background-size 700ms var(--motion-spring), transform 320ms var(--motion-spring), border-color 240ms ease, box-shadow 240ms ease;
+}
+
+.glass-panel::before {
+  background-size: 180% 100%;
+  animation: nilea-panel-sheen 10s ease-in-out infinite;
+}
+
+.waveform span {
+  transform-origin: center;
+}
+
+.waveform.animate-pulse span {
+  animation: nilea-wave 900ms ease-in-out infinite alternate;
+}
+
+.waveform.animate-pulse span:nth-child(2n) { animation-delay: 120ms; }
+.waveform.animate-pulse span:nth-child(3n) { animation-delay: 240ms; }
+.waveform.animate-pulse span:nth-child(4n) { animation-delay: 360ms; }
+
+.life-hero {
+  animation: nilea-life-hero-drift 22s ease-in-out infinite alternate;
+}
+
+.hotel-hero {
+  animation: nilea-hotel-hero-drift 22s ease-in-out infinite alternate;
+}
+
+.transport-hero {
+  animation: nilea-transport-hero-drift 22s ease-in-out infinite alternate;
+}
+
+.life-hero::before,
+.hotel-hero::before,
+.transport-hero::before {
+  animation: nilea-overlay-breathe 12s ease-in-out infinite alternate;
+}
+
+.life-category-rail {
+  animation: nilea-rail-in 900ms var(--motion-spring) 460ms both;
+}
+
+.life-category-item {
+  transition: color 240ms ease, background 240ms ease, padding 240ms var(--motion-spring), transform 240ms var(--motion-spring);
+}
+
+.life-category-item:hover,
+.life-category-item.active {
+  transform: translateX(4px);
+}
+
+.life-category-item > span:first-child {
+  transition: transform 280ms var(--motion-spring), background 240ms ease, box-shadow 240ms ease;
+}
+
+.life-category-item:hover > span:first-child,
+.life-category-item.active > span:first-child {
+  transform: rotate(-8deg) scale(1.1);
+  box-shadow: 0 0 18px rgba(241, 188, 98, .18);
+}
+
+.life-filter-bar {
+  animation: nilea-filter-in 850ms var(--motion-spring) 420ms both;
+}
+
+.life-filter-button,
+.hotel-search-button,
+.hotel-primary-button,
+.transport-search-button,
+.cta-depth {
+  position: relative;
+  overflow: hidden;
+}
+
+.life-filter-button::after,
+.hotel-search-button::after,
+.hotel-primary-button::after,
+.transport-search-button::after,
+.cta-depth::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -42%;
+  width: 35%;
+  transform: skewX(-20deg);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.48), transparent);
+  opacity: 0;
+  transition: left 620ms var(--motion-spring), opacity 220ms ease;
+}
+
+.life-filter-button:hover::after,
+.hotel-search-button:hover::after,
+.hotel-primary-button:hover::after,
+.transport-search-button:hover::after,
+.cta-depth:hover::after {
+  left: 118%;
+  opacity: 1;
+}
+
+.life-map-feature-stage,
+.hotel-results,
+.transport-content {
+  animation: nilea-section-in 900ms var(--motion-spring) 520ms both;
+}
+
+.life-map-card {
+  animation: nilea-map-in 1000ms var(--motion-spring) 500ms both;
+}
+
+.life-map-card::before {
+  animation: nilea-grid-pulse 8s ease-in-out infinite alternate;
+}
+
+.life-map-route {
+  animation: nilea-route-pulse 3.5s ease-in-out infinite alternate;
+}
+
+.life-pin {
+  animation: nilea-pin-bob 3.8s ease-in-out infinite alternate;
+}
+
+.life-pin.aswan { animation-delay: -1.1s; }
+.life-pin.luxor { animation-delay: -2.2s; }
+
+.life-pin::after,
+.hotel-map-dot::after,
+.smart-node::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border: 1px solid rgba(247, 205, 127, .55);
+  border-radius: 50%;
+  animation: nilea-ring 2.4s ease-out infinite;
+}
+
+.life-pin::after { transform: rotate(45deg); }
+
+.life-map-features .life-feature-card:nth-child(1) { animation: nilea-card-in 760ms var(--motion-spring) 680ms both; }
+.life-map-features .life-feature-card:nth-child(2) { animation: nilea-card-in 760ms var(--motion-spring) 790ms both; }
+.life-map-features .life-feature-card:nth-child(3) { animation: nilea-card-in 760ms var(--motion-spring) 900ms both; }
+
+.life-near-card:nth-child(1) { animation: nilea-card-in 700ms var(--motion-spring) 720ms both; }
+.life-near-card:nth-child(2) { animation: nilea-card-in 700ms var(--motion-spring) 800ms both; }
+.life-near-card:nth-child(3) { animation: nilea-card-in 700ms var(--motion-spring) 880ms both; }
+.life-near-card:nth-child(4) { animation: nilea-card-in 700ms var(--motion-spring) 960ms both; }
+
+.life-feature-card::after,
+.life-near-card::after,
+.hotel-featured-media::after,
+.hotel-card-media::after {
+  background-size: 220% 100%;
+  background-position: -120% 0;
+  transition: background-position 800ms var(--motion-spring), opacity 240ms ease;
+}
+
+.life-feature-card:hover::after,
+.life-near-card:hover::after,
+.hotel-featured-card:hover .hotel-featured-media::after,
+.hotel-card:hover .hotel-card-media::after {
+  background-position: 120% 0;
+}
+
+.life-feature-card .life-card-copy,
+.life-near-card .life-card-copy,
+.hotel-card-content {
+  transition: transform 500ms var(--motion-spring);
+}
+
+.life-feature-card:hover .life-card-copy,
+.life-near-card:hover .life-card-copy,
+.hotel-card:hover .hotel-card-content {
+  transform: translateZ(38px) translateY(-2px);
+}
+
+.life-modal,
+.hotel-modal,
+.transport-modal {
+  animation: nilea-modal-in 560ms var(--motion-spring) both;
+}
+
+.site-shell .fixed.inset-0,
+.life-shell .fixed.inset-0,
+.hotel-shell .fixed.inset-0,
+.transport-shell .fixed.inset-0 {
+  animation: nilea-backdrop-in 300ms ease both;
+}
+
+.menu-popover {
+  transform-origin: top right;
+  animation: nilea-menu-in 360ms var(--motion-spring) both;
+}
+
+.menu-popover > * {
+  animation: nilea-menu-item-in 420ms var(--motion-spring) both;
+}
+
+.menu-popover > *:nth-child(2) { animation-delay: 60ms; }
+.menu-popover > *:nth-child(3) { animation-delay: 120ms; }
+
+.hotel-map-label {
+  animation: nilea-label-in 700ms var(--motion-spring) both, nilea-label-float 4s ease-in-out 1s infinite alternate;
+}
+
+.cairo-label { animation-delay: 620ms, -1.2s; }
+.aswan-label { animation-delay: 720ms, -2.1s; }
+.luxor-label { animation-delay: 820ms, -3s; }
+
+.hotel-map-dot {
+  position: relative;
+  animation: nilea-dot-pulse 2.6s ease-in-out infinite;
+}
+
+.hotel-search-panel {
+  animation: nilea-hotel-search-in 900ms var(--motion-spring) 500ms both;
+}
+
+.hotel-filter-row {
+  animation: nilea-filter-in 850ms var(--motion-spring) 620ms both;
+}
+
+.hotel-featured-card {
+  animation: nilea-card-in 850ms var(--motion-spring) 760ms both;
+}
+
+.hotel-featured-media,
+.hotel-card-media,
+.transport-route-image {
+  transition: transform 900ms var(--motion-spring), filter 700ms ease;
+}
+
+.hotel-featured-card:hover .hotel-featured-media,
+.hotel-card:hover .hotel-card-media,
+.transport-route-card:hover .transport-route-image {
+  transform: scale(1.045);
+  filter: saturate(1.12) brightness(1.06);
+}
+
+.hotel-card:nth-child(1) { animation: nilea-card-in 720ms var(--motion-spring) 900ms both; }
+.hotel-card:nth-child(2) { animation: nilea-card-in 720ms var(--motion-spring) 1000ms both; }
+.hotel-card:nth-child(3) { animation: nilea-card-in 720ms var(--motion-spring) 1100ms both; }
+
+.hotel-amenity {
+  transition: transform 300ms var(--motion-spring), color 240ms ease;
+}
+
+.hotel-amenity:hover {
+  transform: translateY(-5px);
+  color: #ffe0a0;
+}
+
+.hotel-amenity span {
+  transition: transform 300ms var(--motion-spring), filter 300ms ease;
+}
+
+.hotel-amenity:hover span {
+  transform: rotateY(180deg) scale(1.12);
+  filter: drop-shadow(0 0 8px rgba(244, 195, 112, .45));
+}
+
+.transport-search-panel {
+  animation: nilea-transport-search-in 900ms var(--motion-spring) 500ms both;
+}
+
+.transport-tabs {
+  animation: nilea-fade-in 760ms ease 650ms both;
+}
+
+.transport-tab svg {
+  transition: transform 350ms var(--motion-spring), filter 350ms ease;
+}
+
+.transport-tab:hover svg,
+.transport-tab.active svg {
+  transform: translateY(-3px) scale(1.12);
+  filter: drop-shadow(0 0 8px rgba(244, 195, 112, .55));
+}
+
+.transport-route-card:nth-child(1) { animation: nilea-card-in 720ms var(--motion-spring) 760ms both; }
+.transport-route-card:nth-child(2) { animation: nilea-card-in 720ms var(--motion-spring) 860ms both; }
+.transport-route-card:nth-child(3) { animation: nilea-card-in 720ms var(--motion-spring) 960ms both; }
+
+.transport-route-card {
+  position: relative;
+}
+
+.transport-route-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(112deg, transparent 20%, rgba(255,255,255,.13) 45%, transparent 68%);
+  background-size: 220% 100%;
+  background-position: -130% 0;
+  transition: background-position 850ms var(--motion-spring);
+}
+
+.transport-route-card:hover::after { background-position: 130% 0; }
+
+.smart-route-panel {
+  animation: nilea-panel-in 900ms var(--motion-spring) 760ms both;
+}
+
+.smart-route-panel::after {
+  animation: nilea-panel-sheen 9s ease-in-out infinite;
+  background-size: 180% 100%;
+}
+
+.smart-sparkle {
+  animation: nilea-sparkle 2.6s ease-in-out infinite;
+}
+
+.smart-route-item:nth-child(1) { animation: nilea-item-in 560ms var(--motion-spring) 900ms both; }
+.smart-route-item:nth-child(2) { animation: nilea-item-in 560ms var(--motion-spring) 980ms both; }
+.smart-route-item:nth-child(3) { animation: nilea-item-in 560ms var(--motion-spring) 1060ms both; }
+.smart-route-item:nth-child(4) { animation: nilea-item-in 560ms var(--motion-spring) 1140ms both; }
+.smart-route-item:nth-child(5) { animation: nilea-item-in 560ms var(--motion-spring) 1220ms both; }
+
+.smart-route-item:hover .smart-route-thumb {
+  transform: scale(1.08);
+  filter: saturate(1.2) brightness(1.08);
+}
+
+.smart-route-thumb {
+  transition: transform 500ms var(--motion-spring), filter 500ms ease;
+}
+
+.smart-node::before {
+  animation: nilea-node-pulse 2.8s ease-in-out infinite;
+}
+
+.transport-notice {
+  animation: nilea-notice-in 560ms var(--motion-spring) both;
+}
+
+@keyframes nilea-page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes nilea-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes nilea-header-in {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nilea-section-in {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nilea-reveal-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nilea-card-in {
+  from { opacity: 0; transform: translateY(28px) scale(.975); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes nilea-tile-in {
+  from { opacity: 0; transform: translateY(22px) rotateX(8deg) scale(.96); }
+  to { opacity: 1; transform: translateY(0) rotateX(0) scale(1); }
+}
+
+@keyframes nilea-map-in {
+  from { opacity: 0; transform: perspective(1200px) rotateX(5deg) translateY(34px); }
+  to { opacity: 1; transform: perspective(1200px) rotateX(0) translateY(0); }
+}
+
+@keyframes nilea-rail-in {
+  from { opacity: 0; transform: perspective(1100px) rotateY(-12deg) translateX(28px); }
+  to { opacity: 1; transform: perspective(1100px) rotateY(-5deg) translateX(0); }
+}
+
+@keyframes nilea-filter-in {
+  from { opacity: 0; transform: translateY(-48px) perspective(1200px) rotateX(9deg); }
+  to { opacity: 1; transform: translateY(-74px) perspective(1200px) rotateX(3deg); }
+}
+
+@keyframes nilea-hotel-search-in {
+  from { opacity: 0; transform: translateY(-46px) perspective(1200px) rotateX(11deg); }
+  to { opacity: 1; transform: translateY(-72px) perspective(1200px) rotateX(3deg); }
+}
+
+@keyframes nilea-transport-search-in {
+  from { opacity: 0; transform: perspective(1200px) rotateX(11deg) translateY(30px); }
+  to { opacity: 1; transform: perspective(1200px) rotateX(3deg) translateY(0); }
+}
+
+@keyframes nilea-panel-in {
+  from { opacity: 0; transform: perspective(1100px) rotateY(5deg) translateY(24px); }
+  to { opacity: 1; transform: perspective(1100px) rotateY(0) translateY(0); }
+}
+
+@keyframes nilea-item-in {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes nilea-menu-in {
+  from { opacity: 0; transform: translateY(-8px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes nilea-menu-item-in {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes nilea-modal-in {
+  from { opacity: 0; transform: perspective(1200px) translateY(24px) rotateX(4deg) scale(.96); }
+  to { opacity: 1; transform: perspective(1200px) translateY(0) rotateX(0) scale(1); }
+}
+
+@keyframes nilea-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes nilea-life-hero-drift {
+  from { background-position: 49% 14%; }
+  to { background-position: 54% 18%; }
+}
+
+@keyframes nilea-hotel-hero-drift {
+  from { background-position: 49% 40%; }
+  to { background-position: 54% 44%; }
+}
+
+@keyframes nilea-transport-hero-drift {
+  from { background-position: 49% 30%; }
+  to { background-position: 54% 34%; }
+}
+
+@media (max-width: 900px) {
+  .life-hero { animation-name: nilea-life-hero-drift-tablet; }
+  .hotel-hero { animation-name: nilea-hotel-hero-drift-tablet; }
+  .transport-hero { animation-name: nilea-transport-hero-drift-tablet; }
+}
+
+@media (max-width: 640px) {
+  .life-hero { animation-name: nilea-life-hero-drift-mobile; }
+  .hotel-hero { animation-name: nilea-hotel-hero-drift-mobile; }
+  .transport-hero { animation-name: nilea-transport-hero-drift-mobile; }
+}
+
+@keyframes nilea-life-hero-drift-tablet {
+  from { background-position: 64% 14%; }
+  to { background-position: 69% 18%; }
+}
+
+@keyframes nilea-hotel-hero-drift-tablet {
+  from { background-position: 56% 40%; }
+  to { background-position: 61% 44%; }
+}
+
+@keyframes nilea-transport-hero-drift-tablet {
+  from { background-position: 60% 28%; }
+  to { background-position: 65% 32%; }
+}
+
+@keyframes nilea-life-hero-drift-mobile {
+  from { background-position: 57% 14%; }
+  to { background-position: 62% 18%; }
+}
+
+@keyframes nilea-hotel-hero-drift-mobile {
+  from { background-position: 59% 42%; }
+  to { background-position: 64% 46%; }
+}
+
+@keyframes nilea-transport-hero-drift-mobile {
+  from { background-position: 60% 28%; }
+  to { background-position: 65% 32%; }
+}
+
+@keyframes nilea-overlay-breathe {
+  from { opacity: .82; }
+  to { opacity: 1; }
+}
+
+@keyframes nilea-panel-sheen {
+  0%, 58% { background-position: -110% 0; }
+  100% { background-position: 120% 0; }
+}
+
+@keyframes nilea-beacon {
+  0%, 100% { box-shadow: 0 0 0 5px rgba(244,199,119,.13), 0 0 22px #efb84e; }
+  50% { box-shadow: 0 0 0 10px rgba(244,199,119,.03), 0 0 34px #efb84e; }
+}
+
+@keyframes nilea-wave {
+  from { transform: scaleY(.58); opacity: .52; }
+  to { transform: scaleY(1.18); opacity: 1; }
+}
+
+@keyframes nilea-grid-pulse {
+  from { opacity: .3; }
+  to { opacity: .72; }
+}
+
+@keyframes nilea-route-pulse {
+  from { opacity: .62; filter: drop-shadow(0 0 5px rgba(245,190,94,.32)); }
+  to { opacity: 1; filter: drop-shadow(0 0 16px rgba(245,190,94,.82)); }
+}
+
+@keyframes nilea-pin-bob {
+  from { transform: rotate(-45deg) translateY(2px); }
+  to { transform: rotate(-45deg) translateY(-7px); }
+}
+
+@keyframes nilea-ring {
+  0% { opacity: .75; transform: scale(.66); }
+  80%, 100% { opacity: 0; transform: scale(1.65); }
+}
+
+@keyframes nilea-label-in {
+  from { opacity: 0; transform: translateZ(22px) translateY(10px) scale(.94); }
+  to { opacity: .78; transform: translateZ(22px) translateY(0) scale(1); }
+}
+
+@keyframes nilea-label-float {
+  from { margin-top: 0; }
+  to { margin-top: -6px; }
+}
+
+@keyframes nilea-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 5px rgba(246,195,104,.15), 0 0 18px rgba(246,195,104,.72); }
+  50% { box-shadow: 0 0 0 8px rgba(246,195,104,.04), 0 0 30px rgba(246,195,104,.94); }
+}
+
+@keyframes nilea-node-pulse {
+  0%, 100% { box-shadow: 0 0 0 5px rgba(245, 202, 120, .1), 0 0 16px rgba(245, 202, 120, .7); }
+  50% { box-shadow: 0 0 0 9px rgba(245, 202, 120, .03), 0 0 26px rgba(245, 202, 120, .98); }
+}
+
+@keyframes nilea-sparkle {
+  0%, 100% { transform: rotate(0) scale(1); }
+  50% { transform: rotate(12deg) scale(1.08); }
+}
+
+@keyframes nilea-notice-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-shell,
+  .life-shell,
+  .hotel-shell,
+  .transport-shell,
+  .site-shell *,
+  .life-shell *,
+  .hotel-shell *,
+  .transport-shell * {
+    animation: none !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+
+  button:not(:disabled):active,
+  a:active {
+    transform: none !important;
+  }
+}
