@@ -128,22 +128,16 @@ export default function Home() {
         <header className="sticky top-0 z-30 flex h-[82px] items-center justify-between border-b border-white/15 bg-[#06111c]/45 backdrop-blur-md">
           <a href="#top" className="font-display text-[23px] tracking-[0.16em] text-[#f3ca82] transition hover:text-white">NILEA</a>
           <nav className="hidden items-center gap-5 text-[11px] text-[#d9d4ca] lg:flex" aria-label="Primary navigation">
-            {[
-              ["Explore", "#journey"],
-              ["Destinations", "#artifacts"],
-              ["History", "#journey"],
-              ["Local Life & Dining", "/local-life"],
-              ["Stays & Hotels", "/stays-hotels"],
-              ["Travel & Transport", "/travel-transport"],
-            ].map(([label, href], i) => <a key={label} href={href} className={`relative py-3 transition hover:text-[#f4ca80] ${i === 2 ? "text-[#f4c577] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-[#e9b85e]" : ""}`}>{label}</a>)}
-            <a href="#guide" className="py-3 transition hover:text-[#f4ca80]">Smart Guide</a>
+            {[[
+              "History", "#journey"
+            ], ["Local Life & Dining", "/local-life"], ["Stays & Hotels", "/stays-hotels"], ["Travel & Transport", "/travel-transport"], ["Tours & Experiences", "/tours-experiences"]].map(([label, href], i) => <a key={label} href={href} className={`relative py-3 transition hover:text-[#f4ca80] ${i === 0 ? "text-[#f4c577] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-[#e9b85e]" : ""}`}>{label}</a>)}
           </nav>
           <div className="flex items-center gap-3">
             <a href="#journey" className="hidden h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white/90 transition hover:border-[#f4c577] hover:text-[#f4c577] sm:flex" aria-label="Search"><Icon name="search" size={16} /></a>
-            <button onClick={() => setMenuOpen((value) => !value)} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white/90 transition hover:border-[#f4c577] hover:text-[#f4c577]" aria-label="Open menu" aria-expanded={menuOpen}><Icon name={menuOpen ? "close" : "menu"} size={16} /></button>
+            <button onClick={() => setMenuOpen((value) => !value)} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white/90 transition hover:border-[#f4c577] hover:text-[#f4c577] lg:hidden" aria-label="Open menu" aria-expanded={menuOpen}><Icon name={menuOpen ? "close" : "menu"} size={16} /></button>
             <button onClick={() => setTripOpen(true)} className="hidden rounded-full bg-gradient-to-b from-[#f6d18d] to-[#d49643] px-5 py-2.5 text-[11px] font-semibold text-[#1e160c] shadow-[0_8px_22px_rgba(202,141,57,.22)] transition hover:brightness-110 sm:block">Plan Your Trip</button>
           </div>
-          {menuOpen && <div className="menu-popover absolute right-0 top-[68px] w-52 rounded-2xl border border-[#e8b65e]/30 bg-[#09141f]/95 p-3 shadow-2xl backdrop-blur-xl md:hidden"><a className="block rounded-xl px-4 py-3 text-sm text-white/80 hover:bg-white/5" href="#journey" onClick={() => setMenuOpen(false)}>Explore the eras</a><a className="block rounded-xl px-4 py-3 text-sm text-white/80 hover:bg-white/5" href="#artifacts" onClick={() => setMenuOpen(false)}>View artifacts</a><button className="block w-full rounded-xl px-4 py-3 text-left text-sm text-[#f4c577] hover:bg-white/5" onClick={() => { setMenuOpen(false); setTripOpen(true); }}>Plan your trip</button></div>}
+          {menuOpen && <div className="menu-popover absolute right-0 top-[68px] w-52 rounded-2xl border border-[#e8b65e]/30 bg-[#09141f]/95 p-3 shadow-2xl backdrop-blur-xl lg:hidden"><a className="block rounded-xl px-4 py-3 text-sm text-white/80 hover:bg-white/5" href="#journey" onClick={() => setMenuOpen(false)}>Explore the eras</a><a className="block rounded-xl px-4 py-3 text-sm text-white/80 hover:bg-white/5" href="#artifacts" onClick={() => setMenuOpen(false)}>View artifacts</a><a className="block rounded-xl px-4 py-3 text-sm text-white/80 hover:bg-white/5" href="/tours-experiences" onClick={() => setMenuOpen(false)}>Tours &amp; experiences</a><button className="block w-full rounded-xl px-4 py-3 text-left text-sm text-[#f4c577] hover:bg-white/5" onClick={() => { setMenuOpen(false); setTripOpen(true); }}>Plan your trip</button></div>}
         </header>
 
         <section id="top" className="relative pt-14 sm:pt-20 lg:pt-24">

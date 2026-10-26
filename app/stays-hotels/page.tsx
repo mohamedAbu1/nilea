@@ -91,17 +91,15 @@ export default function StaysHotelsPage() {
         <div className="mx-auto flex h-[74px] w-full max-w-[1500px] items-center justify-between px-4 sm:px-7 lg:px-12">
           <a href="/" className="font-display text-[23px] tracking-[0.16em] text-[#f3ca82] transition hover:text-white">NILEA</a>
           <nav className="hidden items-center gap-5 text-[11px] text-[#d9d4ca] lg:flex" aria-label="Primary navigation">
-            <a href="/#journey" className="transition hover:text-[#f4ca80]">Explore</a>
-            <a href="/#artifacts" className="transition hover:text-[#f4ca80]">Destinations</a>
             <a href="/" className="transition hover:text-[#f4ca80]">History</a>
             <a href="/local-life" className="transition hover:text-[#f4ca80]">Local Life &amp; Dining</a>
             <a href="/stays-hotels" className="relative py-3 text-[#f4c577] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-[#e9b85e]">Stays &amp; Hotels</a>
             <a href="/travel-transport" className="transition hover:text-[#f4ca80]">Travel &amp; Transport</a>
-            <a href="#guide" className="transition hover:text-[#f4ca80]">Smart Guide</a>
+            <a href="/tours-experiences" className="transition hover:text-[#f4ca80]">Tours &amp; Experiences</a>
           </nav>
           <div className="flex items-center gap-3">
             <a href="#stays" className="hidden h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white/90 transition hover:border-[#f4c577] hover:text-[#f4c577] sm:flex" aria-label="Search stays"><Icon name="search" size={16} /></a>
-            <button onClick={() => setMenuOpen((value) => !value)} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white/90 transition hover:border-[#f4c577] hover:text-[#f4c577]" aria-label="Open menu" aria-expanded={menuOpen}><Icon name={menuOpen ? "close" : "menu"} size={16} /></button>
+            <button onClick={() => setMenuOpen((value) => !value)} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white/90 transition hover:border-[#f4c577] hover:text-[#f4c577] lg:hidden" aria-label="Open menu" aria-expanded={menuOpen}><Icon name={menuOpen ? "close" : "menu"} size={16} /></button>
             <button onClick={searchStays} className="hidden rounded-full bg-gradient-to-b from-[#f6d18d] to-[#d49643] px-5 py-2.5 text-[11px] font-semibold text-[#1e160c] shadow-[0_8px_22px_rgba(202,141,57,.22)] transition hover:brightness-110 sm:block">Plan Your Trip</button>
           </div>
           {menuOpen && <div className="menu-popover absolute right-4 top-[66px] w-60 rounded-2xl border border-[#e8b65e]/30 bg-[#09141f]/95 p-3 shadow-2xl backdrop-blur-xl lg:hidden"><a className="block rounded-xl px-4 py-3 text-sm text-white/80 hover:bg-white/5" href="/local-life" onClick={() => setMenuOpen(false)}>Local life &amp; dining</a><a className="block rounded-xl px-4 py-3 text-sm text-white/80 hover:bg-white/5" href="#stays" onClick={() => setMenuOpen(false)}>Find a stay</a><a className="block rounded-xl px-4 py-3 text-sm text-[#f4c577] hover:bg-white/5" href="#guide" onClick={() => setMenuOpen(false)}>Smart guide</a></div>}
