@@ -8415,6 +8415,44 @@ form .site-select:focus,
 .home-redesign-body { position: relative; z-index: 1; }
 .home-redesign-hero .alpnile-select-menu { z-index: 200; }
 
+/* Shared home-style hero for interior pages. It keeps the same visual language
+   without duplicating each page's data or interaction model. */
+.shared-home-hero {
+  overflow: hidden;
+  isolation: isolate;
+}
+.shared-home-hero .home-redesign-hero-inner { min-height: inherit; }
+.shared-home-hero .home-redesign-hero-copy { padding-bottom: 148px; }
+.shared-home-hero .home-redesign-hero-copy h1 { max-width: 760px; }
+.shared-home-hero .home-redesign-hero-booker { bottom: 26px; }
+.shared-home-hero-booker-fields { grid-template-columns: 1.05fr 1fr .9fr 1.05fr; }
+.shared-home-hero-booker-fields .home-redesign-booker-field { cursor: default; }
+.shared-home-hero-booker-fields .home-redesign-booker-field strong { color: rgba(246, 239, 223, .88); font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.shared-home-hero-slider { position: absolute; right: clamp(36px, 7vw, 110px); bottom: 145px; display: flex; align-items: center; gap: 7px; color: #f5cf87; font-size: 10px; letter-spacing: .12em; }
+.shared-home-hero-slider span { margin-right: 5px; }
+.shared-home-hero-slider i { display: inline-block; width: 25px; height: 1px; margin: 0 6px; vertical-align: middle; background: rgba(241, 198, 120, .52); }
+.shared-home-hero-slider b { display: block; width: 24px; height: 3px; border-radius: 99px; background: rgba(246, 239, 223, .27); }
+.shared-home-hero-slider b.active { width: 46px; background: #f5cf87; }
+
+@media (min-width: 641px) {
+  /* Keep the first viewport dedicated to the hero; the next section begins
+     cleanly below it instead of peeking into the composition. */
+  .home-redesign-hero:not(.shared-home-hero) {
+    min-height: min(860px, max(640px, calc(100svh - 82px)));
+    height: min(860px, max(640px, calc(100svh - 82px)));
+  }
+  .home-redesign-hero:not(.shared-home-hero) .home-redesign-hero-inner { min-height: 100%; height: 100%; }
+}
+
+@media (max-width: 640px) {
+  .shared-home-hero .home-redesign-hero-copy { padding-bottom: 0; }
+  .shared-home-hero .home-redesign-hero-booker { bottom: 22px; }
+  .shared-home-hero-slider { right: 20px; bottom: 315px; left: 20px; justify-content: space-between; }
+  .shared-home-hero-slider b { width: 15px; }
+  .shared-home-hero-slider b.active { width: 30px; }
+  .shared-home-hero-booker-fields { grid-template-columns: 1fr; }
+}
+
 /* Keep the contact story card legible above its artwork and prevent long editorial lines from being clipped. */
 .contact-card-3d { z-index: 3; background: linear-gradient(145deg, rgba(21, 40, 51, .985), rgba(3, 12, 20, .96)); }
 .contact-card-3d p { max-width: 100%; overflow-wrap: normal; }

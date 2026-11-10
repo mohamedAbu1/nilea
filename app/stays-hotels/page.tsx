@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useDialogA11y } from "../components/dialog";
 import { StyledSelect } from "../components/styled-select";
 import { insertInquiry } from "../lib/submissions";
+import { SharedHomeHero } from "../components/shared-home-hero";
 
 type IconName = "search" | "menu" | "close" | "arrow" | "pin" | "calendar" | "users" | "sliders" | "wifi" | "pool" | "spa" | "dining" | "view" | "heart";
 
@@ -130,6 +131,20 @@ export default function StaysHotelsPage() {
 
   return (
     <main className="hotel-shell">
+      <SharedHomeHero
+        sectionId="stays-hero"
+        eyebrow="STAYS · ROOMS WITH A RIVER VIEW"
+        title="Stay where"
+        emphasis="the story slows down."
+        lede="Wake beside the river, sleep beneath ancient columns and choose a place that becomes part of the journey."
+        image="/alpnile-hero-beach-3d-v2.webp"
+        primaryHref="/trip-planner"
+        primaryLabel="Plan your route"
+        secondaryHref="#stays"
+        secondaryLabel="Find your stay"
+        note="Rest / river / return"
+        chapter="03"
+      />
       <section className="hotel-hero">
         <div className="mx-auto min-h-[630px] w-full max-w-[1500px] px-4 pb-20 pt-12 sm:px-7 sm:pt-16 lg:px-12 lg:pt-20">
           <div className="hotel-hero-copy max-w-[640px]">

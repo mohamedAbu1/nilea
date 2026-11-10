@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRef } from "react";
 import { useDialogA11y } from "../components/dialog";
 import { StyledSelect } from "../components/styled-select";
+import { SharedHomeHero } from "../components/shared-home-hero";
 
 type IconName = "search" | "menu" | "close" | "arrow" | "pin" | "calendar" | "sliders" | "utensils" | "coffee" | "store" | "ticket" | "vase" | "lotus" | "family" | "heart";
 
@@ -115,6 +116,20 @@ export default function LocalLifePage() {
 
   return (
     <main className="life-shell">
+      <SharedHomeHero
+        sectionId="local-life-hero"
+        eyebrow="LOCAL LIFE · TABLES WITH A STORY"
+        title="Meet the"
+        emphasis="Egypt between landmarks."
+        lede="Taste, meet and wander through the small places that make a journey feel genuinely local."
+        image="/alpnile-hero-nile-sunset-3d-v2.webp"
+        primaryHref="/trip-planner"
+        primaryLabel="Plan your route"
+        secondaryHref="#experiences"
+        secondaryLabel="Explore local life"
+        note="Tables / people / flavour"
+        chapter="02"
+      />
       <section className="life-hero">
         <div className="mx-auto grid min-h-[710px] w-full max-w-[1500px] grid-cols-1 gap-10 px-4 pb-16 pt-12 sm:px-7 sm:pt-16 lg:grid-cols-[1fr_276px] lg:gap-16 lg:px-12 lg:pt-20">
           <div className="life-hero-copy max-w-[650px] self-start">
