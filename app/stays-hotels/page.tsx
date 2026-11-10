@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useDialogA11y } from "../components/dialog";
+import { StyledSelect } from "../components/styled-select";
+import { insertInquiry } from "../lib/submissions";
 
 type IconName = "search" | "menu" | "close" | "arrow" | "pin" | "calendar" | "users" | "sliders" | "wifi" | "pool" | "spa" | "dining" | "view" | "heart";
 
@@ -21,7 +24,7 @@ const hotels: Hotel[] = [
     rating: "4.8",
     reviews: "982",
     price: "$280",
-    image: "/nilea-hotel-winter-palace.png",
+    image: "/alpnile-hotel-winter-palace.webp",
     description: "A grand riverside palace wrapped in palms, history and the warm glow of old Luxor.",
   },
   {
@@ -30,7 +33,7 @@ const hotels: Hotel[] = [
     rating: "4.6",
     reviews: "754",
     price: "$240",
-    image: "/nilea-hotel-nile-palace.png",
+    image: "/alpnile-hotel-nile-palace.webp",
     description: "A calm Nile-facing stay with long horizons, quiet terraces and evening river lights.",
   },
   {
@@ -39,13 +42,13 @@ const hotels: Hotel[] = [
     rating: "4.7",
     reviews: "618",
     price: "$310",
-    image: "/nilea-hotel-al-moudira.png",
+    image: "/alpnile-hotel-al-moudira.webp",
     description: "An intimate oasis of carved stone, lantern-lit courtyards and private pool moments.",
   },
 ];
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
-  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.45, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.45, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, className: `inline-ui-icon inline-ui-${name}` };
   if (name === "search") return <svg {...common}><circle cx="11" cy="11" r="6.7" /><path d="m16 16 4.3 4.3" /></svg>;
   if (name === "menu") return <svg {...common}><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
   if (name === "close") return <svg {...common}><path d="m6 6 12 12M18 6 6 18" /></svg>;
@@ -72,40 +75,61 @@ const amenities = [
 
 export default function StaysHotelsPage() {
   const [destination, setDestination] = useState("Luxor");
-  const [dates, setDates] = useState("Jun 12, 2025 – Jun 16, 2025");
+  const [dates, setDates] = useState("Nov 12, 2026 – Nov 16, 2026");
   const [guests, setGuests] = useState("2 Guests");
-  const [sort, setSort] = useState("Recommended");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchSubmitted, setSearchSubmitted] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [saved, setSaved] = useState<string[]>([]);
+  const [reservationStarted, setReservationStarted] = useState(false);
+  const [reservationSubmitting, setReservationSubmitting] = useState(false);
+  const [reservationError, setReservationError] = useState("");
+  const dialogRef = useRef<HTMLDivElement>(null);
 
-  const searchStays = () => document.getElementById("stays")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  const cycleDestination = () => setDestination((value) => value === "Luxor" ? "Cairo" : value === "Cairo" ? "Aswan" : "Luxor");
-  const cycleDates = () => setDates((value) => value === "Jun 12, 2025 – Jun 16, 2025" ? "Tonight – Jun 16, 2025" : "Jun 12, 2025 – Jun 16, 2025");
-  const cycleGuests = () => setGuests((value) => value === "2 Guests" ? "3 Guests" : value === "3 Guests" ? "1 Guest" : "2 Guests");
+  useEffect(() => {
+    const stored = window.localStorage.getItem("alpnile-stay-favorites");
+    if (!stored) return;
+    try { setSaved(JSON.parse(stored) as string[]); } catch { window.localStorage.removeItem("alpnile-stay-favorites"); }
+  }, []);
+  useEffect(() => {
+    window.localStorage.setItem("alpnile-stay-favorites", JSON.stringify(saved));
+  }, [saved]);
+
+  const searchStays = () => {
+    setSearchSubmitted(true);
+    document.getElementById("stays")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   const toggleSaved = (name: string) => setSaved((items) => items.includes(name) ? items.filter((item) => item !== name) : [...items, name]);
+  const displayHotels = hotels.filter((hotel) => destination === "All Egypt" || hotel.city.startsWith(destination));
+  const submitReservationRequest = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedHotel) return;
+    setReservationError("");
+    setReservationSubmitting(true);
+    const form = new FormData(event.currentTarget);
+    if (String(form.get("website") ?? "").trim()) { setReservationSubmitting(false); return; }
+    const name = String(form.get("name") ?? "").trim();
+    const email = String(form.get("email") ?? "").trim();
+    const phone = String(form.get("phone") ?? "").trim();
+    const checkIn = String(form.get("checkIn") ?? "").trim();
+    const checkOut = String(form.get("checkOut") ?? "").trim();
+    if (checkOut <= checkIn) {
+      setReservationError("Check-out must be after check-in.");
+      setReservationSubmitting(false);
+      return;
+    }
+    const result = await insertInquiry({ request_type: "stay", full_name: name, email, phone, message: `Stay request: ${selectedHotel.name} · ${checkIn} to ${checkOut} · ${form.get("guests")} guests.`, details: { stay: selectedHotel.name, checkIn, checkOut, guests: form.get("guests") }, source: "stays-page" });
+    if (result.error) {
+      setReservationError("We could not save this reservation request. Please try again.");
+      setReservationSubmitting(false);
+      return;
+    }
+    setReservationStarted(true);
+    setReservationSubmitting(false);
+  };
+  useDialogA11y(Boolean(selectedHotel), () => { setSelectedHotel(null); setReservationStarted(false); }, dialogRef);
 
   return (
     <main className="hotel-shell">
-      <header className="hotel-header sticky top-0 z-40">
-        <div className="mx-auto flex h-[74px] w-full max-w-[1500px] items-center justify-between px-4 sm:px-7 lg:px-12">
-          <a href="/" className="font-display text-[23px] tracking-[0.16em] text-[#f3ca82] transition hover:text-white">NILEA</a>
-          <nav className="hidden items-center gap-5 text-[11px] text-[#d9d4ca] lg:flex" aria-label="Primary navigation">
-            <a href="/" className="transition hover:text-[#f4ca80]">History</a>
-            <a href="/local-life" className="transition hover:text-[#f4ca80]">Local Life &amp; Dining</a>
-            <a href="/stays-hotels" className="relative py-3 text-[#f4c577] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-[#e9b85e]">Stays &amp; Hotels</a>
-            <a href="/travel-transport" className="transition hover:text-[#f4ca80]">Travel &amp; Transport</a>
-            <a href="/tours-experiences" className="transition hover:text-[#f4ca80]">Tours &amp; Experiences</a>
-          </nav>
-          <div className="flex items-center gap-3">
-            <a href="#stays" className="hidden h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white/90 transition hover:border-[#f4c577] hover:text-[#f4c577] sm:flex" aria-label="Search stays"><Icon name="search" size={16} /></a>
-            <button onClick={() => setMenuOpen((value) => !value)} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white/90 transition hover:border-[#f4c577] hover:text-[#f4c577] lg:hidden" aria-label="Open menu" aria-expanded={menuOpen}><Icon name={menuOpen ? "close" : "menu"} size={16} /></button>
-            <button onClick={searchStays} className="hidden rounded-full bg-gradient-to-b from-[#f6d18d] to-[#d49643] px-5 py-2.5 text-[11px] font-semibold text-[#1e160c] shadow-[0_8px_22px_rgba(202,141,57,.22)] transition hover:brightness-110 sm:block">Plan Your Trip</button>
-          </div>
-          {menuOpen && <div className="menu-popover absolute right-4 top-[66px] w-60 rounded-2xl border border-[#e8b65e]/30 bg-[#09141f]/95 p-3 shadow-2xl backdrop-blur-xl lg:hidden"><a className="block rounded-xl px-4 py-3 text-sm text-white/80 hover:bg-white/5" href="/local-life" onClick={() => setMenuOpen(false)}>Local life &amp; dining</a><a className="block rounded-xl px-4 py-3 text-sm text-white/80 hover:bg-white/5" href="#stays" onClick={() => setMenuOpen(false)}>Find a stay</a><a className="block rounded-xl px-4 py-3 text-sm text-[#f4c577] hover:bg-white/5" href="#guide" onClick={() => setMenuOpen(false)}>Smart guide</a></div>}
-        </div>
-      </header>
-
       <section className="hotel-hero">
         <div className="mx-auto min-h-[630px] w-full max-w-[1500px] px-4 pb-20 pt-12 sm:px-7 sm:pt-16 lg:px-12 lg:pt-20">
           <div className="hotel-hero-copy max-w-[640px]">
@@ -120,47 +144,38 @@ export default function StaysHotelsPage() {
 
         <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-7 lg:px-12">
           <div className="hotel-search-panel grid gap-2 rounded-[18px] p-2 sm:grid-cols-[1.05fr_1.35fr_1fr_.75fr] sm:gap-3 sm:p-3">
-            <button onClick={cycleDestination} className="hotel-search-control flex items-center gap-3 rounded-xl px-4 text-left"><span className="text-[#f2c577]"><Icon name="pin" size={18} /></span><span><small>Destination</small><strong>{destination}</strong></span><span className="ml-auto text-white/45">⌄</span></button>
-            <button onClick={cycleDates} className="hotel-search-control flex items-center gap-3 rounded-xl px-4 text-left"><span className="text-[#f2c577]"><Icon name="calendar" size={18} /></span><span><small>Dates</small><strong>{dates}</strong></span><span className="ml-auto text-white/45">⌄</span></button>
-            <button onClick={cycleGuests} className="hotel-search-control flex items-center gap-3 rounded-xl px-4 text-left"><span className="text-[#f2c577]"><Icon name="users" size={18} /></span><span><small>Guests</small><strong>{guests}</strong></span><span className="ml-auto text-white/45">⌄</span></button>
-            <button onClick={searchStays} className="hotel-search-button rounded-xl px-5 text-[12px] font-semibold"><Icon name="search" size={16} /> Search</button>
+            <label className="hotel-search-control flex items-center gap-3 rounded-xl px-4 text-left"><span className="text-[#f2c577]"><Icon name="pin" size={18} /></span><span><small>Destination</small><StyledSelect value={destination} onChange={setDestination} ariaLabel="Destination"><option>All Egypt</option><option>Safaga</option><option>Marsa Alam</option><option>Luxor</option><option>Aswan</option><option>Cairo</option><option>Hurghada</option></StyledSelect></span></label>
+            <label className="hotel-search-control flex items-center gap-3 rounded-xl px-4 text-left"><span className="text-[#f2c577]"><Icon name="calendar" size={18} /></span><span><small>Dates</small><StyledSelect value={dates} onChange={setDates} ariaLabel="Dates"><option>Any dates</option><option>Nov 12, 2026 – Nov 16, 2026</option><option>Tonight – Nov 16, 2026</option></StyledSelect></span></label>
+            <label className="hotel-search-control flex items-center gap-3 rounded-xl px-4 text-left"><span className="text-[#f2c577]"><Icon name="users" size={18} /></span><span><small>Guests</small><StyledSelect value={guests} onChange={setGuests} ariaLabel="Guests"><option>1 Guest</option><option>2 Guests</option><option>3 Guests</option><option>4+ Guests</option></StyledSelect></span></label>
+            <button type="button" onClick={searchStays} className="hotel-search-button rounded-xl px-5 text-[12px] font-semibold"><Icon name="search" size={16} /> Search</button>
           </div>
         </div>
       </section>
 
       <div className="mx-auto w-full max-w-[1500px] px-4 pb-14 sm:px-7 lg:px-12">
         <section id="stays" className="hotel-results scroll-mt-28 pt-0">
-          <div className="hotel-filter-row flex flex-wrap items-center gap-2 rounded-[18px] p-2 sm:p-3">
-            <button onClick={() => setSort("Filters selected")} className="hotel-filter-control active"><Icon name="sliders" size={15} /> Filters</button>
-            <button onClick={() => setSort("Price: low to high")} className="hotel-filter-control">Price <span>⌄</span></button>
-            <button onClick={() => setSort("Top rated")} className="hotel-filter-control">Rating <span>⌄</span></button>
-            <button onClick={() => setSort("Amenities")} className="hotel-filter-control">Amenities <span>⌄</span></button>
-            <span className="ml-auto hidden text-[11px] text-white/55 sm:block">24 stays</span>
-            <button onClick={() => setSort(sort === "Recommended" ? "Price: low to high" : "Recommended")} className="hotel-sort-control">{sort} <span>⌄</span></button>
-          </div>
-
-          <div className="mb-6 mt-7 flex items-end justify-between gap-4"><div><p className="text-[10px] uppercase tracking-[0.3em] text-[#e6b567]">A room with a river view</p><h2 className="mt-2 font-display text-[36px] text-[#f2ca84] sm:text-[42px]">Featured stay</h2></div><p className="hidden text-[11px] text-white/55 sm:block">Showing stays in {destination}</p></div>
+          <div className="mb-6 mt-7 flex items-end justify-between gap-4"><div><p className="text-[10px] uppercase tracking-[0.3em] text-[#e6b567]">A room with a river view</p><h2 className="mt-2 font-display text-[36px] text-[#f2ca84] sm:text-[42px]">Featured stay</h2></div><p className="hidden text-[11px] text-white/55 sm:block">{searchSubmitted ? "Showing" : "Explore"} {displayHotels.length} stays in {destination}</p></div>
 
           <article className="hotel-featured-card rounded-[20px]">
-            <div className="hotel-featured-media" style={{ backgroundImage: "linear-gradient(180deg, rgba(5, 12, 18, .04), rgba(3, 9, 15, .08)), url('/nilea-hotel-luxor-riverside.png')" }}><span className="hotel-featured-badge">♛ &nbsp; Featured</span></div>
+            <div className="hotel-featured-media" style={{ backgroundImage: "linear-gradient(180deg, rgba(5, 12, 18, .04), rgba(3, 9, 15, .08)), url('/alpnile-hotel-luxor-riverside.webp')" }}><span className="hotel-featured-badge">♛ &nbsp; Featured</span></div>
             <div className="hotel-featured-content">
               <div className="flex items-start justify-between gap-4"><div><h3 className="font-display text-[28px] leading-tight text-[#f4d08e] sm:text-[31px]">Luxor Riverside Residence</h3><p className="mt-2 flex items-center gap-2 text-[11px] text-white/65"><Icon name="pin" size={14} /> Luxor, Egypt</p></div><div className="text-right"><p className="font-display text-[31px] text-[#f4cf8b]">$320</p><p className="text-[10px] text-white/60">per night</p></div></div>
               <div className="mt-3 flex items-center gap-2 text-[12px]"><span className="tracking-[0.16em] text-[#f9c34f]">★★★★★</span><span className="text-white/75">4.9</span><span className="text-white/45">(1,236 reviews)</span></div>
               <p className="mt-4 max-w-[520px] text-[13px] leading-6 text-white/65">A private riverfront residence with a warm pool, quiet palms and an uninterrupted view of Luxor&apos;s lights. Designed for the in-between moments.</p>
               <div className="hotel-amenities mt-5 grid grid-cols-5 gap-2 border-t border-white/10 pt-4">{amenities.map(([label, icon]) => <div key={label} className="hotel-amenity"><span><Icon name={icon} size={19} /></span><small>{label}</small></div>)}</div>
-              <div className="mt-5 grid gap-2 sm:grid-cols-2"><button onClick={() => setSelectedHotel({ name: "Luxor Riverside Residence", city: "Luxor, Egypt", rating: "4.9", reviews: "1,236", price: "$320", image: "/nilea-hotel-luxor-riverside.png", description: "A private riverfront residence with a warm pool, quiet palms and an uninterrupted view of Luxor's lights." })} className="hotel-secondary-button rounded-full px-5 py-3 text-[11px] font-semibold"><Icon name="view" size={14} /> View Rooms</button><button onClick={() => setSelectedHotel({ name: "Luxor Riverside Residence", city: "Luxor, Egypt", rating: "4.9", reviews: "1,236", price: "$320", image: "/nilea-hotel-luxor-riverside.png", description: "A private riverfront residence with a warm pool, quiet palms and an uninterrupted view of Luxor's lights." })} className="hotel-primary-button rounded-full px-5 py-3 text-[11px] font-semibold">Reserve Now <Icon name="arrow" size={14} /></button></div>
+              <div className="mt-5 grid gap-2 sm:grid-cols-2"><button onClick={() => { setReservationStarted(false); setSelectedHotel({ name: "Luxor Riverside Residence", city: "Luxor, Egypt", rating: "4.9", reviews: "1,236", price: "$320", image: "/alpnile-hotel-luxor-riverside.webp", description: "A private riverfront residence with a warm pool, quiet palms and an uninterrupted view of Luxor's lights." }); }} className="hotel-secondary-button rounded-full px-5 py-3 text-[11px] font-semibold"><Icon name="view" size={14} /> View Rooms</button><button onClick={() => { setReservationStarted(false); setSelectedHotel({ name: "Luxor Riverside Residence", city: "Luxor, Egypt", rating: "4.9", reviews: "1,236", price: "$320", image: "/alpnile-hotel-luxor-riverside.webp", description: "A private riverfront residence with a warm pool, quiet palms and an uninterrupted view of Luxor's lights." }); }} className="hotel-primary-button rounded-full px-5 py-3 text-[11px] font-semibold">Reserve Now <Icon name="arrow" size={14} /></button></div>
             </div>
           </article>
 
           <div className="mt-5 grid gap-4 md:grid-cols-3">
-            {hotels.map((hotel) => <article key={hotel.name} className="hotel-card rounded-[18px]"><div className="hotel-card-media" style={{ backgroundImage: `linear-gradient(180deg, rgba(4, 10, 16, .06), rgba(3, 9, 15, .22)), url('${hotel.image}')` }}><button onClick={() => toggleSaved(hotel.name)} className={`hotel-heart ${saved.includes(hotel.name) ? "saved" : ""}`} aria-label={`Save ${hotel.name}`}><Icon name="heart" size={16} /></button></div><div className="hotel-card-content"><div className="flex items-start justify-between gap-3"><div><h3 className="font-display text-[19px] text-[#f2d19a]">{hotel.name}</h3><p className="mt-1 text-[10px] text-white/55">{hotel.city}</p></div><div className="text-right"><p className="font-display text-[20px] text-[#f3cf8c]">{hotel.price}</p><p className="text-[9px] text-white/50">per night</p></div></div><div className="mt-2 flex items-center gap-2 text-[10px]"><span className="tracking-[0.08em] text-[#f9c34f]">★★★★★</span><span className="text-white/65">{hotel.rating}</span><span className="text-white/40">({hotel.reviews})</span></div><button onClick={() => setSelectedHotel(hotel)} className="hotel-card-action mt-4 w-full rounded-full px-4 py-2 text-[10px] font-semibold">View rooms <Icon name="arrow" size={12} /></button></div></article>)}
+            {displayHotels.length ? displayHotels.map((hotel) => <article key={hotel.name} className="hotel-card rounded-[18px]"><div className="hotel-card-media" style={{ backgroundImage: `linear-gradient(180deg, rgba(4, 10, 16, .06), rgba(3, 9, 15, .22)), url('${hotel.image}')` }}><button onClick={() => toggleSaved(hotel.name)} className={`hotel-heart ${saved.includes(hotel.name) ? "saved" : ""}`} aria-label={`${saved.includes(hotel.name) ? "Remove" : "Save"} ${hotel.name}`} aria-pressed={saved.includes(hotel.name)}><Icon name="heart" size={16} /></button></div><div className="hotel-card-content"><div className="flex items-start justify-between gap-3"><div><h3 className="font-display text-[19px] text-[#f2d19a]">{hotel.name}</h3><p className="mt-1 text-[10px] text-white/55">{hotel.city}</p></div><div className="text-right"><p className="font-display text-[20px] text-[#f3cf8c]">{hotel.price}</p><p className="text-[9px] text-white/50">per night</p></div></div><div className="mt-2 flex items-center gap-2 text-[10px]"><span className="tracking-[0.08em] text-[#f9c34f]">★★★★★</span><span className="text-white/65">{hotel.rating}</span><span className="text-white/40">({hotel.reviews})</span></div><button onClick={() => { setSelectedHotel(hotel); setReservationStarted(false); }} className="hotel-card-action mt-4 w-full rounded-full px-4 py-2 text-[10px] font-semibold">View rooms <Icon name="arrow" size={12} /></button></div></article>) : <div className="hotel-empty-state"><strong>No stays found</strong><span>Try removing the filters.</span></div>}
           </div>
         </section>
 
-        <section id="guide" className="mt-8 flex flex-col items-start justify-between gap-4 px-2 pb-4 pt-1 text-[11px] text-white/50 sm:flex-row sm:items-center"><p>Quiet mornings, river light <span className="mx-2 text-[#dcae61]">·</span> {sort}</p><p className="font-display tracking-[0.16em] text-[#c7914d]">NILEA / STAYS 03</p></section>
+        <section id="guide" className="mt-8 flex flex-col items-start justify-between gap-4 px-2 pb-4 pt-1 text-[11px] text-white/50 sm:flex-row sm:items-center"><p>Quiet mornings, river light <span className="mx-2 text-[#dcae61]">·</span> {destination}</p><p className="font-display tracking-[0.16em] text-[#c7914d]">ALPNILE / STAYS 03</p></section>
       </div>
 
-      {selectedHotel && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02070c]/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="hotel-title"><div className="hotel-modal modal-depth relative w-full max-w-xl overflow-hidden rounded-[24px]"><button onClick={() => setSelectedHotel(null)} className="absolute right-5 top-5 z-10 text-white/65 transition hover:text-[#f4c577]" aria-label="Close dialog"><Icon name="close" size={18} /></button><div className="hotel-modal-image" style={{ backgroundImage: `url('${selectedHotel.image}')` }} /><div className="p-7 sm:p-9"><p className="text-[10px] uppercase tracking-[0.3em] text-[#e7b96a]">Selected stay · {selectedHotel.city}</p><h2 id="hotel-title" className="mt-3 font-display text-[35px] text-[#f4cf8d]">{selectedHotel.name}</h2><div className="mt-2 flex items-center gap-3 text-[11px] text-white/65"><span className="text-[#f5c55e]">★ {selectedHotel.rating}</span><span>({selectedHotel.reviews} reviews)</span><span>·</span><span>{selectedHotel.price} per night</span></div><p className="mt-5 text-[14px] leading-6 text-white/72">{selectedHotel.description}</p><button onClick={() => setSelectedHotel(null)} className="hotel-primary-button mt-7 w-full rounded-full px-5 py-3 text-[11px] font-semibold">Continue to reserve <Icon name="arrow" size={14} /></button></div></div></div>}
+      {selectedHotel && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02070c]/80 p-4 backdrop-blur-sm" role="presentation" onMouseDown={() => { setSelectedHotel(null); setReservationStarted(false); setReservationError(""); }}><div ref={dialogRef} className="hotel-modal modal-depth relative w-full max-w-xl overflow-hidden rounded-[24px]" role="dialog" aria-modal="true" aria-labelledby="hotel-title" onMouseDown={(event) => event.stopPropagation()}><button type="button" data-dialog-close onClick={() => { setSelectedHotel(null); setReservationStarted(false); }} className="absolute right-5 top-5 z-10 text-white/65 transition hover:text-[#f4c577]" aria-label="Close dialog"><Icon name="close" size={18} /></button><div className="hotel-modal-image" style={{ backgroundImage: `url('${selectedHotel.image}')` }} /><div className="p-7 sm:p-9"><p className="text-[10px] uppercase tracking-[0.3em] text-[#e7b96a]">Selected stay · {selectedHotel.city}</p><h2 id="hotel-title" className="mt-3 font-display text-[35px] text-[#f4cf8d]">{selectedHotel.name}</h2><div className="mt-2 flex items-center gap-3 text-[11px] text-white/65"><span className="text-[#f5c55e]">★ {selectedHotel.rating}</span><span>({selectedHotel.reviews} reviews)</span><span>·</span><span>{selectedHotel.price} per night</span></div><p className="mt-5 text-[14px] leading-6 text-white/72">{selectedHotel.description}</p>{reservationStarted ? <div className="hotel-confirmation mt-6"><strong>Reservation request saved</strong><span>Your request is saved and ready for the AlpNile team to confirm.</span></div> : <form className="hotel-request-form mt-6" onSubmit={submitReservationRequest}><input name="website" className="form-honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" /><div className="hotel-request-grid"><input name="name" required placeholder="Full name" /><input name="email" type="email" required placeholder="Email address" /><input name="phone" required placeholder="WhatsApp number" /><StyledSelect name="guests" defaultValue="2" ariaLabel="Guests"><option value="1">1 Guest</option><option value="2">2 Guests</option><option value="3">3 Guests</option><option value="4">4+ Guests</option></StyledSelect><input name="checkIn" type="date" required min={new Date().toISOString().slice(0, 10)} /><input name="checkOut" type="date" required min={new Date().toISOString().slice(0, 10)} /></div><button type="submit" disabled={reservationSubmitting} className="hotel-primary-button mt-5 w-full rounded-full px-5 py-3 text-[11px] font-semibold">{reservationSubmitting ? "Saving request…" : "Continue to request"} <Icon name="arrow" size={14} /></button>{reservationError && <p className="home-form-error" role="alert">{reservationError}</p>}</form>}</div></div></div>}
     </main>
   );
 }

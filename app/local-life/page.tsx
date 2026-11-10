@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRef } from "react";
+import { useDialogA11y } from "../components/dialog";
+import { StyledSelect } from "../components/styled-select";
 
 type IconName = "search" | "menu" | "close" | "arrow" | "pin" | "calendar" | "sliders" | "utensils" | "coffee" | "store" | "ticket" | "vase" | "lotus" | "family" | "heart";
 
 type Experience = {
   name: string;
   city: string;
+  category: string;
   kind: string;
   rating: string;
   reviews: string;
@@ -29,6 +33,7 @@ const experiences: Experience[] = [
   {
     name: "Rooftop Restaurant",
     city: "Cairo",
+    category: "Restaurants",
     kind: "Dining experience",
     rating: "4.8",
     reviews: "1.2K",
@@ -39,6 +44,7 @@ const experiences: Experience[] = [
   {
     name: "Nubian Dinner",
     city: "Aswan",
+    category: "Restaurants",
     kind: "Local table",
     rating: "4.9",
     reviews: "856",
@@ -49,6 +55,7 @@ const experiences: Experience[] = [
   {
     name: "Crafts Market",
     city: "Luxor",
+    category: "Markets",
     kind: "Market walk",
     rating: "4.7",
     reviews: "923",
@@ -59,14 +66,14 @@ const experiences: Experience[] = [
 ];
 
 const nearby = [
-  { name: "El Fishawi Café", city: "Historic Café · Cairo", rating: "4.6", reviews: "732", action: "Open Now", image: "/nilea-near-fishawi-cafe.png" },
-  { name: "Khan el-Khalili Market", city: "Market · Cairo", rating: "4.5", reviews: "1.1K", action: "Open Now", image: "/nilea-near-khan-market.png" },
-  { name: "Nile Sunset Cruise", city: "Experience · Cairo", rating: "4.8", reviews: "954", action: "Today 5 PM", image: "/nilea-near-nile-cruise.png" },
-  { name: "Cultural Show", city: "Event · Cairo", rating: "4.7", reviews: "621", action: "Fri, Apr 25", image: "/nilea-near-cultural-show.png" },
+  { name: "El Fishawi Café", city: "Historic Café · Cairo", rating: "4.6", reviews: "732", action: "Open Now", image: "/alpnile-near-fishawi-cafe.webp" },
+  { name: "Khan el-Khalili Market", city: "Market · Cairo", rating: "4.5", reviews: "1.1K", action: "Open Now", image: "/alpnile-near-khan-market.webp" },
+  { name: "Nile Sunset Cruise", city: "Experience · Cairo", rating: "4.8", reviews: "954", action: "Today 5 PM", image: "/alpnile-near-nile-cruise.webp" },
+  { name: "Cultural Show", city: "Event · Cairo", rating: "4.7", reviews: "621", action: "Fri, Nov 6", image: "/alpnile-near-cultural-show.webp" },
 ];
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
-  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.45, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.45, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, className: `inline-ui-icon inline-ui-${name}` };
   if (name === "search") return <svg {...common}><circle cx="11" cy="11" r="6.7" /><path d="m16 16 4.3 4.3" /></svg>;
   if (name === "menu") return <svg {...common}><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
   if (name === "close") return <svg {...common}><path d="m6 6 12 12M18 6 6 18" /></svg>;
@@ -89,32 +96,25 @@ export default function LocalLifePage() {
   const [city, setCity] = useState("Cairo");
   const [date, setDate] = useState("Any Date");
   const [cuisine, setCuisine] = useState("All Cuisines");
-  const [menuOpen, setMenuOpen] = useState(false);
   const [selectedExperience, setSelectedExperience] = useState<Experience | null>(null);
+  const [savedPlaces, setSavedPlaces] = useState<string[]>([]);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem("alpnile-local-life-saved");
+    if (stored) setSavedPlaces(JSON.parse(stored) as string[]);
+  }, []);
+  useEffect(() => {
+    window.localStorage.setItem("alpnile-local-life-saved", JSON.stringify(savedPlaces));
+  }, [savedPlaces]);
 
   const searchExperiences = () => document.getElementById("experiences")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const visibleExperiences = experiences.filter((experience) => (activeCategory === "All" || experience.category === activeCategory) && (city === "All Egypt" || experience.city === city));
+  const selectedIsSaved = selectedExperience ? savedPlaces.includes(selectedExperience.name) : false;
+  useDialogA11y(Boolean(selectedExperience), () => setSelectedExperience(null), dialogRef);
 
   return (
     <main className="life-shell">
-      <header className="life-header sticky top-0 z-40">
-        <div className="mx-auto flex h-[74px] w-full max-w-[1500px] items-center justify-between px-4 sm:px-7 lg:px-12">
-          <a href="/" className="font-display text-[23px] tracking-[0.16em] text-[#f3ca82] transition hover:text-white">NILEA</a>
-          <nav className="hidden items-center gap-5 text-[11px] text-[#d9d4ca] lg:flex" aria-label="Primary navigation">
-            <a href="/" className="transition hover:text-[#f4ca80]">History</a>
-            <a href="/local-life" className="relative py-3 text-[#f4c577] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-px after:bg-[#e9b85e]">Local Life &amp; Dining</a>
-            <a href="/stays-hotels" className="transition hover:text-[#f4ca80]">Stays &amp; Hotels</a>
-            <a href="/travel-transport" className="transition hover:text-[#f4ca80]">Travel &amp; Transport</a>
-            <a href="/tours-experiences" className="transition hover:text-[#f4ca80]">Tours &amp; Experiences</a>
-          </nav>
-          <div className="flex items-center gap-3">
-            <a href="#experiences" className="hidden h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white/90 transition hover:border-[#f4c577] hover:text-[#f4c577] sm:flex" aria-label="Search experiences"><Icon name="search" size={16} /></a>
-            <button onClick={() => setMenuOpen((value) => !value)} className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white/90 transition hover:border-[#f4c577] hover:text-[#f4c577] lg:hidden" aria-label="Open menu" aria-expanded={menuOpen}><Icon name={menuOpen ? "close" : "menu"} size={16} /></button>
-            <a href="#experiences" className="hidden rounded-full bg-gradient-to-b from-[#f6d18d] to-[#d49643] px-5 py-2.5 text-[11px] font-semibold text-[#1e160c] shadow-[0_8px_22px_rgba(202,141,57,.22)] transition hover:brightness-110 sm:block">Plan Your Trip</a>
-          </div>
-          {menuOpen && <div className="menu-popover absolute right-4 top-[66px] w-60 rounded-2xl border border-[#e8b65e]/30 bg-[#09141f]/95 p-3 shadow-2xl backdrop-blur-xl lg:hidden"><a className="block rounded-xl px-4 py-3 text-sm text-white/80 hover:bg-white/5" href="/#journey" onClick={() => setMenuOpen(false)}>Explore the eras</a><a className="block rounded-xl px-4 py-3 text-sm text-white/80 hover:bg-white/5" href="#experiences" onClick={() => setMenuOpen(false)}>Local experiences</a><a className="block rounded-xl px-4 py-3 text-sm text-[#f4c577] hover:bg-white/5" href="#guide" onClick={() => setMenuOpen(false)}>Smart guide</a></div>}
-        </div>
-      </header>
-
       <section className="life-hero">
         <div className="mx-auto grid min-h-[710px] w-full max-w-[1500px] grid-cols-1 gap-10 px-4 pb-16 pt-12 sm:px-7 sm:pt-16 lg:grid-cols-[1fr_276px] lg:gap-16 lg:px-12 lg:pt-20">
           <div className="life-hero-copy max-w-[650px] self-start">
@@ -125,38 +125,38 @@ export default function LocalLifePage() {
           </div>
 
           <aside className="life-category-rail self-start rounded-[18px] p-2 lg:mt-16" aria-label="Experience categories">
-            {categories.map((category) => <button key={category.label} onClick={() => setActiveCategory(category.label)} className={`life-category-item w-full px-3 py-3 text-left text-[11px] ${activeCategory === category.label ? "active" : ""}`} aria-pressed={activeCategory === category.label}><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#ecc37a]/40 text-[#f2c77c]"><Icon name={category.icon} size={15} /></span><span>{category.label}</span></button>)}
+            {categories.map((category) => <button type="button" key={category.label} onClick={() => setActiveCategory(category.label)} className={`life-category-item w-full px-3 py-3 text-left text-[11px] ${activeCategory === category.label ? "active" : ""}`} aria-pressed={activeCategory === category.label}><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#ecc37a]/40 text-[#f2c77c]"><Icon name={category.icon} size={15} /></span><span>{category.label}</span></button>)}
           </aside>
         </div>
 
         <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-7 lg:px-12">
           <div className="life-filter-bar grid gap-2 rounded-[18px] p-2 sm:grid-cols-[1.05fr_1fr_1.05fr_.86fr] sm:gap-3 sm:p-3">
-            <button onClick={() => setCity((value) => value === "Cairo" ? "Aswan" : value === "Aswan" ? "Luxor" : "Cairo")} className="life-filter-control flex items-center gap-3 rounded-full px-4 text-left"><span className="text-[#f2c577]"><Icon name="pin" size={18} /></span><span className="text-[12px] text-white/85">{city}</span><span className="ml-auto text-white/45">⌄</span></button>
-            <button onClick={() => setDate((value) => value === "Any Date" ? "Tonight" : "Any Date")} className="life-filter-control flex items-center gap-3 rounded-full px-4 text-left"><span className="text-[#f2c577]"><Icon name="calendar" size={18} /></span><span className="text-[12px] text-white/85">{date}</span><span className="ml-auto text-white/45">⌄</span></button>
-            <button onClick={() => setCuisine((value) => value === "All Cuisines" ? "Local Favorites" : "All Cuisines")} className="life-filter-control flex items-center gap-3 rounded-full px-4 text-left"><span className="text-[#f2c577]"><Icon name="utensils" size={18} /></span><span className="text-[12px] text-white/85">{cuisine}</span><span className="ml-auto text-white/45">⌄</span></button>
-            <button onClick={searchExperiences} className="life-filter-button rounded-full px-5 text-[12px] font-semibold">Search <span className="ml-2">{activeCategory}</span></button>
+            <label className="life-filter-control flex items-center gap-3 rounded-full px-4 text-left"><span className="text-[#f2c577]"><Icon name="pin" size={18} /></span><span><small>City</small><StyledSelect value={city} onChange={setCity} ariaLabel="City"><option>All Egypt</option><option>Safaga</option><option>Marsa Alam</option><option>Luxor</option><option>Aswan</option><option>Cairo</option><option>Hurghada</option></StyledSelect></span></label>
+            <label className="life-filter-control flex items-center gap-3 rounded-full px-4 text-left"><span className="text-[#f2c577]"><Icon name="calendar" size={18} /></span><span><small>Date</small><StyledSelect value={date} onChange={setDate} ariaLabel="Date"><option>Any Date</option><option>Tonight</option><option>This weekend</option></StyledSelect></span></label>
+            <label className="life-filter-control flex items-center gap-3 rounded-full px-4 text-left"><span className="text-[#f2c577]"><Icon name="utensils" size={18} /></span><span><small>Cuisine</small><StyledSelect value={cuisine} onChange={setCuisine} ariaLabel="Cuisine"><option>All Cuisines</option><option>Local Favorites</option><option>Egyptian Classics</option></StyledSelect></span></label>
+            <button type="button" onClick={searchExperiences} className="life-filter-button rounded-full px-5 text-[12px] font-semibold">Search <span className="ml-2">{activeCategory}</span></button>
           </div>
         </div>
       </section>
 
       <div className="mx-auto w-full max-w-[1500px] px-4 pb-14 sm:px-7 lg:px-12">
         <section id="experiences" className="life-section scroll-mt-28 pt-0">
-          <div className="mb-6 flex items-end justify-between gap-4"><div><p className="text-[10px] uppercase tracking-[0.3em] text-[#e6b567]">The city is your table</p><h2 className="mt-2 font-display text-[36px] text-[#f2ca84] sm:text-[42px]">Featured Experiences</h2></div><button onClick={searchExperiences} className="hidden items-center gap-2 text-[11px] text-white/65 transition hover:text-[#f4c577] sm:flex">See all <Icon name="arrow" size={13} /></button></div>
+          <div className="mb-6 flex items-end justify-between gap-4"><div><p className="text-[10px] uppercase tracking-[0.3em] text-[#e6b567]">The city is your table</p><h2 className="mt-2 font-display text-[36px] text-[#f2ca84] sm:text-[42px]">Featured Experiences</h2></div><button type="button" onClick={() => { setActiveCategory("All"); setCity("All Egypt"); searchExperiences(); }} className="hidden items-center gap-2 text-[11px] text-white/65 transition hover:text-[#f4c577] sm:flex">See all <Icon name="arrow" size={13} /></button></div>
           <div className="life-map-card life-map-feature-stage rounded-[20px] p-6 sm:p-8">
             <div className="relative z-10 max-w-[270px]"><p className="text-[10px] uppercase tracking-[0.28em] text-[#edbb6b]">Follow the river</p><h2 className="mt-3 font-display text-[34px] leading-none text-[#f3cd8d]">Three cities.<br />One appetite.</h2><p className="mt-4 text-[12px] leading-5 text-white/65">A living route through rooftops, riverside tables and the small places that make Egypt feel like home.</p></div>
             <div className="life-map-route" aria-hidden="true" /><div className="life-pin cairo"><Icon name="pin" size={13} /></div><div className="life-pin aswan"><Icon name="pin" size={13} /></div><div className="life-pin luxor"><Icon name="pin" size={13} /></div><span className="absolute bottom-6 left-[15%] z-10 font-display text-[13px] text-[#f2c778]">Cairo</span><span className="absolute left-[42%] top-[33%] z-10 font-display text-[13px] text-[#f2c778]">Aswan</span><span className="absolute bottom-8 right-[12%] z-10 font-display text-[13px] text-[#f2c778]">Luxor</span>
             <div className="life-map-features absolute bottom-6 left-6 right-6 z-10 grid gap-3 md:grid-cols-3">
-              {experiences.map((experience, index) => <button key={experience.name} onClick={() => setSelectedExperience(experience)} className="life-feature-card group rounded-[18px] text-left" style={{ backgroundPosition: `${index * 50}% center` }}><div className="life-card-copy p-4"><div className="mb-2 flex items-center justify-between"><span className="life-card-pill rounded-full px-2.5 py-1 text-[8px] uppercase tracking-[0.16em] text-[#f5ca7d]">{experience.city}</span><span className="flex items-center gap-1 text-[10px] text-white/85"><span className="text-[#f5c55e]">★</span> {experience.rating} <span className="text-white/45">({experience.reviews})</span></span></div><h3 className="font-display text-[20px] text-white sm:text-[22px]">{experience.name}</h3><p className="mt-1 max-w-[270px] text-[10px] leading-4 text-white/70">{experience.description}</p><div className="mt-3 flex items-center justify-between"><span className="text-[9px] text-white/55">{experience.kind} · {experience.hours}</span><span className="grid h-7 w-7 place-items-center rounded-full border border-[#f4c578]/60 text-[#f4c578] transition group-hover:bg-[#f4c578] group-hover:text-[#1a120a]"><Icon name="arrow" size={12} /></span></div></div></button>)}
+              {visibleExperiences.length ? visibleExperiences.map((experience, index) => <button key={experience.name} onClick={() => setSelectedExperience(experience)} className="life-feature-card group rounded-[18px] text-left" style={{ backgroundPosition: `${index * 50}% center` }}><div className="life-card-copy p-4"><div className="mb-2 flex items-center justify-between"><span className="life-card-pill rounded-full px-2.5 py-1 text-[8px] uppercase tracking-[0.16em] text-[#f5ca7d]">{experience.city}</span><span className="flex items-center gap-1 text-[10px] text-white/85"><span className="text-[#f5c55e]">★</span> {experience.rating} <span className="text-white/45">({experience.reviews})</span></span></div><h3 className="font-display text-[20px] text-white sm:text-[22px]">{experience.name}</h3><p className="mt-1 max-w-[270px] text-[10px] leading-4 text-white/70">{experience.description}</p><div className="mt-3 flex items-center justify-between"><span className="text-[9px] text-white/55">{experience.kind} · {experience.hours}</span><span className="grid h-7 w-7 place-items-center rounded-full border border-[#f4c578]/60 text-[#f4c578] transition group-hover:bg-[#f4c578] group-hover:text-[#1a120a]"><Icon name="arrow" size={12} /></span></div></div></button>) : <div className="life-empty-state"><strong>No experiences found</strong><span>Try another city or category.</span></div>}
             </div>
           </div>
         </section>
 
-        <section id="nearby" className="glass-panel mt-6 rounded-[20px] p-5 sm:p-7"><div className="mb-5 flex items-center justify-between"><div><p className="text-[10px] uppercase tracking-[0.28em] text-[#edbb6b]">Close to the moment</p><h2 className="mt-2 font-display text-[31px] text-[#f3cc89]">Near You</h2></div><button className="flex items-center gap-2 text-[10px] text-white/60 transition hover:text-[#f4c577]">See all <Icon name="arrow" size={12} /></button></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{nearby.map((item, index) => <button key={item.name} onClick={() => setSelectedExperience({ ...experiences[index % experiences.length], name: item.name, city: "Cairo", kind: item.city })} className="life-near-card group rounded-[15px] text-left" style={{ backgroundImage: `linear-gradient(90deg, rgba(3, 10, 16, .82) 0%, rgba(3, 10, 16, .24) 70%, rgba(3, 10, 16, .58) 100%), url('${item.image}')` }}><div className="life-card-copy flex items-center justify-between gap-3 p-4"><div><h3 className="font-display text-[18px] text-white">{item.name}</h3><p className="mt-1 text-[10px] text-white/60">{item.city}</p><p className="mt-2 text-[10px] text-[#f4c577]"><span className="mr-1">★</span>{item.rating} <span className="text-white/45">({item.reviews})</span></p></div><span className="rounded-full border border-[#f3c477]/45 bg-[#07121b]/65 px-3 py-1 text-[9px] text-[#f4c577]">{item.action}</span></div></button>)}</div></section>
+        <section id="nearby" className="glass-panel mt-6 rounded-[20px] p-5 sm:p-7"><div className="mb-5 flex items-center justify-between"><div><p className="text-[10px] uppercase tracking-[0.28em] text-[#edbb6b]">Close to the moment</p><h2 className="mt-2 font-display text-[31px] text-[#f3cc89]">Near You</h2></div><button onClick={() => { setActiveCategory("All"); setCity("All Egypt"); searchExperiences(); }} className="flex items-center gap-2 text-[10px] text-white/60 transition hover:text-[#f4c577]">See all <Icon name="arrow" size={12} /></button></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{nearby.map((item, index) => <button key={item.name} onClick={() => setSelectedExperience({ ...experiences[index % experiences.length], name: item.name, city: "Cairo", kind: item.city })} className="life-near-card group rounded-[15px] text-left" style={{ backgroundImage: `linear-gradient(90deg, rgba(3, 10, 16, .58) 0%, rgba(3, 10, 16, .2) 70%, rgba(3, 10, 16, .58) 100%), url('${item.image}')` }}><div className="life-card-copy flex items-center justify-between gap-3 p-4"><div><h3 className="font-display text-[18px] text-white">{item.name}</h3><p className="mt-1 text-[10px] text-white/60">{item.city}</p><p className="mt-2 text-[10px] text-[#f4c577]"><span className="mr-1">★</span>{item.rating} <span className="text-white/45">({item.reviews})</span></p></div><span className="rounded-full border border-[#f3c477]/45 bg-[#07121b]/65 px-3 py-1 text-[9px] text-[#f4c577]">{item.action}</span></div></button>)}</div></section>
 
-        <section id="guide" className="mt-8 flex flex-col items-start justify-between gap-4 px-2 pb-4 pt-1 text-[11px] text-white/50 sm:flex-row sm:items-center"><p>Small places, rich stories <span className="mx-2 text-[#dcae61]">·</span> {activeCategory} in {city}</p><p className="font-display tracking-[0.16em] text-[#c7914d]">NILEA / LOCAL LIFE 02</p></section>
+        <section id="guide" className="mt-8 flex flex-col items-start justify-between gap-4 px-2 pb-4 pt-1 text-[11px] text-white/50 sm:flex-row sm:items-center"><p>Small places, rich stories <span className="mx-2 text-[#dcae61]">·</span> {activeCategory} in {city}</p><p className="font-display tracking-[0.16em] text-[#c7914d]">ALPNILE / LOCAL LIFE 02</p></section>
       </div>
 
-      {selectedExperience && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02070c]/78 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="experience-title"><div className="life-modal modal-depth relative w-full max-w-xl overflow-hidden rounded-[24px] p-7 sm:p-9"><button onClick={() => setSelectedExperience(null)} className="absolute right-5 top-5 z-10 text-white/65 transition hover:text-[#f4c577]" aria-label="Close dialog"><Icon name="close" size={18} /></button><p className="text-[10px] uppercase tracking-[0.3em] text-[#e7b96a]">{selectedExperience.kind}</p><h2 id="experience-title" className="mt-4 font-display text-[38px] text-[#f4cf8d]">{selectedExperience.name}</h2><div className="mt-2 flex items-center gap-3 text-[11px] text-white/65"><span className="text-[#f5c55e]">★ {selectedExperience.rating}</span><span>({selectedExperience.reviews} reviews)</span><span>·</span><span>{selectedExperience.city}</span></div><p className="mt-6 max-w-lg text-[14px] leading-6 text-white/75">{selectedExperience.description} This is a curated starting point for a slower, more local Nile experience.</p><div className="mt-6 flex flex-wrap gap-2">{selectedExperience.tags.map((tag) => <span key={tag} className="life-card-pill rounded-full px-3 py-1.5 text-[10px] text-[#f4c577]">{tag}</span>)}</div><div className="mt-8 flex items-center justify-between border-t border-white/10 pt-5"><span className="text-[11px] text-white/55">Today · {selectedExperience.hours}</span><button onClick={() => setSelectedExperience(null)} className="life-filter-button rounded-full px-5 py-3 text-[11px] font-semibold">Save this place <Icon name="heart" size={14} /></button></div></div></div>}
+      {selectedExperience && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#02070c]/78 p-4 backdrop-blur-sm" role="presentation" onMouseDown={() => setSelectedExperience(null)}><div ref={dialogRef} className="life-modal modal-depth relative w-full max-w-xl overflow-hidden rounded-[24px] p-7 sm:p-9" role="dialog" aria-modal="true" aria-labelledby="experience-title" onMouseDown={(event) => event.stopPropagation()}><button data-dialog-close onClick={() => setSelectedExperience(null)} className="absolute right-5 top-5 z-10 text-white/65 transition hover:text-[#f4c577]" aria-label="Close dialog"><Icon name="close" size={18} /></button><p className="text-[10px] uppercase tracking-[0.3em] text-[#e7b96a]">{selectedExperience.kind}</p><h2 id="experience-title" className="mt-4 font-display text-[38px] text-[#f4cf8d]">{selectedExperience.name}</h2><div className="mt-2 flex items-center gap-3 text-[11px] text-white/65"><span className="text-[#f5c55e]">★ {selectedExperience.rating}</span><span>({selectedExperience.reviews} reviews)</span><span>·</span><span>{selectedExperience.city}</span></div><p className="mt-6 max-w-lg text-[14px] leading-6 text-white/75">{selectedExperience.description} This is a curated starting point for a slower, more local Nile experience.</p><div className="mt-6 flex flex-wrap gap-2">{selectedExperience.tags.map((tag) => <span key={tag} className="life-card-pill rounded-full px-3 py-1.5 text-[10px] text-[#f4c577]">{tag}</span>)}</div><div className="mt-8 flex items-center justify-between border-t border-white/10 pt-5"><span className="text-[11px] text-white/55">Today · {selectedExperience.hours}</span><button onClick={() => setSavedPlaces((items) => selectedIsSaved ? items.filter((item) => item !== selectedExperience.name) : [...items, selectedExperience.name])} className="life-filter-button rounded-full px-5 py-3 text-[11px] font-semibold" aria-pressed={selectedIsSaved}>{selectedIsSaved ? "Saved" : "Save this place"} <Icon name="heart" size={14} /></button></div></div></div>}
     </main>
   );
 }

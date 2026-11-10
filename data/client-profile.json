@@ -1,0 +1,35 @@
+{
+  "client": {
+    "nameAr": "محمود محمد شحاته",
+    "email": "alpnile@gmail.com",
+    "businessName": "alpnile",
+    "address": "Luxor, Egypt",
+    "hours": "Open 24 hours",
+    "phones": [
+      {
+        "label": "Egypt",
+        "display": "٠١٠٠٢٧١٢٠٦٤",
+        "international": "+201002712064"
+      },
+      {
+        "label": "Switzerland",
+        "display": "٠٠٤١٧٦٥٠٨٢٨٨٥",
+        "international": "+41765082885"
+      }
+    ]
+  },
+  "brand": {
+    "site": "AlpNile",
+    "profileAvatarAsset": "/alpnile-profile-avatar.webp",
+    "socialProfiles": {
+      "google": { "status": "to_be_created", "handle": null },
+      "facebook": { "status": "to_be_created", "handle": null },
+      "instagram": { "status": "to_be_created", "handle": null },
+      "tiktok": { "status": "to_be_created", "handle": null }
+    }
+  },
+  "security": {
+    "passwordStored": false,
+    "note": "Never store account passwords in the repository. The password shared in chat must be changed before any account setup."
+  }
+}

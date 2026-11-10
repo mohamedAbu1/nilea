@@ -1,0 +1,51 @@
+{
+  "brand": {
+    "name": "AlpNile",
+    "positioning": "A considered guide to Egypt through places, people and unforgettable moments.",
+    "countryFocus": ["Egypt", "Switzerland"],
+    "desiredHandle": "alpnile",
+    "handleAvailability": "user_confirmed_handle"
+  },
+  "publicContact": {
+    "email": "alpnile@gmail.com",
+    "phones": ["+201002712064", "+41765082885"],
+    "website": null,
+    "address": "Luxor, Egypt",
+    "hours": "Open 24 hours"
+  },
+  "assets": {
+    "profileAvatar": "/alpnile-profile-avatar.webp",
+    "socialCover": "/alpnile-social-cover.webp",
+    "companyBrandScene": "/alpnile-company-brand-scene.webp"
+  },
+  "platformProfiles": {
+    "googleBusiness": {
+      "displayName": "AlpNile",
+      "categorySuggestion": "Travel agency",
+      "description": "AlpNile is a thoughtful travel guide to Egypt, connecting iconic places, local life, characterful stays and memorable experiences along the Nile. Discover a slower, more meaningful way to plan your journey.",
+      "status": "prepared_not_published"
+    },
+    "facebook": {
+      "pageName": "AlpNile",
+      "bio": "A thousand stories along the Nile. Discover Egypt through destinations, local life, stays and experiences.",
+      "status": "prepared_not_published"
+    },
+    "instagram": {
+      "displayName": "AlpNile | Egypt Travel",
+      "bio": "Egypt, through a thoughtful lens ✦\nPlaces · local life · stays · experiences\nSame river. A thousand stories.",
+      "status": "prepared_not_published"
+    },
+    "tiktok": {
+      "displayName": "AlpNile",
+      "bio": "Egypt through places, people and stories along the Nile.",
+      "status": "prepared_not_published"
+    }
+  },
+  "needsConfirmationBeforePublishing": [
+    "Official legal company name",
+    "Exact business address or service area",
+    "Public website URL",
+    "Official opening hours",
+    "Final public website URL"
+  ]
+}
