@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useDialogA11y } from "../components/dialog";
 import { StyledSelect } from "../components/styled-select";
 import { insertInquiry } from "../lib/submissions";
-import { SharedHomeHero } from "../components/shared-home-hero";
 
 type IconName = "search" | "menu" | "close" | "arrow" | "pin" | "calendar" | "users" | "sliders" | "wifi" | "pool" | "spa" | "dining" | "view" | "heart";
 
@@ -131,33 +130,8 @@ export default function StaysHotelsPage() {
 
   return (
     <main className="hotel-shell">
-      <SharedHomeHero
-        sectionId="stays-hero"
-        eyebrow="STAYS · ROOMS WITH A RIVER VIEW"
-        title="Stay where"
-        emphasis="the story slows down."
-        lede="Wake beside the river, sleep beneath ancient columns and choose a place that becomes part of the journey."
-        image="/alpnile-hero-beach-3d-v2.webp"
-        primaryHref="/trip-planner"
-        primaryLabel="Plan your route"
-        secondaryHref="#stays"
-        secondaryLabel="Find your stay"
-        note="Rest / river / return"
-        chapter="03"
-      />
-      <section className="hotel-hero">
-        <div className="mx-auto min-h-[630px] w-full max-w-[1500px] px-4 pb-20 pt-12 sm:px-7 sm:pt-16 lg:px-12 lg:pt-20">
-          <div className="hotel-hero-copy max-w-[640px]">
-            <p className="mb-4 text-[10px] uppercase tracking-[0.36em] text-[#e5b767]">Nile archives · chapter three</p>
-            <h1 className="font-display text-[59px] leading-[.9] tracking-[-.045em] text-[#f3c477] sm:text-[82px]">Stays &amp; Hotels<br /><span className="text-[40px] sm:text-[55px]">Find your perfect stay</span></h1>
-            <p className="mt-7 max-w-[390px] text-[14px] leading-6 text-[#eee9df]/90 sm:text-[15px]">Wake beside the river, sleep beneath ancient columns and find a slower way to experience Egypt.</p>
-          </div>
-          <div className="hotel-map-label luxor-label"><span className="hotel-map-dot" /> Luxor Riverside Residence <Icon name="arrow" size={13} /></div>
-          <div className="hotel-map-label cairo-label"><span className="hotel-map-dot" /> Riverfront stays</div>
-          <div className="hotel-map-label aswan-label"><span className="hotel-map-dot" /> Aswan escapes</div>
-        </div>
-
-        <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-7 lg:px-12">
+      <section className="hotel-controls" aria-label="Stay search">
+        <div className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-7 lg:px-12">
           <div className="hotel-search-panel grid gap-2 rounded-[18px] p-2 sm:grid-cols-[1.05fr_1.35fr_1fr_.75fr] sm:gap-3 sm:p-3">
             <label className="hotel-search-control flex items-center gap-3 rounded-xl px-4 text-left"><span className="text-[#f2c577]"><Icon name="pin" size={18} /></span><span><small>Destination</small><StyledSelect value={destination} onChange={setDestination} ariaLabel="Destination"><option>All Egypt</option><option>Safaga</option><option>Marsa Alam</option><option>Luxor</option><option>Aswan</option><option>Cairo</option><option>Hurghada</option></StyledSelect></span></label>
             <label className="hotel-search-control flex items-center gap-3 rounded-xl px-4 text-left"><span className="text-[#f2c577]"><Icon name="calendar" size={18} /></span><span><small>Dates</small><StyledSelect value={dates} onChange={setDates} ariaLabel="Dates"><option>Any dates</option><option>Nov 12, 2026 – Nov 16, 2026</option><option>Tonight – Nov 16, 2026</option></StyledSelect></span></label>

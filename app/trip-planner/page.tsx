@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { SharedHomeHero } from "../components/shared-home-hero";
 
 type IconName = "search" | "menu" | "close" | "calendar" | "chevron" | "sun" | "culture" | "adventure" | "luxury" | "family" | "sparkle" | "bookmark" | "share" | "plus" | "arrow" | "route" | "compass" | "heart" | "expand";
 type TravelStyle = "Culture" | "Adventure" | "Luxury" | "Family";
@@ -141,26 +140,7 @@ export default function TripPlannerPage() {
 
   return (
     <main className="trip-planner-shell">
-      <SharedHomeHero
-        sectionId="planner-hero"
-        eyebrow="SMART GUIDE · YOUR ROUTE, CONSIDERED"
-        title="Shape the"
-        emphasis="journey around you."
-        lede="Bring your time, pace and curiosity. We will turn them into a thoughtful Egypt route."
-        image="/alpnile-hero-giza-3d-v2.webp"
-        primaryHref="#trip-planner-content"
-        primaryLabel="Build your route"
-        secondaryHref="#trip-planner-content"
-        secondaryLabel="Open the planner"
-        note="Time / taste / tempo"
-        chapter="04"
-      />
       <div className="trip-planner-page" id="trip-planner-content">
-        <section className="trip-planner-hero" aria-labelledby="trip-planner-title">
-          <div className="trip-planner-hero-copy"><p className="trip-planner-kicker">ALPNILE / SMART PLANNER</p><h1 id="trip-planner-title">Smart Trip Planner</h1><h2>Your journey, intelligently arranged</h2><p>Create a personalized itinerary with AI-powered recommendations,<br className="desktop-only" /> iconic destinations and unforgettable experiences.</p></div>
-          <aside className="trip-weather-card"><span><Icon name="sun" size={31} /></span><div><small>Cairo</small><strong>28°C</strong><em>Sunny</em><p>Perfect weather<br />for exploring</p></div></aside>
-        </section>
-
         <section className="trip-controls" aria-label="Trip preferences">
           <button className="trip-date-control" type="button" onClick={() => setDateSet((value) => (value + 1) % dateOptions.length)}><span className="trip-control-icon"><Icon name="calendar" size={21} /></span><span><small>Travel Dates</small><strong>{dateOptions[dateSet]}</strong></span><Icon name="chevron" size={15} /></button>
           <div className="trip-style-control"><div className="trip-control-heading"><small>Travel Style</small><span>Choose your pace</span></div><div>{travelStyles.map((style) => <button key={style.label} type="button" className={selectedStyle === style.label ? "active" : ""} onClick={() => { setSelectedStyle(style.label); setJourneyBuilt(false); flashNotice(`${style.label} style selected.`); }} aria-pressed={selectedStyle === style.label}><Icon name={style.icon} size={19} /><span>{style.label}</span></button>)}</div></div>

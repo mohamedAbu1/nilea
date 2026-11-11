@@ -66,7 +66,7 @@ function SocialIcon({ kind }: { kind: (typeof socialLinks)[number]["kind"] }) {
 export function SiteHeader() {
   const pathname = usePathname() || "/";
   const { locale, setLocale, t } = useLanguage();
-  const showPrimaryNavigation = navigation.some((item) => item.href === pathname);
+  const showPrimaryNavigation = true;
   const [menuOpen, setMenuOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);

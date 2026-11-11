@@ -1,6 +1,9 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { additionalTranslations } from "./additional-translations";
+import { remainingTranslations } from "./remaining-translations";
+import { completeTranslations } from "./complete-translations";
 
 export type LocaleCode = "en" | "ar" | "es" | "fr" | "it" | "zh" | "de" | "pl" | "cs";
 
@@ -581,7 +584,7 @@ const stateTranslations: Record<string, Partial<Record<LocaleCode, string>>> = {
   "Email confirmation is enabled in Supabase. Disable Confirm email in Auth settings, then try again.": { ar: "تأكيد البريد الإلكتروني مفعّل في Supabase. عطّل Confirm email في إعدادات Auth ثم حاول مرة أخرى.", es: "La confirmación de correo está activada en Supabase. Desactiva Confirm email en Auth y vuelve a intentarlo.", fr: "La confirmation e-mail est activée dans Supabase. Désactivez Confirm email dans Auth, puis réessayez.", it: "La conferma e-mail è attiva in Supabase. Disattiva Confirm email nelle impostazioni Auth e riprova.", zh: "Supabase 已启用邮箱确认。请在 Auth 设置中关闭 Confirm email，然后重试。", de: "Die E-Mail-Bestätigung ist in Supabase aktiviert. Deaktiviere Confirm email in den Auth-Einstellungen und versuche es erneut.", pl: "Potwierdzenie e-maila jest włączone w Supabase. Wyłącz Confirm email w ustawieniach Auth i spróbuj ponownie.", cs: "V Supabase je zapnuté potvrzení e-mailu. V nastavení Auth vypněte Confirm email a zkuste to znovu." },
 };
 
-const translationCatalog = { ...expandedTranslations, ...moreTranslations, ...finalTranslations, ...interfaceTranslations, ...stateTranslations };
+const translationCatalog = { ...expandedTranslations, ...moreTranslations, ...finalTranslations, ...interfaceTranslations, ...stateTranslations, ...additionalTranslations, ...remainingTranslations, ...completeTranslations };
 
 type LanguageContextValue = { locale: LocaleCode; setLocale: (locale: LocaleCode) => void; t: (text: string) => string };
 const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -596,7 +599,10 @@ function translateExact(text: string, locale: LocaleCode) {
   const direct = translationCatalog[core]?.[locale] ?? translations[locale][core] ?? commonTranslations[locale][core];
   if (direct) return `${leading}${direct}${trailing}`;
   let translated = core;
-  for (const source of Object.keys(translationCatalog).sort((a, b) => b.length - a.length)) {
+  const phraseSources = Object.keys(translationCatalog)
+    .filter((source) => source.trim().length >= 5 && /\s/.test(source.trim()))
+    .sort((a, b) => b.length - a.length);
+  for (const source of phraseSources) {
     const replacement = translationCatalog[source]?.[locale];
     if (replacement && translated.includes(source)) translated = translated.split(source).join(replacement);
   }
@@ -625,9 +631,9 @@ function translateDocument(locale: LocaleCode) {
       }
       node = walker.nextNode() as Text | null;
     }
-    document.querySelectorAll<HTMLElement>("[aria-label], [placeholder], [title]").forEach((element) => {
+    document.querySelectorAll<HTMLElement>("[aria-label], [placeholder], [title], [alt]").forEach((element) => {
       const records = attributeRecords.get(element) ?? {};
-      for (const attribute of ["aria-label", "placeholder", "title"] as const) {
+      for (const attribute of ["aria-label", "placeholder", "title", "alt"] as const) {
         const value = element.getAttribute(attribute);
         if (!value) continue;
         const record = records[attribute];

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDialogA11y } from "../components/dialog";
-import { SharedHomeHero } from "../components/shared-home-hero";
 
 type DestinationId = "safaga" | "marsa-alam" | "luxor" | "aswan" | "cairo" | "hurghada";
 type IconName = "search" | "menu" | "close" | "chevron" | "pin" | "layers" | "list" | "heart" | "book" | "route" | "ticket" | "bed" | "arrow";
@@ -173,20 +172,6 @@ export default function DestinationsPage() {
 
   return (
     <main className="destinations-shell">
-      <SharedHomeHero
-        sectionId="destinations-hero"
-        eyebrow="THE NILE · PLACES WITH A PULSE"
-        title="Find your"
-        emphasis="Egypt in chapters."
-        lede="Start with a place, then follow the details that make the route feel like yours."
-        image="/alpnile-hero-abu-simbel-3d-v2.webp"
-        primaryHref="/trip-planner"
-        primaryLabel="Plan your route"
-        secondaryHref="#destinations-content"
-        secondaryLabel="Explore destinations"
-        note="Places / pace / possibility"
-        chapter="01"
-      />
       <div className="destinations-glow destinations-glow-one" aria-hidden="true" />
       <div className="destinations-glow destinations-glow-two" aria-hidden="true" />
       <div className="destinations-page" id="destinations-content">

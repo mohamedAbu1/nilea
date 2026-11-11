@@ -41,38 +41,6 @@ export default function ContactPage() {
 
   return (
     <main className="info-page contact-page">
-      <div className="info-backdrop info-backdrop-one" aria-hidden="true" />
-      <div className="info-backdrop info-backdrop-two" aria-hidden="true" />
-
-      <section className="info-hero contact-hero" aria-labelledby="contact-title">
-        <div className="info-hero-copy">
-          <p className="info-eyebrow">ALPNILE / CONTACT</p>
-          <h1 id="contact-title">Let’s make the next chapter yours.</h1>
-          <p className="info-lede">Tell us what is pulling you towards Egypt. A place, a mood, a date or simply the need to get away — we’ll meet you there and help shape the rest.</p>
-          <div className="contact-direct-links">
-            <a href="mailto:hello@alpnile.com">hello@alpnile.com <span aria-hidden="true">↗</span></a>
-            <a href="tel:+201002712064">+20 100 271 2064 <span aria-hidden="true">↗</span></a>
-          </div>
-        </div>
-
-        <div className="contact-visual-stage" aria-hidden="true">
-          <div className="contact-visual-image" />
-          <div className="contact-visual-grid" />
-          <div className="contact-orbit contact-orbit-one" />
-          <div className="contact-orbit contact-orbit-two" />
-          <div className="contact-signal contact-signal-one" />
-          <div className="contact-signal contact-signal-two" />
-          <div className="contact-card-3d">
-            <div className="contact-card-top"><span>ALPNILE</span><span>CONNECT / 01</span></div>
-            <div className="contact-card-mark">✦</div>
-            <p>Every good route<br /><em>starts with a<br />question.</em></p>
-            <div className="contact-card-route"><span /><i /><b /><em /></div>
-            <div className="contact-card-bottom"><span>EGYPT</span><strong>→</strong></div>
-          </div>
-          <div className="contact-visual-caption"><span>OPEN CHANNEL</span><strong>Human on the other side.</strong></div>
-        </div>
-      </section>
-
       <section className="contact-content-section info-section" aria-labelledby="contact-form-title">
         <div className="contact-side-column">
           <p className="info-eyebrow">WAYS IN</p>

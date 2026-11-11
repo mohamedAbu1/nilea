@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRef } from "react";
 import { useDialogA11y } from "../components/dialog";
 import { StyledSelect } from "../components/styled-select";
-import { SharedHomeHero } from "../components/shared-home-hero";
 
 type IconName = "search" | "menu" | "close" | "arrow" | "pin" | "calendar" | "sliders" | "utensils" | "coffee" | "store" | "ticket" | "vase" | "lotus" | "family" | "heart";
 
@@ -116,35 +115,11 @@ export default function LocalLifePage() {
 
   return (
     <main className="life-shell">
-      <SharedHomeHero
-        sectionId="local-life-hero"
-        eyebrow="LOCAL LIFE · TABLES WITH A STORY"
-        title="Meet the"
-        emphasis="Egypt between landmarks."
-        lede="Taste, meet and wander through the small places that make a journey feel genuinely local."
-        image="/alpnile-hero-nile-sunset-3d-v2.webp"
-        primaryHref="/trip-planner"
-        primaryLabel="Plan your route"
-        secondaryHref="#experiences"
-        secondaryLabel="Explore local life"
-        note="Tables / people / flavour"
-        chapter="02"
-      />
-      <section className="life-hero">
-        <div className="mx-auto grid min-h-[710px] w-full max-w-[1500px] grid-cols-1 gap-10 px-4 pb-16 pt-12 sm:px-7 sm:pt-16 lg:grid-cols-[1fr_276px] lg:gap-16 lg:px-12 lg:pt-20">
-          <div className="life-hero-copy max-w-[650px] self-start">
-            <p className="mb-4 text-[10px] uppercase tracking-[0.36em] text-[#e5b767]">Nile archives · chapter two</p>
-            <h1 className="font-display text-[53px] leading-[.92] tracking-[-.045em] text-[#f3c477] sm:text-[76px] lg:text-[82px]">Local Life &amp; Dining<br /><span className="text-[38px] sm:text-[52px] lg:text-[58px]">Find your Egypt</span></h1>
-            <p className="mt-7 max-w-[390px] text-[14px] leading-6 text-[#eee9df]/90 sm:text-[15px]">Taste, meet, explore. From rooftop restaurants and local cafés to vibrant markets, cultural events and unique experiences — discover the real Egypt through its people, flavors and places.</p>
-            <div className="mt-7 flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-[0.22em] text-white/60"><span className="section-cap text-[#e7b96a]">Curated for you</span><span>7 categories</span><span>·</span><span>3 cities</span></div>
-          </div>
-
-          <aside className="life-category-rail self-start rounded-[18px] p-2 lg:mt-16" aria-label="Experience categories">
-            {categories.map((category) => <button type="button" key={category.label} onClick={() => setActiveCategory(category.label)} className={`life-category-item w-full px-3 py-3 text-left text-[11px] ${activeCategory === category.label ? "active" : ""}`} aria-pressed={activeCategory === category.label}><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#ecc37a]/40 text-[#f2c77c]"><Icon name={category.icon} size={15} /></span><span>{category.label}</span></button>)}
+      <section className="life-controls" aria-label="Local life filters">
+        <div className="mx-auto flex w-full max-w-[1500px] flex-col gap-4 px-4 py-6 sm:px-7 lg:px-12">
+          <aside className="life-category-rail flex flex-wrap items-center gap-1 rounded-[18px] p-2" aria-label="Experience categories">
+            {categories.map((category) => <button type="button" key={category.label} onClick={() => setActiveCategory(category.label)} className={`life-category-item w-auto px-3 py-3 text-left text-[11px] ${activeCategory === category.label ? "active" : ""}`} aria-pressed={activeCategory === category.label}><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#ecc37a]/40 text-[#f2c77c]"><Icon name={category.icon} size={15} /></span><span>{category.label}</span></button>)}
           </aside>
-        </div>
-
-        <div className="mx-auto w-full max-w-[1500px] px-4 sm:px-7 lg:px-12">
           <div className="life-filter-bar grid gap-2 rounded-[18px] p-2 sm:grid-cols-[1.05fr_1fr_1.05fr_.86fr] sm:gap-3 sm:p-3">
             <label className="life-filter-control flex items-center gap-3 rounded-full px-4 text-left"><span className="text-[#f2c577]"><Icon name="pin" size={18} /></span><span><small>City</small><StyledSelect value={city} onChange={setCity} ariaLabel="City"><option>All Egypt</option><option>Safaga</option><option>Marsa Alam</option><option>Luxor</option><option>Aswan</option><option>Cairo</option><option>Hurghada</option></StyledSelect></span></label>
             <label className="life-filter-control flex items-center gap-3 rounded-full px-4 text-left"><span className="text-[#f2c577]"><Icon name="calendar" size={18} /></span><span><small>Date</small><StyledSelect value={date} onChange={setDate} ariaLabel="Date"><option>Any Date</option><option>Tonight</option><option>This weekend</option></StyledSelect></span></label>

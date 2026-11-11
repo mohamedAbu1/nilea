@@ -30,36 +30,6 @@ const collection = [
 export default function AboutPage() {
   return (
     <main className="info-page about-page">
-      <div className="info-backdrop info-backdrop-one" aria-hidden="true" />
-      <div className="info-backdrop info-backdrop-two" aria-hidden="true" />
-
-      <section className="info-hero about-hero" aria-labelledby="about-title">
-        <div className="info-hero-copy">
-          <p className="info-eyebrow">ALPNILE / ABOUT</p>
-          <h1 id="about-title">The river is our starting point.</h1>
-          <p className="info-lede">AlpNile is a more human way to meet Egypt — through places with a pulse, stories with context and journeys shaped around your curiosity.</p>
-          <div className="info-actions">
-            <Link href="/destinations" className="info-primary-action">Explore the route <span aria-hidden="true">↗</span></Link>
-            <Link href="/contact" className="info-secondary-action">Talk to us</Link>
-          </div>
-          <div className="info-hero-note"><span className="info-note-dot" aria-hidden="true" /> Same river. A thousand ways in.</div>
-        </div>
-
-        <div className="about-visual-stage" aria-label="A 3D-inspired view of Egyptian stories">
-          <div className="about-visual-orbit about-visual-orbit-one" aria-hidden="true" />
-          <div className="about-visual-orbit about-visual-orbit-two" aria-hidden="true" />
-          <div className="about-visual-glow" aria-hidden="true" />
-          <div className="about-visual-card">
-            <img src="/alpnile-about-hero-3d-v1.webp" alt="A royal 3D Nile archive with Egyptian columns, a route map and a pharaonic bust" />
-            <div className="about-visual-card-overlay" />
-            <div className="about-visual-caption"><span>FIELD NOTE / 01</span><strong>Stories in relief.</strong></div>
-          </div>
-          <div className="about-floating-tag about-floating-tag-top"><span>THE NILE</span><strong>∞</strong></div>
-          <div className="about-floating-tag about-floating-tag-bottom"><span>CURATED WITH</span><strong>CARE</strong></div>
-          <div className="about-visual-pedestal" aria-hidden="true" />
-        </div>
-      </section>
-
       <section className="about-story-section info-section" aria-labelledby="story-title">
         <div className="section-intro">
           <p className="info-eyebrow">A LIVING ARCHIVE</p>
