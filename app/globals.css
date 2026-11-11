@@ -8782,3 +8782,21 @@ form .site-select:focus,
   .welcome-visual-caption { right: -3%; bottom: 0; }
   .welcome-visual-caption strong { font-size: 18px; }
 }
+
+/* The homepage gate shares the standalone welcome page's exact visual system. */
+.home-welcome-screen.welcome-page { display: block; width: 100%; min-height: 100dvh; padding: clamp(30px, 5vw, 72px) clamp(20px, 5vw, 78px); }
+.home-welcome-screen .welcome-layout { min-height: min(760px, calc(100dvh - 120px)); }
+.home-welcome-screen .welcome-card { max-width: 640px; }
+.home-welcome-screen .welcome-visual { min-height: 650px; }
+.home-welcome-enter { border: 1px solid rgba(255, 231, 180, .68); font: inherit; cursor: pointer; }
+.home-welcome-skip { margin-left: 0; border: 0; padding: 0 15px; font: inherit; cursor: pointer; }
+
+@media (max-width: 900px) {
+  .home-welcome-screen .welcome-layout { min-height: 0; }
+  .home-welcome-screen .welcome-visual { min-height: 520px; }
+}
+
+@media (max-width: 560px) {
+  .home-welcome-screen.welcome-page { padding-inline: 20px; }
+  .home-welcome-screen .welcome-visual { min-height: 400px; }
+}
