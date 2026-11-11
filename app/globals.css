@@ -8717,3 +8717,68 @@ form .site-select:focus,
   .policy-hero-mark,
   .policy-section { animation: none; }
 }
+
+/* Welcome page: a lighter editorial composition with a hero pharaoh image. */
+.welcome-page {
+  min-height: calc(100vh - 82px);
+  place-items: stretch;
+  padding: clamp(34px, 6vw, 86px) clamp(22px, 6vw, 90px);
+  background:
+    radial-gradient(circle at 73% 44%, rgba(244, 197, 119, .16), transparent 22%),
+    radial-gradient(circle at 82% 78%, rgba(47, 173, 167, .12), transparent 25%),
+    linear-gradient(120deg, #06121e 0%, #0a1b29 50%, #071018 100%);
+}
+.welcome-page::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  opacity: .26;
+  background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(90deg, #000 0%, transparent 94%);
+}
+.welcome-backdrop { inset: 8% 22% 5% 49%; border-color: rgba(244,197,119,.17); transform: rotateX(67deg) rotateZ(-17deg); box-shadow: 0 0 0 24px rgba(244,197,119,.018), 0 0 130px rgba(244,197,119,.13); }
+.welcome-layout { position: relative; z-index: 1; display: grid; width: min(1280px, 100%); min-height: min(760px, calc(100vh - 150px)); margin: auto; grid-template-columns: minmax(0, .92fr) minmax(420px, 1.08fr); align-items: center; gap: clamp(20px, 5vw, 90px); }
+.welcome-card { width: min(640px, 100%); padding: clamp(28px, 4vw, 58px) 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; transform: none; }
+.welcome-card::before { position: absolute; top: 0; left: 0; width: 64px; height: 1px; content: ""; background: linear-gradient(90deg, #f4c577, transparent); box-shadow: 0 0 15px rgba(244,197,119,.65); }
+.welcome-mark { width: 64px; height: 64px; border-radius: 19px 10px 20px 11px; }
+.welcome-card h1 { max-width: 660px; margin-top: 24px; font-size: clamp(52px, 6.6vw, 96px); line-height: .88; text-wrap: balance; }
+.welcome-lede { max-width: 470px; margin-top: 27px; color: rgba(244,238,225,.66); font-size: 14px; line-height: 1.85; }
+.welcome-route { max-width: 520px; margin-top: 30px; }
+.welcome-actions { gap: 14px; margin-top: 2px; }
+.welcome-meta { display: flex; flex-wrap: wrap; gap: 16px 26px; margin-top: 34px; padding-top: 18px; border-top: 1px solid rgba(244,197,119,.16); color: rgba(244,238,225,.46); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.welcome-meta span { display: inline-flex; align-items: center; gap: 8px; }
+.welcome-meta b { color: #f4c577; font-weight: 500; }
+.welcome-visual { position: relative; min-height: 650px; display: grid; place-items: center; perspective: 1400px; }
+.welcome-visual-halo { position: absolute; width: min(600px, 90%); aspect-ratio: 1; border: 1px solid rgba(244,197,119,.18); border-radius: 50%; transform: rotateX(67deg) rotateZ(-12deg); box-shadow: 0 0 0 22px rgba(244,197,119,.025), 0 0 80px rgba(244,197,119,.11); }
+.welcome-visual-halo::before, .welcome-visual-halo::after { position: absolute; width: 8px; height: 8px; border-radius: 50%; content: ""; background: #f4c577; box-shadow: 0 0 17px 4px rgba(244,197,119,.52); }
+.welcome-visual-halo::before { top: 6%; left: 21%; }.welcome-visual-halo::after { right: 14%; bottom: 17%; background: #6bd2cf; box-shadow: 0 0 17px 4px rgba(107,210,207,.42); }
+.welcome-visual-frame { position: relative; width: min(510px, 90%); aspect-ratio: .78; display: grid; place-items: end center; overflow: visible; border: 1px solid rgba(244,197,119,.28); border-radius: 46% 42% 22px 24px; background: linear-gradient(145deg, rgba(20, 48, 64, .64), rgba(4, 14, 23, .33)); box-shadow: 22px 30px 66px rgba(0,0,0,.34), inset 0 1px rgba(255,255,255,.15), inset 0 -30px 60px rgba(0,0,0,.16); transform: perspective(1400px) rotateY(-10deg) rotateX(3deg) translateZ(20px); }
+.welcome-visual-frame::before { position: absolute; inset: 12px; border: 1px solid rgba(244,197,119,.14); border-radius: inherit; content: ""; pointer-events: none; }
+.welcome-visual-frame img { position: relative; z-index: 1; width: 119%; max-width: none; height: 119%; object-fit: contain; object-position: center bottom; filter: drop-shadow(0 30px 25px rgba(0,0,0,.58)) drop-shadow(0 0 28px rgba(241,190,93,.18)); transform: translateY(5%); transition: transform .65s ease, filter .65s ease; }
+.welcome-visual-frame:hover img { filter: drop-shadow(0 38px 30px rgba(0,0,0,.64)) drop-shadow(0 0 36px rgba(241,190,93,.27)); transform: translateY(2%) scale(1.025); }
+.welcome-visual-chip { position: absolute; z-index: 2; top: 24px; left: 25px; padding: 9px 12px; border: 1px solid rgba(244,197,119,.32); border-radius: 999px; color: #f4cf8d; background: rgba(6,18,29,.6); font-size: 9px; letter-spacing: .18em; }
+.welcome-visual-reflection { position: absolute; right: 8%; bottom: 7%; left: 8%; height: 18%; border-radius: 50%; background: radial-gradient(ellipse, rgba(244,197,119,.28), transparent 68%); filter: blur(10px); }
+.welcome-visual-caption { position: absolute; right: 2%; bottom: 3%; z-index: 3; display: grid; gap: 5px; max-width: 190px; padding: 15px 17px; border-left: 1px solid rgba(244,197,119,.55); background: linear-gradient(90deg, rgba(4,14,23,.88), transparent); }
+.welcome-visual-caption span { color: #edbe70; font-size: 8px; letter-spacing: .22em; }.welcome-visual-caption strong { color: #f6d394; font-family: Georgia, "Times New Roman", serif; font-size: 23px; font-weight: 400; }.welcome-visual-caption p { margin: 0; color: rgba(244,238,225,.48); font-size: 10px; }
+
+@media (max-width: 900px) {
+  .welcome-page { min-height: auto; padding-block: 34px 64px; }
+  .welcome-layout { min-height: 0; grid-template-columns: 1fr; gap: 8px; }
+  .welcome-card { width: min(650px, 100%); margin: auto; padding-block: 25px 10px; }
+  .welcome-card h1 { font-size: clamp(49px, 11vw, 80px); }
+  .welcome-visual { min-height: 520px; margin-top: -6px; }
+  .welcome-visual-frame { width: min(440px, 82vw); }
+}
+@media (max-width: 560px) {
+  .welcome-page { padding-inline: 20px; }
+  .welcome-card h1 { font-size: clamp(46px, 14vw, 68px); }
+  .welcome-lede { font-size: 13px; }
+  .welcome-meta { gap: 11px 15px; font-size: 8px; }
+  .welcome-visual { min-height: 400px; }
+  .welcome-visual-frame { width: min(355px, 92vw); }
+  .welcome-visual-caption { right: -3%; bottom: 0; }
+  .welcome-visual-caption strong { font-size: 18px; }
+}
