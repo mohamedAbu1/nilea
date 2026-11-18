@@ -33,6 +33,21 @@ const routeCoordinates: Record<string, { top: number; left: number }> = {
   Aswan: { top: 76, left: 57 },
 };
 
+function formatTripDate(date: Date) {
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit", year: "numeric" }).format(date);
+}
+
+function buildDateOptions() {
+  const today = new Date();
+  return [[7, 14], [28, 35], [56, 63]].map(([startOffset, endOffset]) => {
+    const start = new Date(today);
+    const end = new Date(today);
+    start.setDate(today.getDate() + startOffset);
+    end.setDate(today.getDate() + endOffset);
+    return `${formatTripDate(start)}  →  ${formatTripDate(end)}`;
+  });
+}
+
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true, className: `inline-ui-icon inline-ui-${name}` };
   switch (name) {
@@ -69,7 +84,7 @@ export default function TripPlannerPage() {
   const [journeyBuilt, setJourneyBuilt] = useState(false);
   const [routeExpanded, setRouteExpanded] = useState(false);
   const noticeTimerRef = useRef<number | null>(null);
-  const dateOptions = ["Nov 10, 2026  →  Nov 17, 2026", "Dec 04, 2026  →  Dec 11, 2026", "Jan 12, 2027  →  Jan 19, 2027"];
+  const dateOptions = useMemo(buildDateOptions, []);
 
   const recommendationsForRoute = useMemo(() => recommendations.map((recommendation, index) => ({
     ...recommendation,
@@ -85,9 +100,17 @@ export default function TripPlannerPage() {
   useEffect(() => {
     const requestedStyle = searchParams.get("style") as TravelStyle | null;
     if (requestedStyle && travelStyles.some((style) => style.label === requestedStyle)) setSelectedStyle(requestedStyle);
+    const requestedBudget = Number(searchParams.get("budget"));
+    if (Number.isFinite(requestedBudget) && requestedBudget >= 500 && requestedBudget <= 10000) setBudget(requestedBudget);
+    const requestedDate = Number(searchParams.get("date"));
+    if (Number.isInteger(requestedDate) && requestedDate >= 0 && requestedDate < dateOptions.length) setDateSet(requestedDate);
+    const requestedDays = searchParams.get("days")?.split(",").filter((day) => dayCards.some((card) => card.day === day)) ?? [];
+    if (requestedDays.length) setSelectedDays(Array.from(new Set(requestedDays)));
+    const requestedRecommendations = searchParams.get("recommendations")?.split(",").filter((title) => recommendations.some((recommendation) => recommendation.title === title)) ?? [];
+    if (requestedRecommendations.length) setSelectedRecommendations(Array.from(new Set(requestedRecommendations)));
     const destination = searchParams.get("destination");
     if (destination) flashNotice(`Starting your route around ${destination.replace(/-/g, " ")}.`);
-  }, [searchParams]);
+  }, [dateOptions, searchParams]);
 
   useEffect(() => () => {
     if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
@@ -107,6 +130,7 @@ export default function TripPlannerPage() {
 
   const buildJourney = () => {
     setJourneyBuilt(true);
+    window.localStorage.setItem("alpnile-itinerary", JSON.stringify({ selectedStyle, budget, date: dateOptions[dateSet], selectedDays, selectedRecommendations }));
     flashNotice(`${selectedDays.length} days arranged around your ${selectedStyle.toLowerCase()} style and $${budget.toLocaleString()} budget.`);
   };
 
@@ -117,7 +141,8 @@ export default function TripPlannerPage() {
 
   const shareTrip = async () => {
     const message = `AlpNile itinerary · ${selectedStyle} · ${selectedDays.length} days`;
-    const shareUrl = `${window.location.origin}/trip-planner?style=${encodeURIComponent(selectedStyle)}&days=${encodeURIComponent(selectedDays.join(","))}`;
+    const params = new URLSearchParams({ style: selectedStyle, budget: String(budget), date: String(dateSet), days: selectedDays.join(","), recommendations: selectedRecommendations.join(",") });
+    const shareUrl = `${window.location.origin}/trip-planner?${params.toString()}`;
     const canShare = typeof navigator.share === "function";
     try {
       if (canShare) await navigator.share({ title: "AlpNile itinerary", text: message, url: shareUrl });

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { accountProfileFromUser, isSupabaseConfigured, supabase, type AccountProfile } from "../lib/supabase";
+import { useDialogA11y } from "./dialog";
 import { StyledSelect } from "./styled-select";
 
 export type AuthMode = "login" | "register" | "forgot" | "reset";
@@ -64,6 +65,7 @@ export default function AccountDialog({ open, initialMode, initialError = "", on
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const dialogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -74,14 +76,9 @@ export default function AccountDialog({ open, initialMode, initialError = "", on
     setBusy(false);
     setError(initialError);
     setSuccess("");
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = "";
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [initialError, initialMode, onClose, open]);
+  }, [initialError, initialMode, open]);
+
+  useDialogA11y(open, onClose, dialogRef);
 
   const passwordScore = useMemo(() => [
     form.password.length >= 8,
@@ -200,9 +197,9 @@ export default function AccountDialog({ open, initialMode, initialError = "", on
 
   return (
     <div className="account-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-      <section className="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title">
+      <section ref={dialogRef} className="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title">
           <div className="account-dialog-visual">
-          <img className="account-dialog-pharaoh" src="/alpnile-pharaoh-mask-gold-v1.png" alt="" aria-hidden="true" />
+          <img className="account-dialog-pharaoh" src="/alpnile-welcome-pharaoh.png" alt="" aria-hidden="true" />
           <div className="account-dialog-pharaoh-glow" aria-hidden="true" />
           <div className="account-dialog-orbit account-dialog-orbit-one" />
           <div className="account-dialog-orbit account-dialog-orbit-two" />

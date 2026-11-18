@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDialogA11y } from "../components/dialog";
+import { legacyCatalog } from "../lib/legacy-catalog";
 
-type DestinationId = "safaga" | "marsa-alam" | "luxor" | "aswan" | "cairo" | "hurghada";
+type DestinationId = string;
 type IconName = "search" | "menu" | "close" | "chevron" | "pin" | "layers" | "list" | "heart" | "book" | "route" | "ticket" | "bed" | "arrow";
 
 type Destination = {
@@ -19,6 +20,18 @@ type Destination = {
 };
 
 type Attraction = { name: string; type: string; image: string };
+
+const catalogCityImages: Record<string, string> = {
+  "marsa-alam": "/catalog/cities/marsa-alam.png",
+  fayoum: "/catalog/cities/fayoum.png",
+  aswan: "/catalog/cities/aswan.png",
+  luxor: "/catalog/cities/luxor.png",
+  hurghada: "/catalog/cities/hurghada.png",
+  cairo: "/catalog/cities/cairo.png",
+  alexandria: "/catalog/cities/alexandria.png",
+  "sharm-el-sheikh": "/catalog/cities/sharm-el-sheikh.png",
+  siwa: "/catalog/cities/siwa.png",
+};
 
 const attractionsByDestination: Record<DestinationId, Attraction[]> = {
   safaga: [
@@ -51,6 +64,26 @@ const attractionsByDestination: Record<DestinationId, Attraction[]> = {
     { name: "Coral Garden Dive", type: "Underwater Life", image: "/alpnile-hero-beach-3d-v2.webp" },
     { name: "Marina by Night", type: "Waterfront Evening", image: "/alpnile-destination-hurghada-v2.webp" },
   ],
+  fayoum: [
+    { name: "Wadi El Hitan", type: "Desert Heritage", image: "/alpnile-eras.webp" },
+    { name: "Magic Lake", type: "Oasis Escape", image: "/alpnile-hero-beach-3d-v2.webp" },
+    { name: "Tunis Village", type: "Local Craft", image: "/alpnile-local-life-v2.webp" },
+  ],
+  alexandria: [
+    { name: "Qaitbay Citadel", type: "Mediterranean Heritage", image: "/alpnile-destination-alexandria.webp" },
+    { name: "Bibliotheca Alexandrina", type: "Culture & Knowledge", image: "/alpnile-destination-alexandria.webp" },
+    { name: "Alexandria Corniche", type: "Sea Views", image: "/alpnile-hero-beach-3d-v2.webp" },
+  ],
+  "sharm-el-sheikh": [
+    { name: "Ras Mohammed", type: "Marine Park", image: "/alpnile-destination-sharm-v2.webp" },
+    { name: "Nabq Bay", type: "Desert Coast", image: "/alpnile-hero-beach-3d-v2.webp" },
+    { name: "Bedouin Evening", type: "Desert Culture", image: "/alpnile-destination-sharm-v2.webp" },
+  ],
+  siwa: [
+    { name: "Cleopatra's Spring", type: "Oasis Water", image: "/alpnile-destination-siwa.webp" },
+    { name: "Great Sand Sea", type: "Desert Horizon", image: "/alpnile-eras.webp" },
+    { name: "Shali Fortress", type: "Living Heritage", image: "/alpnile-destination-siwa.webp" },
+  ],
 };
 
 const destinations: Destination[] = [
@@ -62,7 +95,7 @@ const destinations: Destination[] = [
     era: "Modern Egypt",
     experience: "Diving",
     image: "/alpnile-hero-beach-3d-v2.webp",
-    position: { left: "78%", top: "46%" },
+    position: { left: "89%", top: "44%" },
   },
   {
     id: "marsa-alam",
@@ -71,8 +104,8 @@ const destinations: Destination[] = [
     region: "Red Sea",
     era: "Modern Egypt",
     experience: "Nature",
-    image: "/alpnile-destination-sharm-v2.webp",
-    position: { left: "82%", top: "62%" },
+    image: catalogCityImages["marsa-alam"],
+    position: { left: "94%", top: "63%" },
   },
   {
     id: "luxor",
@@ -81,8 +114,8 @@ const destinations: Destination[] = [
     region: "Upper Egypt",
     era: "Ancient Egypt",
     experience: "Heritage",
-    image: "/alpnile-destination-luxor.webp",
-    position: { left: "63%", top: "61%" },
+    image: catalogCityImages.luxor,
+    position: { left: "69%", top: "51%" },
   },
   {
     id: "aswan",
@@ -91,8 +124,8 @@ const destinations: Destination[] = [
     region: "Upper Egypt",
     era: "Nubian Egypt",
     experience: "Nile",
-    image: "/alpnile-tour-nile-sunset.webp",
-    position: { left: "54%", top: "80%" },
+    image: catalogCityImages.aswan,
+    position: { left: "51%", top: "86%" },
   },
   {
     id: "cairo",
@@ -101,8 +134,8 @@ const destinations: Destination[] = [
     region: "Lower Egypt",
     era: "Modern Egypt",
     experience: "Culture",
-    image: "/alpnile-destination-cairo.webp",
-    position: { left: "58%", top: "34%" },
+    image: catalogCityImages.cairo,
+    position: { left: "65%", top: "20%" },
   },
   {
     id: "hurghada",
@@ -111,8 +144,48 @@ const destinations: Destination[] = [
     region: "Red Sea",
     era: "Modern Egypt",
     experience: "Water",
-    image: "/alpnile-destination-hurghada-v2.webp",
-    position: { left: "76%", top: "49%" },
+    image: catalogCityImages.hurghada,
+    position: { left: "86%", top: "37%" },
+  },
+  {
+    id: "fayoum",
+    name: "Fayoum",
+    description: legacyCatalog.cities.find((city) => city.slug === "fayoum")?.description ?? "Oasis landscapes, desert skies and a slower rhythm close to Cairo.",
+    region: "Western Desert",
+    era: "Oasis Egypt",
+    experience: "Oasis",
+    image: catalogCityImages.fayoum,
+    position: { left: "43%", top: "31%" },
+  },
+  {
+    id: "alexandria",
+    name: "Alexandria",
+    description: legacyCatalog.cities.find((city) => city.slug === "alexandria")?.description ?? "Mediterranean light, layered history and a city shaped by the sea.",
+    region: "North Coast",
+    era: "Mediterranean Egypt",
+    experience: "Culture",
+    image: catalogCityImages.alexandria,
+    position: { left: "28%", top: "10%" },
+  },
+  {
+    id: "sharm-el-sheikh",
+    name: "Sharm El Sheikh",
+    description: legacyCatalog.cities.find((city) => city.slug === "sharm-el-sheikh")?.description ?? "Clear reefs, desert mountains and a Red Sea horizon made for open air.",
+    region: "South Sinai",
+    era: "Modern Egypt",
+    experience: "Sea & Desert",
+    image: catalogCityImages["sharm-el-sheikh"],
+    position: { left: "96%", top: "48%" },
+  },
+  {
+    id: "siwa",
+    name: "Siwa",
+    description: legacyCatalog.cities.find((city) => city.slug === "siwa")?.description ?? "Palm groves, salt lakes and a quiet oasis at Egypt's western edge.",
+    region: "Western Desert",
+    era: "Oasis Egypt",
+    experience: "Desert",
+    image: catalogCityImages.siwa,
+    position: { left: "9%", top: "30%" },
   },
 ];
 
@@ -138,7 +211,8 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 export default function DestinationsPage() {
   const searchParams = useSearchParams();
   const requestedDestination = searchParams.get("destination");
-  const initialDestination = destinations.some((destination) => destination.id === requestedDestination) ? requestedDestination as DestinationId : "luxor";
+  const normalizedRequestedDestination = requestedDestination === "hurgada" ? "hurghada" : requestedDestination;
+  const initialDestination = destinations.some((destination) => destination.id === normalizedRequestedDestination) ? normalizedRequestedDestination as DestinationId : "luxor";
   const [activeDestination, setActiveDestination] = useState<DestinationId>(initialDestination);
   const [mapMode, setMapMode] = useState<"3D Map" | "List View">("3D Map");
   const [planning, setPlanning] = useState(false);
@@ -167,8 +241,8 @@ export default function DestinationsPage() {
   }, [savedDestinations, savedDestinationsLoaded]);
 
   useEffect(() => {
-    if (requestedDestination && destinations.some((destination) => destination.id === requestedDestination)) setActiveDestination(requestedDestination as DestinationId);
-  }, [requestedDestination]);
+    if (normalizedRequestedDestination && destinations.some((destination) => destination.id === normalizedRequestedDestination)) setActiveDestination(normalizedRequestedDestination as DestinationId);
+  }, [normalizedRequestedDestination]);
 
   return (
     <main className="destinations-shell">
@@ -231,7 +305,7 @@ export default function DestinationsPage() {
         </section>
 
         <section className="destinations-featured-section" aria-labelledby="featured-destinations-title">
-          <div className="destinations-section-heading"><div><p className="destination-kicker">A CURATED ROUTE · 06 CITIES</p><h2 id="featured-destinations-title">Featured Destinations</h2></div><span>Explore six distinct chapters, from the Nile and ancient heritage to the Red Sea.</span></div>
+          <div className="destinations-section-heading"><div><p className="destination-kicker">A CURATED ROUTE · {String(legacyCatalog.cities.length).padStart(2, "0")} DATA CITIES</p><h2 id="featured-destinations-title">Featured Destinations</h2></div><span>Explore {destinations.length} distinct chapters, including every city in the imported catalog plus Safaga.</span></div>
           <div className="destinations-grid">
             {destinations.map((destination, index) => <button key={destination.id} type="button" className={`destination-card ${activeDestination === destination.id ? "active" : ""}`} onClick={() => setActiveDestination(destination.id)}><span className="destination-card-image"><img src={destination.image} alt={`${destination.name} destination`} loading="lazy" /></span><span className="destination-card-shade" /><span className="destination-card-index">0{index + 1}</span><span className="destination-card-copy"><small>{destination.region} · {destination.experience}</small><strong>{destination.name}</strong><span>{destination.description}</span><em><Icon name="arrow" size={14} /></em></span></button>)}
           </div>

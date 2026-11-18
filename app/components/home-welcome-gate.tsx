@@ -1,46 +1,46 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useDialogA11y } from "./dialog";
 
 export function HomeWelcomeGate() {
   const pathname = usePathname() || "/";
-  const [isOpen, setIsOpen] = useState(pathname === "/");
+  const [isReady, setIsReady] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const dialogRef = useRef<HTMLElement>(null);
 
-  const openHomepage = () => {
-    window.localStorage.setItem("alpnile-welcome-seen", "true");
+  const closeWelcome = useCallback(() => {
+    try {
+      window.localStorage.setItem("alpnile-welcome-seen", "true");
+    } catch {
+      // Private browsing or storage restrictions should never trap the visitor in the gate.
+    }
     setIsOpen(false);
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  };
+  }, []);
 
   useEffect(() => {
     if (pathname !== "/") {
       setIsOpen(false);
+      setIsReady(true);
       return;
     }
-    setIsOpen(window.localStorage.getItem("alpnile-welcome-seen") !== "true");
+    try {
+      setIsOpen(window.localStorage.getItem("alpnile-welcome-seen") !== "true");
+    } catch {
+      setIsOpen(true);
+    }
+    setIsReady(true);
   }, [pathname]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") openHomepage();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isOpen]);
+  useDialogA11y(isReady && isOpen && pathname === "/", closeWelcome, dialogRef);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previousOverflow; };
-  }, [isOpen]);
-
-  if (!isOpen || pathname !== "/") return null;
+  if (!isReady || !isOpen || pathname !== "/") return null;
 
   return (
-    <section className="home-welcome-screen welcome-page" role="dialog" aria-modal="true" aria-labelledby="home-welcome-title">
+    <section ref={dialogRef} className="home-welcome-screen welcome-page" role="dialog" aria-modal="true" aria-labelledby="home-welcome-title">
+      <button type="button" className="home-welcome-close" onClick={closeWelcome} aria-label="Close welcome introduction">×</button>
       <div className="welcome-backdrop" aria-hidden="true" />
       <div className="welcome-layout home-welcome-layout">
         <section className="welcome-card home-welcome-card">
@@ -50,8 +50,8 @@ export function HomeWelcomeGate() {
           <p className="welcome-lede">Welcome, traveler. Discover Egypt through considered routes, soulful stays, local experiences and river moments worth remembering.</p>
           <div className="welcome-route" aria-hidden="true"><span /><i /><b /><em /></div>
           <div className="welcome-actions">
-            <button type="button" className="home-redesign-primary-button home-welcome-enter" onClick={openHomepage}>Enter AlpNile <span aria-hidden="true">↗</span></button>
-            <button type="button" className="home-redesign-secondary-button home-welcome-skip" onClick={openHomepage}>Skip intro</button>
+            <button type="button" className="home-redesign-primary-button home-welcome-enter" onClick={closeWelcome}>Enter AlpNile <span aria-hidden="true">↗</span></button>
+            <button type="button" className="home-redesign-secondary-button home-welcome-skip" onClick={closeWelcome}>Skip intro</button>
           </div>
           <div className="welcome-meta" aria-label="AlpNile highlights"><span><b>01</b> Curated routes</span><span><b>02</b> Nile moments</span><span><b>03</b> Local stories</span></div>
           <p className="welcome-note">A royal introduction to the Nile, made for curious travelers.</p>

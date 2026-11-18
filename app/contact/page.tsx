@@ -8,7 +8,8 @@ import { insertInquiry } from "../lib/submissions";
 const contactChannels = [
   { kicker: "Email", value: "hello@alpnile.com", detail: "A thoughtful reply within one working day.", href: "mailto:hello@alpnile.com", icon: "✉" },
   { kicker: "Call", value: "+20 100 271 2064", detail: "Daily · 09:00–18:00 EET", href: "tel:+201002712064", icon: "⌁" },
-  { kicker: "Follow", value: "@alpnile", detail: "Stories, places and small moments from the river.", href: "https://www.instagram.com/alpnile", icon: "◎" },
+  { kicker: "Instagram", value: "@alpnile", detail: "Stories, places and small moments from the river.", href: "https://www.instagram.com/alpnile/", icon: "◎" },
+  { kicker: "Facebook", value: "AlpNile Egypt", detail: "Official updates, journeys and community news.", href: "https://www.facebook.com/profile.php?id=61596060581090", icon: "f" },
 ];
 
 export default function ContactPage() {

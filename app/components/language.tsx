@@ -675,7 +675,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.lang = locale === "zh" ? "zh-CN" : locale;
     document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
     window.localStorage.setItem("alpnile-locale", locale);
-    const pageTitles: Record<string, string> = { "/": "A Thousand Stories", "/about": "About", "/destinations": "Destinations", "/local-life": "Local Life", "/stays-hotels": "Stays & Hotels", "/tours-experiences": "Tours & Experiences", "/travel-transport": "Travel & Transport", "/trip-planner": "Smart Trip Planner", "/contact": "Contact", "/site-policy": "Site Policy", "/financial-policy": "Financial Policy", "/404": "404", "/500": "500" };
+    const pageTitles: Record<string, string> = { "/": "A Thousand Stories", "/about": "About", "/destinations": "Destinations", "/market": "Travel Market", "/stays-hotels": "Stays & Hotels", "/tours-experiences": "Tours & Experiences", "/travel-transport": "Travel & Transport", "/trip-planner": "Smart Trip Planner", "/contact": "Contact", "/site-policy": "Site Policy", "/financial-policy": "Financial Policy", "/404": "404", "/500": "500" };
     const title = pageTitles[window.location.pathname] ?? "A Thousand Stories";
     document.title = `AlpNile — ${translateExact(title, locale)}`;
     return translateDocument(locale);

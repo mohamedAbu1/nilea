@@ -7,7 +7,7 @@ import { BackToTop, SiteFooter, SiteHeader } from "./components/site-chrome";
 export const metadata: Metadata = {
   title: "AlpNile — A Thousand Stories",
   description: "A cinematic journey through Egypt's extraordinary story.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://nilea-drab.vercel.app"),
   applicationName: "AlpNile",
   keywords: ["Egypt travel", "Nile experiences", "Egypt villas", "tourist cars", "AlpNile"],
   openGraph: {

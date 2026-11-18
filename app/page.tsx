@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { StyledSelect } from "./components/styled-select";
 import { HomeHero, Icon, bookingLocations, type IconName } from "./components/home-hero";
+import { legacyCatalog } from "./lib/legacy-catalog";
 import { insertCarBooking, insertInquiry, insertReview, listPublishedReviews, toggleReviewLike } from "./lib/submissions";
 import { supabase } from "./lib/supabase";
 
@@ -23,17 +24,6 @@ type City = {
   description: string;
   image: string;
   href: string;
-};
-
-type Trip = {
-  title: string;
-  location: string;
-  category: string;
-  duration: string;
-  description: string;
-  image: string;
-  href: string;
-  tone: string;
 };
 
 type Review = {
@@ -60,21 +50,57 @@ const inquiryModes: { key: InquiryMode; label: string; eyebrow: string; title: s
   { key: "contact", label: "Talk to us", eyebrow: "A HUMAN HELLO", title: "Tell us what you have in mind.", button: "Send message" },
 ];
 
+const catalogCategoryIcons: Record<string, IconName> = {
+  "nile-cruises": "pin",
+  spiritual: "spark",
+  "luxury-tours": "compass",
+  "night-tours": "spark",
+  "family-friendly": "home",
+  "adventure-trips": "compass",
+  historical: "spark",
+  "wellness-medical": "home",
+  "one-day-trips": "pin",
+};
+const catalogCategoryTones: Record<string, string> = {
+  "nile-cruises": "teal",
+  spiritual: "amber",
+  "luxury-tours": "violet",
+  "night-tours": "blue",
+  "family-friendly": "coral",
+  "adventure-trips": "sand",
+  historical: "amber",
+  "wellness-medical": "teal",
+  "one-day-trips": "blue",
+};
+const catalogCategoryImages: Record<string, string> = {
+  "nile-cruises": "/catalog/categories/nile-cruises-4k.webp",
+  spiritual: "/catalog/categories/spiritual-4k.webp",
+  "luxury-tours": "/catalog/categories/luxury-tours-4k.webp",
+  "night-tours": "/catalog/categories/night-tours-4k.webp",
+  "family-friendly": "/catalog/categories/family-friendly-4k.webp",
+  "adventure-trips": "/catalog/categories/adventure-trips-4k.webp",
+  historical: "/catalog/categories/historical-4k.webp",
+  "wellness-medical": "/catalog/categories/wellness-medical-4k.webp",
+  "one-day-trips": "/catalog/categories/one-day-trips-4k.webp",
+};
 const tripCategories = [
-  { key: "all", label: "All routes", detail: "The full collection", icon: "compass" as IconName, tone: "teal" },
-  { key: "heritage", label: "Heritage & culture", detail: "Temples, museums and stories", icon: "spark" as IconName, tone: "amber" },
-  { key: "nile", label: "Nile escapes", detail: "Feluccas, cruises and river light", icon: "pin" as IconName, tone: "blue" },
-  { key: "desert", label: "Desert & oasis", detail: "Stillness beyond the map", icon: "compass" as IconName, tone: "sand" },
-  { key: "sea", label: "Beach & diving", detail: "Red Sea and Mediterranean days", icon: "spark" as IconName, tone: "coral" },
-  { key: "food", label: "Food & local life", detail: "Tables, markets and people", icon: "bag" as IconName, tone: "violet" },
-  { key: "family", label: "Family journeys", detail: "Easy days for everyone", icon: "home" as IconName, tone: "blue" },
+  { key: "all", label: "All routes", detail: "Featured route collection", icon: "compass" as IconName, tone: "teal", image: "/alpnile-destinations-v2.webp", href: "/tours-experiences" },
+  ...legacyCatalog.categories.map((category) => ({
+    key: category.slug,
+    label: category.name,
+    detail: `${legacyCatalog.trips.filter((trip) => trip.categories.some((tripCategory) => tripCategory.slug === category.slug)).length} catalog experiences`,
+    icon: catalogCategoryIcons[category.slug] ?? ("spark" as IconName),
+    tone: catalogCategoryTones[category.slug] ?? "teal",
+    image: catalogCategoryImages[category.slug] ?? "/catalog/categories/historical-4k.webp",
+    href: `/tours-experiences?category=${encodeURIComponent(category.slug)}`,
+  })),
 ];
 
 const categories: Category[] = [
   { title: "Destinations", label: "Find your Egypt", description: "From Nile capitals to desert oases.", image: "/alpnile-destinations-v2.webp", href: "/destinations", tone: "teal", icon: "compass" },
   { title: "Villas & Homes", label: "Stay with character", description: "Private spaces, heritage homes and river views.", image: "/alpnile-villas-v2.webp", href: "/stays-hotels", tone: "sand", icon: "home" },
   { title: "Experiences", label: "Make the day yours", description: "Sails, temples, food walks and local stories.", image: "/alpnile-experiences-v2.webp", href: "/tours-experiences", tone: "coral", icon: "spark" },
-  { title: "Travel Market", label: "Take a piece home", description: "Artisan objects and considered souvenirs.", image: "/alpnile-products-v2.webp", href: "/local-life", tone: "violet", icon: "bag" },
+  { title: "Travel Market", label: "Take a piece home", description: "Artisan objects and considered souvenirs.", image: "/alpnile-products-v2.webp", href: "/market", tone: "violet", icon: "bag" },
   { title: "Tourist Cars", label: "Move beautifully", description: "Comfortable cars for a smoother route.", image: "/alpnile-cars-v2.webp", href: "#car-booking", tone: "blue", icon: "car" },
 ];
 
@@ -87,15 +113,6 @@ const cities: City[] = [
   { name: "Hurghada", region: "Red Sea · Water", description: "Clear water, coral gardens and long evenings by the sea.", image: "/alpnile-destination-hurghada-v2.webp", href: "/destinations?destination=hurghada" },
 ];
 
-const trips: Trip[] = [
-  { title: "Temples after dark", location: "Luxor", category: "heritage", duration: "4 hours", description: "A slow evening through stone, shadow and the last light on the Nile.", image: "/alpnile-tour-temple-night.webp", href: "/tours-experiences?experience=temples-after-dark", tone: "amber" },
-  { title: "A table in the city", location: "Cairo", category: "food", duration: "3 hours", description: "A generous food walk through the tastes and rituals locals return to.", image: "/alpnile-tour-food-walk.webp", href: "/tours-experiences?experience=food-walk", tone: "coral" },
-  { title: "Sail into the sunset", location: "Aswan", category: "nile", duration: "2.5 hours", description: "Quiet water, a traditional felucca and the river changing color around you.", image: "/alpnile-tour-nile-sunset.webp", href: "/tours-experiences?experience=nile-sunset", tone: "teal" },
-  { title: "Safaga reef morning", location: "Safaga", category: "sea", duration: "5 hours", description: "A clear-water morning above reefs, warm shallows and the open Red Sea.", image: "/alpnile-hero-beach-3d-v2.webp", href: "/tours-experiences?destination=safaga", tone: "sand" },
-  { title: "Coral garden morning", location: "Hurghada", category: "sea", duration: "5 hours", description: "Clear water, a private boat and the quiet rhythm of the Red Sea.", image: "/alpnile-destination-hurghada-v2.webp", href: "/tours-experiences?destination=hurghada", tone: "blue" },
-  { title: "Pyramids with the family", location: "Cairo", category: "family", duration: "6 hours", description: "An easy, story-filled day made for curious eyes of every age.", image: "/alpnile-city-cairo-v2.webp", href: "/tours-experiences?destination=cairo", tone: "violet" },
-];
-
 const homes = [
   { name: "Winter Palace Riverside", place: "Luxor", image: "/alpnile-hotel-winter-palace.webp", href: "/stays-hotels?stay=winter-palace" },
   { name: "Nile Palace Residence", place: "Aswan", image: "/alpnile-hotel-nile-palace.webp", href: "/stays-hotels?stay=nile-palace" },
@@ -103,12 +120,12 @@ const homes = [
 ];
 
 const products = [
-  { name: "Brass Nile Compass", detail: "A small object for big journeys", image: "/alpnile-bazaar-compass.webp", href: "/local-life?product=compass" },
-  { name: "The Egypt Field Notes", detail: "A tactile guide for curious days", image: "/alpnile-bazaar-field-notes.webp", href: "/local-life?product=field-notes" },
-  { name: "Pharaonic Keepsake", detail: "Made to carry the story home", image: "/alpnile-bazaar-keepsake.webp", href: "/local-life?product=keepsake" },
+  { name: "Brass Nile Compass", detail: "A small object for big journeys", image: "/alpnile-bazaar-compass.webp", href: "/market?product=brass-nile-compass" },
+  { name: "The Egypt Field Notes", detail: "A tactile guide for curious days", image: "/alpnile-bazaar-field-notes.webp", href: "/market?product=papyrus-journal" },
+  { name: "Pharaonic Keepsake", detail: "Made to carry the story home", image: "/alpnile-bazaar-keepsake.webp", href: "/market?product=alabaster-bastet" },
 ];
 
-const marketSongEmbedUrl = "https://www.youtube.com/embed/qvqa7J9iHsU?rel=0&modestbranding=1";
+const marketSongEmbedUrl = "https://www.youtube.com/embed/qvqa7J9iHsU?autoplay=1&controls=0&disablekb=1&playsinline=1&rel=0&modestbranding=1";
 
 const starterReviews: Review[] = [
   { name: "Maya Richardson", city: "London", rating: 5, quote: "AlpNile made Egypt feel beautifully human. Every transfer, table and quiet moment had been considered.", avatar: "/alpnile-avatar-woman-explorer-v1.webp", trip: "Cairo · Luxor · Aswan", likes: 18 },
@@ -142,7 +159,6 @@ function AuthGate({ title, description, onLogin }: { title: string; description:
 export default function Home() {
   const [bookingSent, setBookingSent] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
-  const [tripCategory, setTripCategory] = useState("all");
   const [inquiryMode, setInquiryMode] = useState<InquiryMode>("trip");
   const [inquirySent, setInquirySent] = useState(false);
   const [inquirySubmitting, setInquirySubmitting] = useState(false);
@@ -361,7 +377,6 @@ export default function Home() {
       setReviewSubmitting(false);
       return;
     }
-    setReviews((current) => [{ ...review, id: result.data?.id }, ...current]);
     formElement.reset();
     setReviewSent(true);
     setReviewSubmitting(false);
@@ -400,8 +415,6 @@ export default function Home() {
   };
 
   const activeInquiry = inquiryModes.find((mode) => mode.key === inquiryMode) ?? inquiryModes[0];
-  const visibleTrips = tripCategory === "all" ? trips : trips.filter((trip) => trip.category === tripCategory);
-
   return (
     <main className="home-redesign">
       <HomeHero onSubmit={openTripBrief} secondaryHref="#categories" />
@@ -479,17 +492,13 @@ export default function Home() {
 
         <section className="home-redesign-section home-trips-section" id="trips">
           <SectionHeading eyebrow="The days you will remember" title="Signature trips, thoughtfully made." description="Not a checklist. A point of view — built around atmosphere, timing and the people who make a place feel real." action={{ label: "See every experience", href: "/tours-experiences" }} />
-          <div className="home-trip-category-rail" role="tablist" aria-label="Egypt trip categories">
-            {tripCategories.map((category) => <button key={category.key} type="button" role="tab" aria-selected={tripCategory === category.key} className={`home-trip-category home-tone-${category.tone} ${tripCategory === category.key ? "active" : ""}`} onClick={() => setTripCategory(category.key)}><span className="home-trip-category-icon"><Icon name={category.icon} size={17} /></span><span><strong>{category.label}</strong><small>{category.detail}</small></span></button>)}
-          </div>
-          <div className="home-trips-grid">
-            {visibleTrips.map((trip, index) => (
-              <Link key={trip.title} href={trip.href} className={"home-trip-card home-tone-" + trip.tone}>
-                <div className="home-trip-image" style={{ backgroundImage: "url('" + trip.image + "')" }} />
-                <div className="home-trip-top"><span>0{index + 1}</span><span>{trip.duration}</span></div>
-                <div className="home-trip-content"><p>{trip.location} · {trip.duration}</p><h3>{trip.title}</h3><span>{trip.description}</span><b>View the experience <Icon name="arrow" size={14} /></b></div>
-              </Link>
-            ))}
+          <div className="home-trip-category-grid" aria-label="Egypt trip categories">
+            {tripCategories.map((category, index) => <Link key={category.key} href={category.href} aria-label={`Browse ${category.label}`} className={`home-trip-category-card home-tone-${category.tone}`}>
+              <span className="home-trip-category-card-image" style={{ backgroundImage: "url('" + category.image + "')" }} />
+              <span className="home-trip-category-card-overlay" />
+              <span className="home-trip-category-card-top"><span className="home-trip-category-number">{String(index + 1).padStart(2, "0")}</span><span className="home-trip-category-icon"><Icon name={category.icon} size={17} /></span></span>
+              <span className="home-trip-category-card-copy"><strong>{category.label}</strong><small>{category.detail}</small></span>
+            </Link>)}
           </div>
         </section>
 
@@ -520,11 +529,11 @@ export default function Home() {
                   <span><small>{storyAudioOpen ? "Now playing in AlpNile" : "Listen to the story"}</small><strong>Ancient Egypt · soundtrack</strong></span>
                   <Icon name="arrow" size={15} />
                 </button>
-                {storyAudioOpen && <div id="alpnile-story-audio" className="audio-player-preview home-market-audio-player"><iframe title="Ancient Egypt soundtrack" src={marketSongEmbedUrl} loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen /></div>}
-                <Link className="home-redesign-primary-button home-market-archive-cta" href="/local-life">Explore local life <Icon name="arrow" size={15} /></Link>
+                {storyAudioOpen && <iframe id="alpnile-story-audio" className="home-market-audio-frame" title="Ancient Egypt soundtrack" src={marketSongEmbedUrl} allow="autoplay; encrypted-media; picture-in-picture" />}
+                <Link className="home-redesign-primary-button home-market-archive-cta" href="/market">Explore the market <Icon name="arrow" size={15} /></Link>
               </div>
               <div className="home-market-archive-explore">
-                <div className="home-market-explore-head"><div><p className="home-redesign-eyebrow">Objects with a sense of place</p><h3>Explore artifacts</h3></div><Link href="/local-life">View all <Icon name="arrow" size={13} /></Link></div>
+                <div className="home-market-explore-head"><div><p className="home-redesign-eyebrow">Objects with a sense of place</p><h3>Explore artifacts</h3></div><Link href="/market">View all <Icon name="arrow" size={13} /></Link></div>
                 <div className="home-market-artifact-grid">
                   {products.map((product, index) => <Link key={product.name} href={product.href} className="home-market-artifact-card"><span className="home-market-artifact-number">0{index + 1}</span><div className="home-market-artifact-image" style={{ backgroundImage: "url('" + product.image + "')" }} /><span className="home-market-artifact-copy"><strong>{product.name}</strong><small>{product.detail}</small></span><Icon name="arrow" size={13} /></Link>)}
                 </div>

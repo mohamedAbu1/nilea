@@ -28,6 +28,29 @@ export async function insertInquiry(payload: InquiryPayload) {
   return { error };
 }
 
+export type TripBookingPayload = {
+  trip_id?: string;
+  full_name: string;
+  email?: string;
+  phone?: string;
+  start_date: string;
+  end_date?: string;
+  guests: number;
+  notes?: string;
+};
+
+export async function insertTripBooking(payload: TripBookingPayload) {
+  if (!supabase) return { error: new Error("Supabase is not configured") };
+  const userId = await currentUserId();
+  const { error } = await supabase.from("trip_bookings").insert({
+    ...payload,
+    user_id: userId,
+    trip_id: payload.trip_id ?? null,
+    end_date: payload.end_date || null,
+  });
+  return { error };
+}
+
 export type CarBookingPayload = {
   full_name: string;
   phone: string;
@@ -95,20 +118,14 @@ function getVisitorKey() {
 export async function toggleReviewLike(reviewId: string) {
   if (!supabase) return { liked: false, count: 0, error: new Error("Supabase is not configured") };
   const visitorKey = getVisitorKey();
-  const existing = await supabase.from("review_likes").select("review_id").eq("review_id", reviewId).eq("visitor_key", visitorKey).maybeSingle();
-  if (existing.error) return { liked: false, count: 0, error: existing.error };
-  const liked = !existing.data;
-  const mutation = liked
-    ? await supabase.from("review_likes").insert({ review_id: reviewId, visitor_key: visitorKey })
-    : await supabase.from("review_likes").delete().eq("review_id", reviewId).eq("visitor_key", visitorKey);
-  if (mutation.error) return { liked: !liked, count: 0, error: mutation.error };
-  const countResult = await supabase.from("review_likes").select("review_id", { count: "exact", head: true }).eq("review_id", reviewId);
-  return { liked, count: countResult.count ?? 0, error: countResult.error };
+  const result = await supabase.rpc("toggle_review_like", { p_review_id: reviewId, p_visitor_key: visitorKey }).single();
+  if (result.error || !result.data) return { liked: false, count: 0, error: result.error ?? new Error("Unable to update review like") };
+  const likeState = result.data as { liked?: boolean; like_count?: number };
+  return { liked: Boolean(likeState.liked), count: Number(likeState.like_count ?? 0), error: null };
 }
 
 export async function subscribeToNewsletter(email: string) {
   if (!supabase) return { error: new Error("Supabase is not configured") };
-  const userId = await currentUserId();
-  const { error } = await supabase.from("newsletter_subscribers").upsert({ email: email.toLowerCase(), user_id: userId, is_active: true }, { onConflict: "email" });
+  const { error } = await supabase.rpc("subscribe_to_newsletter", { p_email: email.toLowerCase() });
   return { error };
 }

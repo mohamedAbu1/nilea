@@ -33,7 +33,7 @@ function isActive(key: NavKey, pathname: string) {
 
 const searchItems = [
   { label: "Destinations", detail: "Safaga, Marsa Alam, Luxor, Aswan, Cairo and Hurghada", href: "/destinations" },
-  { label: "Local Life & Dining", detail: "Restaurants, cafés, markets and local moments", href: "/local-life" },
+  { label: "Travel Market", detail: "Handmade Egyptian objects, keepsakes and gifts", href: "/market" },
   { label: "Stays & Hotels", detail: "Riverfront stays and historic hotels", href: "/stays-hotels" },
   { label: "Tours & Experiences", detail: "Curated journeys with local experts", href: "/tours-experiences" },
   { label: "Smart Guide", detail: "Build a personalized Nile itinerary", href: "/trip-planner" },
@@ -48,8 +48,8 @@ const footerContact = {
 };
 
 const socialLinks = [
-  { label: "Instagram", handle: "@alpnile", href: "https://www.instagram.com/alpnile", kind: "instagram" },
-  { label: "Facebook", handle: "AlpNile", href: "https://www.facebook.com/alpnile", kind: "facebook" },
+  { label: "Instagram", handle: "@alpnile", href: "https://www.instagram.com/alpnile/", kind: "instagram" },
+  { label: "Facebook", handle: "AlpNile", href: "https://www.facebook.com/profile.php?id=61596060581090", kind: "facebook" },
   { label: "Gmail", handle: "hello@alpnile.com", href: "mailto:hello@alpnile.com", kind: "gmail" },
   { label: "Tripadvisor", handle: "AlpNile", href: "https://www.tripadvisor.com/Search?q=AlpNile", kind: "tripadvisor" },
   { label: "TikTok", handle: "@alpnile", href: "https://www.tiktok.com/@alpnile", kind: "tiktok" },
@@ -65,6 +65,8 @@ function SocialIcon({ kind }: { kind: (typeof socialLinks)[number]["kind"] }) {
 
 export function SiteHeader() {
   const pathname = usePathname() || "/";
+  const staysChrome = pathname.startsWith("/stays-hotels");
+  const marketChrome = pathname.startsWith("/market");
   const { locale, setLocale, t } = useLanguage();
   const showPrimaryNavigation = true;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -172,7 +174,7 @@ export function SiteHeader() {
   };
 
   return (
-    <header className="site-header">
+    <header className={`site-header ${staysChrome ? "site-stays-chrome" : ""} ${marketChrome ? "site-market-chrome" : ""}`.trim()}>
       <div className="site-header-inner">
         <BrandLogo href="/" />
         {showPrimaryNavigation && (
@@ -203,7 +205,7 @@ export function SiteHeader() {
             </button>
           )}
           <div className="site-user-area">
-            <button type="button" className="site-user-profile" aria-label={account ? `Open traveler profile for ${account.name}` : "Open account access"} aria-expanded={accountMenuOpen} onClick={() => account ? setAccountMenuOpen((open) => !open) : openAccount("login")}><img src={account?.avatar ?? "/alpnile-profile-avatar.webp"} alt={account ? `${account.name} profile` : "Traveler avatar"} /><span><small>{account ? "Signed in" : "Welcome back"}</small><strong>{account?.name ?? "Traveler"}</strong></span></button>
+             <button type="button" className="site-user-profile" aria-label={account ? `Open traveler profile for ${account.name}` : "Open account access"} aria-expanded={accountMenuOpen} onClick={() => account ? setAccountMenuOpen((open) => !open) : openAccount("login")}><img src={account?.avatar ?? "/alpnile-profile-avatar.webp"} alt={account ? `${account.name} profile` : "Traveler avatar"} /><span><small>{account ? "Signed in" : "Traveler access"}</small><strong>{account?.name ?? "Traveler"}</strong></span></button>
             {account ? <button type="button" className="site-header-login" onClick={signOut}>Log out <span aria-hidden="true">↗</span></button> : <button type="button" className="site-header-login" onClick={() => openAccount("login")}>Log in <span className="site-plan-icon pharaonic-ui-icon pharaonic-ui-arrow" aria-hidden="true" /></button>}
             {account && accountMenuOpen && <div className="site-account-popover" role="dialog" aria-label="Traveler profile"><div className="site-account-popover-head"><img src={account.avatar} alt="" /><span><small>Traveler account</small><strong>{account.name}</strong></span></div><p>{account.email}</p><button type="button" onClick={() => openAccount("login")}>Manage account <span aria-hidden="true">↗</span></button></div>}
           </div>
@@ -241,6 +243,9 @@ export function SiteHeader() {
 }
 
 export function SiteFooter() {
+  const pathname = usePathname() || "/";
+  const staysChrome = pathname.startsWith("/stays-hotels");
+  const marketChrome = pathname.startsWith("/market");
   const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [newsletterSubmitted, setNewsletterSubmitted] = useState(false);
@@ -264,7 +269,7 @@ export function SiteFooter() {
   };
 
   return (
-    <footer className="site-footer">
+    <footer className={`site-footer ${staysChrome ? "site-stays-chrome" : ""} ${marketChrome ? "site-market-chrome" : ""}`.trim()}>
       <div className="site-footer-inner">
         <div className="site-footer-brand">
           <BrandLogo href="/" />
@@ -284,10 +289,20 @@ export function SiteFooter() {
           <p className="site-footer-label">More routes</p>
           <nav className="site-footer-links" aria-label="More routes navigation">
             <Link href="/destinations">{t("Destinations")}</Link>
-            <Link href="/local-life">{t("Local Life")}</Link>
+            <Link href="/market">{t("Travel Market")}</Link>
             <Link href="/stays-hotels">{t("Stays")}</Link>
             <Link href="/trip-planner">{t("Smart Guide")}</Link>
           </nav>
+          {marketChrome && <>
+            <p className="site-footer-label site-market-footer-label">Market</p>
+            <nav className="site-footer-links site-market-footer-links" aria-label="Market navigation">
+              <Link href="/market#bazaar-catalog">All products</Link>
+              <Link href="/market?category=Travel%20keepsakes#bazaar-catalog">Travel keepsakes</Link>
+              <Link href="/market?category=Home%20%26%20light#bazaar-catalog">Home &amp; light</Link>
+              <Link href="/market?category=Spices%20%26%20scents#bazaar-catalog">Spices &amp; scents</Link>
+              <Link href="/market?category=Paper%20%26%20gifts#bazaar-catalog">Paper &amp; gifts</Link>
+            </nav>
+          </>}
         </div>
         <div className="site-footer-column">
           <p className="site-footer-label">Policies</p>
