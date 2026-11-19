@@ -3,21 +3,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-type IconName = "calendar" | "chevron" | "sun" | "culture" | "adventure" | "luxury" | "family" | "sparkle" | "bookmark" | "share" | "plus" | "arrow" | "route" | "compass" | "clock" | "car" | "guide" | "utensils" | "accessibility" | "paw" | "users" | "check" | "minus";
-type TravelStyle = "Culture" | "Adventure" | "Luxury" | "Family";
+type IconName = "calendar" | "chevron" | "sun" | "culture" | "adventure" | "luxury" | "family" | "sparkle" | "bookmark" | "share" | "plus" | "arrow" | "route" | "compass" | "clock" | "car" | "guide" | "utensils" | "accessibility" | "paw" | "users" | "check" | "minus" | "beach" | "wellness" | "nature";
+type TravelStyle = "Culture" | "Adventure" | "Beach" | "Nature" | "Food" | "Wellness" | "Luxury" | "Family";
 type PlannerStep = 1 | 2 | 3;
 
 type Landmark = { id: string; title: string; meta: string; description: string; image: string };
 type Experience = { id: string; title: string; meta: string; description: string; duration: string; price: number; image: string };
 type Destination = { id: string; name: string; region: string; summary: string; image: string; landmarks: Landmark[]; experiences: Experience[] };
-type DayPlan = { destinationId: string; landmarkIds: string[]; landmarkTimes: Record<string, string>; experienceIds: string[]; experienceTimes: Record<string, string>; guideId: string; vehicleId: string };
+type DayPlan = { destinationId: string; landmarkIds: string[]; landmarkTimes: Record<string, string>; experienceIds: string[]; experienceTimes: Record<string, string>; guideId: string; guideLanguage: string; vehicleId: string };
 
 const travelStyles: { label: TravelStyle; detail: string; icon: IconName }[] = [
   { label: "Culture", detail: "History, art & local stories", icon: "culture" },
   { label: "Adventure", detail: "Water, desert & open air", icon: "adventure" },
+  { label: "Beach", detail: "Reefs, islands & sea time", icon: "beach" },
+  { label: "Nature", detail: "Oases, wildlife & landscapes", icon: "nature" },
+  { label: "Food", detail: "Markets, kitchens & tastings", icon: "utensils" },
+  { label: "Wellness", detail: "Slow mornings & restoration", icon: "wellness" },
   { label: "Luxury", detail: "Private, polished & unhurried", icon: "luxury" },
   { label: "Family", detail: "Easy pace for every age", icon: "family" },
 ];
+
+const guideLanguages = ["English", "Arabic", "French", "German", "Spanish", "Italian", "Russian"];
 
 const guideOptions = [
   { id: "local", title: "Local host", meta: "Warm stories from someone who lives here", price: 35, icon: "guide" as IconName },
@@ -35,31 +41,31 @@ const destinations: Destination[] = [
   {
     id: "giza", name: "Giza", region: "Greater Cairo", summary: "Pyramids, ancient wonders and an unforgettable first morning.", image: "/alpnile-destination-cairo.webp",
     landmarks: [
-      { id: "pyramids", title: "Pyramids of Giza", meta: "Signature · 2–3 hours", description: "Walk through the plateau with time for the best viewpoints and quiet corners.", image: "/alpnile-destination-cairo.webp" },
-      { id: "sphinx", title: "The Sphinx", meta: "Ancient landmark · 1 hour", description: "A calm visit to the guardian of the plateau before the crowds arrive.", image: "/alpnile-destination-cairo.webp" },
+      { id: "pyramids", title: "Pyramids of Giza", meta: "Signature · 2–3 hours", description: "Walk through the plateau with time for the best viewpoints and quiet corners.", image: "/trips/tour-of-the-grand-museum-and-giza-pyramids-with-lunch-from-cairo.png" },
+      { id: "sphinx", title: "The Sphinx", meta: "Ancient landmark · 1 hour", description: "A calm visit to the guardian of the plateau before the crowds arrive.", image: "/trips/discover-the-grand-museum-and-giza-pyramids-by-plane-from-sharm-el-sheikh.png" },
       { id: "grand-museum", title: "Grand Egyptian Museum", meta: "Museum · 2–3 hours", description: "A spacious introduction to Egypt’s objects, dynasties and visual language.", image: "/trips/grand-museum-giza-from-marsa-alam.png" },
     ],
     experiences: [
-      { id: "sunrise-pyramids", title: "Sunrise at the pyramids", meta: "Early start · Private entry planning", description: "Begin before the heat with a considered route around the plateau.", duration: "3h", price: 70, image: "/alpnile-destination-cairo.webp" },
+      { id: "sunrise-pyramids", title: "Sunrise at the pyramids", meta: "Early start · Private entry planning", description: "Begin before the heat with a considered route around the plateau.", duration: "3h", price: 70, image: "/trips/curated-night-at-the-temple.png" },
       { id: "cairo-food", title: "Old Cairo food walk", meta: "Local life · Tastings included", description: "Small bites, family kitchens and stories from the old lanes.", duration: "3h", price: 55, image: "/trips/curated-cairo-food-walk.png" },
     ],
   },
   {
-    id: "cairo", name: "Cairo", region: "The capital", summary: "Museums, old streets and the energy of modern Egypt.", image: "/alpnile-destination-cairo.webp",
+    id: "cairo", name: "Cairo", region: "The capital", summary: "Museums, old streets and the energy of modern Egypt.", image: "/trips/added/islamic-cairo-al-muizz-and-khan-el-khalili-evening.png",
     landmarks: [
-      { id: "islamic-cairo", title: "Islamic Cairo", meta: "Heritage walk · 2 hours", description: "A hand-picked route through mosques, courtyards and historic craft streets.", image: "/trips/added/islamic-cairo-al-muizz-and-khan-el-khalili-evening.png" },
+      { id: "islamic-cairo", title: "Islamic Cairo", meta: "Heritage walk · 2 hours", description: "A hand-picked route through mosques, courtyards and historic craft streets.", image: "/trips/tour-of-civilization-museum-and-salah-el-din-citadel-with-el-khan-bazaar-from-ca.png" },
       { id: "khan-el-khalili", title: "Khan el-Khalili", meta: "Market · 1–2 hours", description: "Choose a slower market walk with time for coffee and small finds.", image: "/alpnile-near-khan-market.webp" },
       { id: "civilization-museum", title: "Civilization Museum", meta: "Museum · 2 hours", description: "A clear, atmospheric journey through Egypt’s long human story.", image: "/trips/added/coptic-cairo-national-civilization-museum.png" },
     ],
     experiences: [
       { id: "cairo-food", title: "Cairo food walk", meta: "Local life · Tastings included", description: "A relaxed tasting route with the places locals actually return to.", duration: "3h", price: 55, image: "/trips/curated-cairo-food-walk.png" },
-      { id: "night-at-temple", title: "Night at the temple", meta: "Evening · Light and sound", description: "Keep the evening open for a cinematic after-dark visit.", duration: "2h", price: 48, image: "/trips/curated-night-at-the-temple.png" },
+      { id: "night-at-temple", title: "Night at the temple", meta: "Evening · Light and sound", description: "Keep the evening open for a cinematic after-dark visit.", duration: "2h", price: 48, image: "/trips/experience-the-sound-and-light-show-of-philae-temple.png" },
     ],
   },
   {
     id: "luxor", name: "Luxor", region: "The West & East Bank", summary: "Temples, tombs and the stories that made the Nile eternal.", image: "/alpnile-destination-luxor.webp",
     landmarks: [
-      { id: "karnak", title: "Karnak Temple", meta: "Temple complex · 2 hours", description: "Use an expert route through the columns, sanctuary and sacred lake.", image: "/alpnile-destination-luxor.webp" },
+      { id: "karnak", title: "Karnak Temple", meta: "Temple complex · 2 hours", description: "Use an expert route through the columns, sanctuary and sacred lake.", image: "/trips/tour-of-karnak-and-luxor-temples-with-the-sphinx-alley-from-luxor.png" },
       { id: "valley-kings", title: "Valley of the Kings", meta: "Royal tombs · 2–3 hours", description: "Select the right tombs for your pace rather than rushing through them all.", image: "/trips/valley-of-the-kings-and-hatshepsut-temple-with-felucca-experience-from-luxor.png" },
       { id: "medinat-habu", title: "Medinat Habu", meta: "Temple · 1 hour", description: "A quieter West Bank stop with vivid reliefs and generous space.", image: "/trips/tour-of-valley-of-the-nobles-medinat-habu-and-the-ramesseum-from-luxor.png" },
     ],
@@ -72,12 +78,12 @@ const destinations: Destination[] = [
     id: "aswan", name: "Aswan", region: "Nubia & the Nile", summary: "Warm light, Nubian hospitality and the river at its most generous.", image: "/alpnile-destination-abu-simbel.webp",
     landmarks: [
       { id: "philae", title: "Philae Temple", meta: "Island temple · 2 hours", description: "Arrive by boat and let the island reveal itself at an easy pace.", image: "/trips/added/aswan-philae-high-dam-and-nubian-village.png" },
-      { id: "nubian-village", title: "Nubian village", meta: "Local life · 2 hours", description: "A respectful, hosted visit with time for tea and conversation.", image: "/trips/added/aswan-philae-high-dam-and-nubian-village.png" },
+      { id: "nubian-village", title: "Nubian village", meta: "Local life · 2 hours", description: "A respectful, hosted visit with time for tea and conversation.", image: "/trips/explore-the-nubian-village-by-traditional-felucca-plus-authentic-lunch.png" },
       { id: "abu-simbel", title: "Abu Simbel", meta: "Day trip · 4–5 hours", description: "A well-paced private transfer to one of Egypt’s great southern monuments.", image: "/trips/abu-simbel-day-trip-from-aswan-round-trip-by-car.png" },
     ],
     experiences: [
-      { id: "nubian-lunch", title: "Nubian lunch by the river", meta: "Food · Hosted table", description: "A generous meal with the color and welcome of southern Egypt.", duration: "2h", price: 45, image: "/trips/added/aswan-philae-high-dam-and-nubian-village.png" },
-      { id: "felucca-sunset", title: "Sunset felucca sail", meta: "Nile time · Golden hour", description: "Float past the islands as the temperature softens.", duration: "2h", price: 65, image: "/alpnile-tour-nile-sunset.webp" },
+      { id: "nubian-lunch", title: "Nubian lunch by the river", meta: "Food · Hosted table", description: "A generous meal with the color and welcome of southern Egypt.", duration: "2h", price: 45, image: "/trips/experience-the-sound-and-light-show-of-philae-temple.png" },
+      { id: "felucca-sunset", title: "Sunset felucca sail", meta: "Nile time · Golden hour", description: "Float past the islands as the temperature softens.", duration: "2h", price: 65, image: "/trips/lake-nasser-abu-simbel-cruise.png" },
     ],
   },
   {
@@ -88,16 +94,16 @@ const destinations: Destination[] = [
       { id: "hurghada-city", title: "Hurghada city life", meta: "City walk · 2 hours", description: "A short route through local cafés, markets and waterfront light.", image: "/trips/hurghada-city-local-life.png" },
     ],
     experiences: [
-      { id: "giftun-snorkel", title: "Giftun snorkeling cruise", meta: "Sea day · Lunch included", description: "A simple, bright day on the water with room to choose your pace.", duration: "6h", price: 95, image: "/trips/added/hurghada-giftun-islands-snorkeling-day.png" },
+      { id: "giftun-snorkel", title: "Giftun snorkeling cruise", meta: "Sea day · Lunch included", description: "A simple, bright day on the water with room to choose your pace.", duration: "6h", price: 95, image: "/trips/discover-magawish-island-with-snorkeling-cruise-and-lunch-in-hurghada.png" },
       { id: "desert-safari", title: "Desert safari & camel ride", meta: "Adventure · Sunset", description: "Trade the coast for open desert, a short ride and Bedouin tea.", duration: "5h", price: 80, image: "/trips/super-4x4-safari-with-sand-buggies-camel-ride-in-marsa-alam.png" },
     ],
   },
   {
-    id: "marsa-alam", name: "Marsa Alam", region: "Wild Red Sea", summary: "Quiet coastlines, reef mornings and a little more space.", image: "/alpnile-destination-hurghada-v2.webp",
+    id: "marsa-alam", name: "Marsa Alam", region: "Wild Red Sea", summary: "Quiet coastlines, reef mornings and a little more space.", image: "/trips/curated-marsa-alam-wild-coast.png",
     landmarks: [
-      { id: "wild-coast", title: "Wild Red Sea coast", meta: "Nature · Half day", description: "A low-key coastline route away from the busiest resorts.", image: "/trips/curated-marsa-alam-wild-coast.png" },
-      { id: "coral-garden", title: "Coral garden", meta: "Snorkeling · 3 hours", description: "Clear water and a gentle reef route with a local sea guide.", image: "/trips/curated-marsa-alam-nature-trail.png" },
-      { id: "wadi-el-gemal", title: "Wadi El Gemal", meta: "National park · Full day", description: "Desert, mangroves and coastline in one beautifully varied day.", image: "/trips/curated-marsa-alam-nature-trail.png" },
+      { id: "wild-coast", title: "Wild Red Sea coast", meta: "Nature · Half day", description: "A low-key coastline route away from the busiest resorts.", image: "/trips/discover-magawish-island-with-snorkeling-cruise-and-lunch-in-hurghada.png" },
+      { id: "coral-garden", title: "Coral garden", meta: "Snorkeling · 3 hours", description: "Clear water and a gentle reef route with a local sea guide.", image: "/trips/curated-red-sea-coral-garden.png" },
+      { id: "wadi-el-gemal", title: "Wadi El Gemal", meta: "National park · Full day", description: "Desert, mangroves and coastline in one beautifully varied day.", image: "/trips/added/hurghada-dolphin-house-snorkeling-and-lunch.png" },
     ],
     experiences: [
       { id: "nature-trail", title: "Marsa Alam nature trail", meta: "Nature · Small group", description: "A slower land route for wildlife, desert textures and wide views.", duration: "5h", price: 75, image: "/trips/curated-marsa-alam-nature-trail.png" },
@@ -108,35 +114,35 @@ const destinations: Destination[] = [
     id: "siwa", name: "Siwa", region: "Western Desert", summary: "Salt lakes, palms and the kind of quiet you remember.", image: "/alpnile-destination-siwa.webp",
     landmarks: [
       { id: "salt-lakes", title: "Siwa salt lakes", meta: "Nature · 2 hours", description: "A restorative float and a wide-open desert horizon.", image: "/trips/added/siwa-oasis-salt-lakes-and-great-sand-sea.png" },
-      { id: "shali", title: "Shali Fortress", meta: "Heritage · 1 hour", description: "Walk through the old mud-brick heart of the oasis.", image: "/trips/added/siwa-oasis-salt-lakes-and-great-sand-sea.png" },
-      { id: "great-sand-sea", title: "Great Sand Sea", meta: "Desert · Sunset", description: "Dunes, tea and a final light show made by the landscape itself.", image: "/trips/added/siwa-oasis-salt-lakes-and-great-sand-sea.png" },
+      { id: "shali", title: "Shali Fortress", meta: "Heritage · 1 hour", description: "Walk through the old mud-brick heart of the oasis.", image: "/trips/added/bahariya-white-desert-two-day-camp.png" },
+      { id: "great-sand-sea", title: "Great Sand Sea", meta: "Desert · Sunset", description: "Dunes, tea and a final light show made by the landscape itself.", image: "/trips/from-cairo-desert-safari-camel-ride-magic-lake-lunch.png" },
     ],
     experiences: [
-      { id: "salt-lake-float", title: "Salt lake float", meta: "Wellness · Gentle pace", description: "A quiet reset in the mineral-rich lakes beyond the oasis.", duration: "3h", price: 52, image: "/trips/added/siwa-oasis-salt-lakes-and-great-sand-sea.png" },
-      { id: "desert-safari", title: "Great Sand Sea safari", meta: "Adventure · Sunset", description: "A golden desert run with a simple camp-style dinner.", duration: "5h", price: 90, image: "/trips/added/siwa-oasis-salt-lakes-and-great-sand-sea.png" },
+      { id: "salt-lake-float", title: "Salt lake float", meta: "Wellness · Gentle pace", description: "A quiet reset in the mineral-rich lakes beyond the oasis.", duration: "3h", price: 52, image: "/trips/fayoum-magic-lake-desert.png" },
+      { id: "desert-safari", title: "Great Sand Sea safari", meta: "Adventure · Sunset", description: "A golden desert run with a simple camp-style dinner.", duration: "5h", price: 90, image: "/trips/ultimate-desert-experience-quad-biking-camel-ride-bedouin-dinner-and-show.png" },
     ],
   },
   {
     id: "alexandria", name: "Alexandria", region: "Mediterranean coast", summary: "Sea air, layered history and an elegant change of rhythm.", image: "/alpnile-destination-alexandria.webp",
     landmarks: [
-      { id: "bibliotheca", title: "Bibliotheca Alexandrina", meta: "Culture · 2 hours", description: "A clean, thoughtful museum and library stop by the sea.", image: "/alpnile-destination-alexandria.webp" },
-      { id: "catacombs", title: "Catacombs of Kom El Shoqafa", meta: "Ancient · 1 hour", description: "A compact underground story where cultures meet.", image: "/alpnile-destination-alexandria.webp" },
-      { id: "corniche", title: "Corniche & seafood", meta: "Local life · 2 hours", description: "Keep the afternoon open for the waterfront and a long lunch.", image: "/alpnile-destination-alexandria.webp" },
+      { id: "bibliotheca", title: "Bibliotheca Alexandrina", meta: "Culture · 2 hours", description: "A clean, thoughtful museum and library stop by the sea.", image: "/trips/one-day-alexandria-trip-from-cairo.png" },
+      { id: "catacombs", title: "Catacombs of Kom El Shoqafa", meta: "Ancient · 1 hour", description: "A compact underground story where cultures meet.", image: "/trips/dendera-abydos-from-hurghada.png" },
+      { id: "corniche", title: "Corniche & seafood", meta: "Local life · 2 hours", description: "Keep the afternoon open for the waterfront and a long lunch.", image: "/trips/hurghada-city-local-life.png" },
     ],
     experiences: [
-      { id: "alexandria-food", title: "Mediterranean food route", meta: "Food · Local tables", description: "Fresh seafood, bakeries and small places with a sea view.", duration: "3h", price: 60, image: "/trips/one-day-alexandria-trip-from-cairo.png" },
-      { id: "coastal-day", title: "Alexandria day escape", meta: "Culture · Private route", description: "A flexible day linking the city’s most atmospheric chapters.", duration: "6h", price: 95, image: "/trips/one-day-alexandria-trip-from-cairo.png" },
+      { id: "alexandria-food", title: "Mediterranean food route", meta: "Food · Local tables", description: "Fresh seafood, bakeries and small places with a sea view.", duration: "3h", price: 60, image: "/trips/curated-cairo-food-walk.png" },
+      { id: "coastal-day", title: "Alexandria day escape", meta: "Culture · Private route", description: "A flexible day linking the city’s most atmospheric chapters.", duration: "6h", price: 95, image: "/trips/discover-the-grand-museum-and-giza-pyramids-by-plane-from-sharm-el-sheikh.png" },
     ],
   },
   {
-    id: "abu-simbel", name: "Abu Simbel", region: "Lake Nasser", summary: "Monumental temples, quiet roads and a powerful southern finale.", image: "/alpnile-destination-abu-simbel.webp",
+    id: "abu-simbel", name: "Abu Simbel", region: "Lake Nasser", summary: "Monumental temples, quiet roads and a powerful southern finale.", image: "/trips/added/abu-simbel-sunrise-and-lake-nasser.png",
     landmarks: [
-      { id: "great-temple", title: "Great Temple of Ramses II", meta: "Signature · 2 hours", description: "Leave time to understand the scale, alignment and story of the temple.", image: "/alpnile-destination-abu-simbel.webp" },
-      { id: "small-temple", title: "Temple of Nefertari", meta: "Temple · 1 hour", description: "The smaller temple carries some of the most intimate reliefs in Egypt.", image: "/alpnile-destination-abu-simbel.webp" },
-      { id: "lake-nasser", title: "Lake Nasser outlook", meta: "Landscape · 1 hour", description: "A quiet pause beside the water before the return journey.", image: "/trips/added/abu-simbel-sunrise-and-lake-nasser.png" },
+      { id: "great-temple", title: "Great Temple of Ramses II", meta: "Signature · 2 hours", description: "Leave time to understand the scale, alignment and story of the temple.", image: "/trips/abu-simbel-day-trip-from-aswan-round-trip-by-car.png" },
+      { id: "small-temple", title: "Temple of Nefertari", meta: "Temple · 1 hour", description: "The smaller temple carries some of the most intimate reliefs in Egypt.", image: "/trips/luxor-deluxe-temples.png" },
+      { id: "lake-nasser", title: "Lake Nasser outlook", meta: "Landscape · 1 hour", description: "A quiet pause beside the water before the return journey.", image: "/trips/5-days-4-nights-nile-cruise-from-luxor-to-aswan.png" },
     ],
     experiences: [
-      { id: "abu-simbel-sunrise", title: "Abu Simbel sunrise", meta: "Signature · Early entry", description: "Reach the temples in the softer light and leave space for the drive back.", duration: "7h", price: 135, image: "/trips/added/abu-simbel-sunrise-and-lake-nasser.png" },
+      { id: "abu-simbel-sunrise", title: "Abu Simbel sunrise", meta: "Signature · Early entry", description: "Reach the temples in the softer light and leave space for the drive back.", duration: "7h", price: 135, image: "/trips/4-days-3-nights-nile-cruise-from-aswan-to-luxor.png" },
       { id: "lake-nasser-cruise", title: "Lake Nasser by boat", meta: "Water · Slow travel", description: "A different view of the southern landscape from the water.", duration: "4h", price: 105, image: "/trips/lake-nasser-abu-simbel-cruise.png" },
     ],
   },
@@ -151,6 +157,9 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
     case "chevron": return <svg {...common}><path d="m7 9 5 5 5-5" /></svg>;
     case "culture": return <svg {...common}><path d="M4 20h16M5 20V9h14v11M3 9h18M6 6l6-3 6 3v3H6V6ZM8 13v4M12 13v4M16 13v4" /></svg>;
     case "adventure": return <svg {...common}><path d="m4 18 7-12 5 7 4-5" /><path d="M4 18h4M16 13h4" /></svg>;
+    case "beach": return <svg {...common}><path d="M3 18c3-2 6-2 9 0s6 2 9 0M5 14c2-5 5-7 7-7s5 2 7 7M12 7V3" /></svg>;
+    case "nature": return <svg {...common}><path d="M12 21V8M12 14c-4-1-6-3-7-7 4 0 7 1 7 5M12 11c4-1 6-3 7-7-4 0-7 1-7 5" /></svg>;
+    case "wellness": return <svg {...common}><path d="M12 20c-5-3-7-6-7-10 3 0 6 1 7 4 1-3 4-4 7-4 0 4-2 7-7 10Z" /><path d="M12 14V6M9 4h6" /></svg>;
     case "luxury": return <svg {...common}><path d="M5 8h14l-1 11H6L5 8Z" /><path d="M8 8a4 4 0 0 1 8 0M9 12h.01M15 12h.01" /></svg>;
     case "family": return <svg {...common}><circle cx="8" cy="8" r="2.5" /><circle cx="16" cy="8" r="2.5" /><path d="M3.5 19a4.5 4.5 0 0 1 9 0M11.5 19a4.5 4.5 0 0 1 9 0" /></svg>;
     case "sparkle": return <svg {...common}><path d="m12 3 1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3ZM19 16l.7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z" /></svg>;
@@ -175,12 +184,30 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 
 function createDayPlan(destinationId: string): DayPlan {
   const destination = destinations.find((item) => item.id === destinationId) ?? destinations[0];
-  return { destinationId: destination.id, landmarkIds: [destination.landmarks[0].id], landmarkTimes: { [destination.landmarks[0].id]: "09:00" }, experienceIds: [], experienceTimes: {}, guideId: "local", vehicleId: "sedan" };
+  return { destinationId: destination.id, landmarkIds: [destination.landmarks[0].id], landmarkTimes: { [destination.landmarks[0].id]: "09:00" }, experienceIds: [], experienceTimes: {}, guideId: "local", guideLanguage: "English", vehicleId: "sedan" };
 }
 
 function formatDate(value: string) {
   if (!value) return "Choose a start date";
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(`${value}T00:00:00`));
+}
+
+function dateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function calendarDays(month: Date) {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const start = new Date(first);
+  start.setDate(first.getDate() - first.getDay());
+  return Array.from({ length: 42 }, (_, index) => {
+    const day = new Date(start);
+    day.setDate(start.getDate() + index);
+    return day;
+  });
 }
 
 export default function TripPlannerPage() {
@@ -192,6 +219,7 @@ export default function TripPlannerPage() {
   const [budget, setBudget] = useState(1500);
   const [travelers, setTravelers] = useState(2);
   const [startDate, setStartDate] = useState("");
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [food, setFood] = useState("local");
   const [accessibilityNeeds, setAccessibilityNeeds] = useState(false);
   const [pets, setPets] = useState(false);
@@ -205,6 +233,8 @@ export default function TripPlannerPage() {
   const selectedLandmarks = currentDestination.landmarks.filter((item) => currentPlan.landmarkIds.includes(item.id));
   const selectedExperiences = currentDestination.experiences.filter((item) => currentPlan.experienceIds.includes(item.id));
   const itineraryCount = plannedDays.reduce((total, plan) => total + plan.landmarkIds.length + plan.experienceIds.length, 0);
+  const monthDays = useMemo(() => calendarDays(calendarMonth), [calendarMonth]);
+  const todayKey = dateKey(new Date());
 
   const estimatedTotal = useMemo(() => {
     const guideTotal = plannedDays.reduce((total, plan) => total + (guideOptions.find((option) => option.id === plan.guideId)?.price ?? 0), 0);
@@ -233,10 +263,17 @@ export default function TripPlannerPage() {
     if (destinationId) setDayPlans((plans) => plans.map((plan, index) => index === 0 ? createDayPlan(destinationId) : plan));
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!startDate) return;
+    const selected = new Date(`${startDate}T00:00:00`);
+    setCalendarMonth(new Date(selected.getFullYear(), selected.getMonth(), 1));
+  }, [startDate]);
+
   const changeDuration = (value: number) => {
-    setDuration(value);
-    setDayPlans((plans) => value <= plans.length ? plans.slice(0, value) : [...plans, ...Array.from({ length: value - plans.length }, (_, index) => createDayPlan(destinations[(plans.length + index) % destinations.length].id))]);
-    setSelectedDay((day) => Math.min(day, value));
+    const nextDuration = Math.max(1, Math.min(30, Math.round(value) || 1));
+    setDuration(nextDuration);
+    setDayPlans((plans) => nextDuration <= plans.length ? plans.slice(0, nextDuration) : [...plans, ...Array.from({ length: nextDuration - plans.length }, (_, index) => createDayPlan(destinations[(plans.length + index) % destinations.length].id))]);
+    setSelectedDay((day) => Math.min(day, nextDuration));
     setJourneyBuilt(false);
   };
 
@@ -301,6 +338,8 @@ export default function TripPlannerPage() {
 
         <section className="smart-planner-footer-note"><span><Icon name="sparkle" size={14} /> AlpNile concierge</span><p>We turn your choices into a route that leaves room for the unexpected.</p><span>{journeyBuilt ? "Your plan is ready" : "Designed for real days, not checklists"}</span></section>
       </div>
+      {step === 1 && <section className="smart-calendar-dock" aria-labelledby="calendar-dock-title"><div className="smart-calendar-dock-copy"><p className="smart-planner-eyebrow"><Icon name="calendar" size={14} /> Choose your start date</p><h2 id="calendar-dock-title">Put the first day on the calendar.</h2><p>Pick any available date. The itinerary will keep the same number of days you selected above.</p><div className="custom-duration-field dock-duration"><label htmlFor="dock-duration">Trip length</label><div><input id="dock-duration" type="number" min="1" max="30" value={duration} onChange={(event) => changeDuration(Number(event.target.value))} /><span>days · up to 30</span></div></div></div><div className="smart-calendar-widget"><div className="smart-calendar-header"><button type="button" onClick={() => setCalendarMonth((month) => new Date(month.getFullYear(), month.getMonth() - 1, 1))} disabled={calendarMonth.getFullYear() === new Date().getFullYear() && calendarMonth.getMonth() === new Date().getMonth()} aria-label="Previous month"><Icon name="chevron" size={17} /></button><strong>{new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(calendarMonth)}</strong><button type="button" onClick={() => setCalendarMonth((month) => new Date(month.getFullYear(), month.getMonth() + 1, 1))} aria-label="Next month"><Icon name="chevron" size={17} /></button></div><div className="smart-calendar-weekdays">{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => <span key={day}>{day}</span>)}</div><div className="smart-calendar-grid">{monthDays.map((day) => { const key = dateKey(day); const selected = key === startDate; const past = key < todayKey; const currentMonth = day.getMonth() === calendarMonth.getMonth() && day.getFullYear() === calendarMonth.getFullYear(); return <button key={key} type="button" className={`${currentMonth ? "current-month" : "outside-month"} ${selected ? "selected" : ""} ${key === todayKey ? "today" : ""}`} disabled={past} onClick={() => { setStartDate(key); setCalendarMonth(new Date(day.getFullYear(), day.getMonth(), 1)); }} aria-pressed={selected}>{day.getDate()}</button>; })}</div><div className="smart-calendar-selected"><span>Selected date</span><strong>{formatDate(startDate)}</strong></div></div></section>}
+      {step === 2 && <section className="smart-guide-language-dock"><div><p className="smart-planner-eyebrow"><Icon name="guide" size={14} /> Guide language</p><h2>Choose the language of your tour guide.</h2><p>The language is saved for the active day and can be different in each destination.</p></div><label htmlFor="guide-language-dock">Tour guide language<select id="guide-language-dock" value={currentPlan.guideLanguage} onChange={(event) => updateCurrentPlan((plan) => ({ ...plan, guideLanguage: event.target.value }))}>{guideLanguages.map((language) => <option key={language}>{language}</option>)}</select></label></section>}
       {notice && <div className="smart-planner-notice" role="status">{notice}</div>}
     </main>
   );
