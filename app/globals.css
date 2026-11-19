@@ -10099,7 +10099,7 @@ footer.site-market-chrome .site-footer-newsletter-success { color: #abd9b2; }
 .fleet-primary-action { color: #24180b; background: linear-gradient(180deg, #f8d697, #d89443); box-shadow: 0 12px 28px rgba(212, 145, 58, .2); }
 .fleet-secondary-action { border: 1px solid rgba(244, 197, 119, .45); color: #f4d18a; background: rgba(244, 197, 119, .05); }
 .fleet-primary-action:hover, .fleet-secondary-action:hover, .fleet-detail-link:hover { filter: brightness(1.08); transform: translateY(-2px); }
-.fleet-hero-art { min-height: 450px; margin: 0 -80px 0 25px; border: 1px solid rgba(244, 197, 119, .33); border-radius: 30px; overflow: hidden; background: linear-gradient(90deg, rgba(6, 19, 29, .85), rgba(6, 19, 29, .08)), url('/vehicles/executive-sedan-front.webp') center / cover; box-shadow: 0 30px 90px rgba(0, 0, 0, .36); transform: rotate(1.5deg); }
+.fleet-hero-art { min-height: 450px; margin: 0 -80px 0 25px; border: 1px solid rgba(244, 197, 119, .33); border-radius: 30px; overflow: hidden; background: linear-gradient(90deg, rgba(6, 19, 29, .85), rgba(6, 19, 29, .08)), url('/vehicles/real/xpander-front.webp') center / cover; box-shadow: 0 30px 90px rgba(0, 0, 0, .36); transform: rotate(1.5deg); }
 .fleet-hero-art::after { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 50%, rgba(4, 14, 21, .78)), radial-gradient(circle at 75% 20%, rgba(244, 197, 119, .22), transparent 24%); content: ""; }
 .fleet-hero-orbit { position: absolute; z-index: 2; border: 1px solid rgba(244, 197, 119, .35); border-radius: 50%; transform: rotate(-17deg); }
 .fleet-hero-orbit-one { top: 23%; right: 10%; width: 230px; height: 94px; }
@@ -10131,7 +10131,8 @@ footer.site-market-chrome .site-footer-newsletter-success { color: #abd9b2; }
 .fleet-card-topline small { color: #79d9cb; font-size: 9px; }
 .fleet-card-label { margin: 18px 0 6px; color: #f4c577; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
 .fleet-card h3 { margin: 0; color: #f4eee1; font-family: Georgia, "Times New Roman", serif; font-size: 28px; font-weight: 400; letter-spacing: -.045em; }
-.fleet-card-content > p:not(.fleet-card-label) { min-height: 76px; margin: 12px 0 17px; color: rgba(244, 238, 225, .62); font-size: 14px; line-height: 1.55; }
+.fleet-card-content > p:not(.fleet-card-label):not(.fleet-card-arabic) { min-height: 76px; margin: 12px 0 17px; color: rgba(244, 238, 225, .62); font-size: 14px; line-height: 1.55; }
+.fleet-card-arabic { margin: 4px 0 12px; color: #79d9cb; font-family: Tahoma, Arial, sans-serif; font-size: 14px; line-height: 1.45; }
 .fleet-card-specs { display: flex; flex-wrap: wrap; gap: 10px; border-top: 1px solid rgba(244, 197, 119, .15); padding-top: 15px; }
 .fleet-card-specs span { display: inline-flex; align-items: center; gap: 6px; color: rgba(244, 238, 225, .7); font-size: 11px; }
 .fleet-card-specs svg { width: 15px; height: 15px; }
@@ -10153,6 +10154,15 @@ footer.site-market-chrome .site-footer-newsletter-success { color: #abd9b2; }
 .fleet-detail-price { color: #f4c577; font-family: Georgia, serif; font-size: 32px; font-weight: 400; white-space: nowrap; }
 .fleet-detail-price small { display: block; margin-top: 3px; color: rgba(244, 238, 225, .43); font-family: inherit; font-size: 10px; text-align: right; }
 .fleet-detail-description { margin: 27px 0 26px; color: rgba(244, 238, 225, .68); font-size: 16px; line-height: 1.65; }
+.fleet-arabic-panel { margin: 0 0 25px; border: 1px solid rgba(117, 212, 201, .26); border-radius: 14px; padding: 18px 19px; background: linear-gradient(145deg, rgba(117, 212, 201, .08), rgba(3, 14, 21, .24)); }
+.fleet-arabic-panel-label { margin: 0 0 8px; color: #f4c577; font-family: Tahoma, Arial, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.fleet-arabic-panel h3 { margin: 0 0 8px; color: #f4eee1; font-family: Tahoma, Arial, sans-serif; font-size: 22px; font-weight: 700; }
+.fleet-arabic-panel > p:not(.fleet-arabic-panel-label):not(.fleet-arabic-features) { margin: 0 0 14px; color: rgba(244, 238, 225, .7); font-family: Tahoma, Arial, sans-serif; font-size: 14px; line-height: 1.8; }
+.fleet-arabic-panel > div { display: grid; grid-template-columns: 1fr 1.45fr; gap: 12px; border-top: 1px solid rgba(117, 212, 201, .15); padding: 10px 0 0; }
+.fleet-arabic-panel > div + div { margin-top: 9px; }
+.fleet-arabic-panel > div span { color: rgba(244, 238, 225, .44); font-family: Tahoma, Arial, sans-serif; font-size: 11px; }
+.fleet-arabic-panel > div strong { color: #f4eee1; font-family: Tahoma, Arial, sans-serif; font-size: 12px; font-weight: 500; }
+.fleet-arabic-features { margin: 15px 0 0; color: #79d9cb; font-family: Tahoma, Arial, sans-serif; font-size: 12px; line-height: 1.8; }
 .fleet-detail-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; border-top: 1px solid rgba(117, 212, 201, .18); border-bottom: 1px solid rgba(117, 212, 201, .18); padding: 18px 0; }
 .fleet-detail-facts span { display: block; margin-bottom: 6px; color: rgba(244, 238, 225, .43); font-size: 11px; }
 .fleet-detail-facts strong { display: block; color: #f4eee1; font-size: 14px; font-weight: 500; line-height: 1.4; }
