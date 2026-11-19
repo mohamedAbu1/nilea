@@ -35,6 +35,7 @@ const searchItems = [
   { label: "Destinations", detail: "Safaga, Marsa Alam, Luxor, Aswan, Cairo and Hurghada", href: "/destinations" },
   { label: "Travel Market", detail: "Handmade Egyptian objects, keepsakes and gifts", href: "/market" },
   { label: "Stays & Hotels", detail: "Riverfront stays and historic hotels", href: "/stays-hotels" },
+  { label: "Travel & Transport", detail: "Private cars, vans, 4x4s and accessible vehicles", href: "/travel-transport" },
   { label: "Tours & Experiences", detail: "Curated journeys with local experts", href: "/tours-experiences" },
   { label: "Smart Guide", detail: "Build a personalized Nile itinerary", href: "/trip-planner" },
 ];
@@ -291,6 +292,7 @@ export function SiteFooter() {
             <Link href="/destinations">{t("Destinations")}</Link>
             <Link href="/market">{t("Travel Market")}</Link>
             <Link href="/stays-hotels">{t("Stays")}</Link>
+              <Link href="/travel-transport">{t("Travel & Transport")}</Link>
             <Link href="/trip-planner">{t("Smart Guide")}</Link>
           </nav>
           {marketChrome && <>
