@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { LanguageProvider } from "./components/language";
+import { CurrencyProvider } from "./components/currency";
 import { HomeWelcomeGate } from "./components/home-welcome-gate";
 import { BackToTop, SiteFooter, SiteHeader } from "./components/site-chrome";
 import ChatWidget from "./components/chat-widget";
@@ -33,12 +34,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body>
         <LanguageProvider>
-          <HomeWelcomeGate />
-          <SiteHeader />
-          {children}
-          <SiteFooter />
-          <BackToTop />
-          <ChatWidget />
+          <CurrencyProvider>
+            <HomeWelcomeGate />
+            <SiteHeader />
+            {children}
+            <SiteFooter />
+            <BackToTop />
+            <ChatWidget />
+          </CurrencyProvider>
         </LanguageProvider>
       </body>
     </html>

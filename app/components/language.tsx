@@ -10,13 +10,8 @@ export type LocaleCode = "en" | "ar" | "es" | "fr" | "it" | "zh" | "de" | "pl" |
 export const localeOptions: { code: LocaleCode; native: string }[] = [
   { code: "en", native: "English" },
   { code: "ar", native: "العربية" },
-  { code: "es", native: "Español" },
   { code: "fr", native: "Français" },
-  { code: "it", native: "Italiano" },
-  { code: "zh", native: "中文" },
   { code: "de", native: "Deutsch" },
-  { code: "pl", native: "Polski" },
-  { code: "cs", native: "Čeština" },
 ];
 
 type TranslationMap = Record<string, string>;

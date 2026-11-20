@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getDestinationLabel, getMatchingVehicles, normalizeDestinationId } from "../lib/travel-availability";
 import { getSubmissionErrorMessage, insertCarBooking } from "../lib/submissions";
+import { LocalizedPrice } from "../components/currency";
 
 type FleetCategory = "Executive" | "Family" | "Group" | "Desert" | "Accessible";
 type VehicleImage = { src: string; label: string };
@@ -283,7 +284,7 @@ export default function TravelTransportPage() {
         {travelerFilter > 0 && <div className="fleet-route-context" role="status"><div><span>Smart match</span><strong>{getDestinationLabel(routeDestination)} · {travelerFilter} {travelerFilter === 1 ? "traveler" : "travelers"}</strong><small>Only vehicles with enough seats and route fit are shown.</small></div><Link href={`/trip-planner?destination=${routeDestination || "luxor"}&travelers=${travelerFilter}`}>Tune the complete route <span aria-hidden="true">↗</span></Link><button type="button" onClick={() => { setTravelerFilter(0); setRouteDestination(""); }}>Show all vehicles</button></div>}
         <div className="fleet-grid">{filteredVehicles.map((vehicle, index) => <article className="fleet-card" key={vehicle.id}>
           <Link href={`/travel-transport/${vehicle.id}`} className="fleet-card-image-button" aria-label={`View ${vehicle.name}`}><span className="fleet-card-image"><img src={vehicle.images[0].src} alt={`${vehicle.name} front view`} /><span className="fleet-card-image-count">5 views</span></span></Link>
-          <div className="fleet-card-content"><div className="fleet-card-topline"><span>0{index + 1}</span><small>{vehicle.category}</small></div><p className="fleet-card-label">{vehicle.label}</p><h3>{vehicle.name}</h3><p className="fleet-card-arabic" lang="ar" dir="rtl">{vehicle.arabicName}</p><p>{vehicle.description}</p><div className="fleet-card-specs"><span><FleetMark type="seat" />{vehicle.seats}</span><span><FleetMark type="bag" />{vehicle.luggage}</span></div><div className="fleet-card-footer"><strong>From ${vehicle.price}<small> / route</small></strong><Link href={`/travel-transport/${vehicle.id}`} className="fleet-card-details-link">View details</Link></div></div>
+          <div className="fleet-card-content"><div className="fleet-card-topline"><span>0{index + 1}</span><small>{vehicle.category}</small></div><p className="fleet-card-label">{vehicle.label}</p><h3>{vehicle.name}</h3><p className="fleet-card-arabic" lang="ar" dir="rtl">{vehicle.arabicName}</p><p>{vehicle.description}</p><div className="fleet-card-specs"><span><FleetMark type="seat" />{vehicle.seats}</span><span><FleetMark type="bag" />{vehicle.luggage}</span></div><div className="fleet-card-footer"><strong>From <LocalizedPrice amount={vehicle.price} /><small> / route</small></strong><Link href={`/travel-transport/${vehicle.id}`} className="fleet-card-details-link">View details</Link></div></div>
         </article>)}</div>
       </section>
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Vehicle } from "../vehicle-data";
+import { LocalizedPrice } from "../../components/currency";
 
 function DetailMark({ type }: { type: "seat" | "bag" | "route" | "check" }) {
   if (type === "seat") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v8a3 3 0 0 0 3 3h7a3 3 0 0 0 3-3V9" /><path d="M6 16v3M18 16v3M9 5a2 2 0 1 1 4 0v6H9V5ZM4 19h16" /></svg>;
@@ -24,7 +25,7 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: Vehicle }) {
           <h1 id="vehicle-detail-title">{vehicle.name}<em>{vehicle.label}</em></h1>
           <p className="vehicle-detail-hero-description">{vehicle.description}</p>
           <div className="vehicle-detail-hero-facts"><span><DetailMark type="seat" />{vehicle.seats}</span><span><DetailMark type="bag" />{vehicle.luggage}</span><span><DetailMark type="route" />Egypt-wide routes</span></div>
-          <div className="vehicle-detail-price"><strong>${vehicle.price}</strong><span>from / route</span></div>
+          <div className="vehicle-detail-price"><strong><LocalizedPrice amount={vehicle.price} /></strong><span>from / route</span></div>
         </div>
         <div className="vehicle-detail-hero-image"><img src={vehicle.images[0].src} alt={`${vehicle.name} front three-quarter view`} /><span className="vehicle-detail-hero-badge">Ready for your route</span></div>
       </section>

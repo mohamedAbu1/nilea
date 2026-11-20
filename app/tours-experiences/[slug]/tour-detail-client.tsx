@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { getSubmissionErrorMessage, insertTripBooking } from "../../lib/submissions";
 import { getSimilarTours, getTourGallery, type TourDetail } from "../../lib/tour-details";
+import { useCurrency, type CurrencyCode } from "../../components/currency";
 
 type BookingStep = "details" | "payment" | "success";
 
@@ -48,6 +49,8 @@ function DetailIcon({ children }: { children: React.ReactNode }) {
 }
 
 export default function TourDetailClient({ tour }: { tour: TourDetail }) {
+  const { format } = useCurrency();
+  const formatMoney = (amount: number, currency: string) => format(amount, (currency || "USD") as CurrencyCode);
   const today = useMemo(() => dateKeyForDate(new Date()), []);
   const gallery = useMemo(() => getTourGallery(tour), [tour]);
   const similarTours = useMemo(() => getSimilarTours(tour), [tour]);

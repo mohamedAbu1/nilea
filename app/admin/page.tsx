@@ -15,9 +15,10 @@ import {
   type ChatStatus,
 } from "../lib/chat";
 import { supabase } from "../lib/supabase";
+import { currencyOptions, type CurrencyCode, type ExchangeRate } from "../components/currency";
 
 type AccessRole = "traveler" | "support" | "editor" | "admin";
-type DashboardSection = "overview" | "inbox" | "requests" | "stays" | "trips" | "market" | "vehicles";
+type DashboardSection = "overview" | "inbox" | "requests" | "stays" | "trips" | "market" | "vehicles" | "currency";
 type CatalogCollection = "stays" | "trips" | "products" | "vehicles";
 type Row = Record<string, unknown>;
 
@@ -59,6 +60,7 @@ const navItems: { id: DashboardSection; label: string; caption: string; icon: st
   { id: "trips", label: "Trips", caption: "Experiences", icon: "✦" },
   { id: "market", label: "Bazaar", caption: "Products", icon: "◇" },
   { id: "vehicles", label: "Vehicles", caption: "Fleet", icon: "▰" },
+  { id: "currency", label: "Currencies", caption: "Exchange rates", icon: "¤" },
 ];
 
 const collectionLabels: Record<CatalogCollection, string> = {
@@ -140,10 +142,13 @@ export default function AdminPage() {
   const [chatSending, setChatSending] = useState(false);
   const [chatFile, setChatFile] = useState<File | null>(null);
   const [chatUserNames, setChatUserNames] = useState<Record<string, string>>({});
+  const [currencyRows, setCurrencyRows] = useState<ExchangeRate[]>(currencyOptions);
+  const [currencyDrafts, setCurrencyDrafts] = useState<Record<CurrencyCode, string>>(() => Object.fromEntries(currencyOptions.map((row) => [row.currency_code, String(row.rate_to_usd)])) as Record<CurrencyCode, string>);
 
   const selectedConversation = conversations.find((item) => item.id === selectedConversationId) ?? null;
   const canEditCatalog = role === "admin" || role === "editor";
-  const visibleNavItems = useMemo(() => role === "support" ? navItems.filter((item) => ["overview", "inbox", "requests"].includes(item.id)) : navItems, [role]);
+  const canManageRates = role === "admin";
+  const visibleNavItems = useMemo(() => role === "support" ? navItems.filter((item) => ["overview", "inbox", "requests"].includes(item.id)) : role === "editor" ? navItems.filter((item) => item.id !== "currency") : navItems, [role]);
 
   const loadRequests = async () => {
     if (!supabase) return;
@@ -198,6 +203,19 @@ export default function AdminPage() {
     setCatalogLoading(false);
   };
 
+  const loadCurrencyRates = async () => {
+    if (!supabase) return;
+    const result = await supabase.from("exchange_rates").select("currency_code, currency_name, symbol, rate_to_usd, decimal_digits, is_active, updated_at").order("currency_code");
+    if (result.error) {
+      setError(getSubmissionErrorMessage(result.error, "Exchange rates could not be loaded."));
+      return;
+    }
+    const rows = result.data as ExchangeRate[];
+    const normalized = currencyOptions.map((fallback) => rows.find((row) => row.currency_code === fallback.currency_code) ?? fallback);
+    setCurrencyRows(normalized);
+    setCurrencyDrafts(Object.fromEntries(normalized.map((row) => [row.currency_code, String(row.rate_to_usd)])) as Record<CurrencyCode, string>);
+  };
+
   useEffect(() => {
     let active = true;
     void (async () => {
@@ -223,7 +241,7 @@ export default function AdminPage() {
       setProfileName(profile.data.full_name || identity.data.user.email || "AlpNile team");
       setRole(profile.data.access_role as AccessRole);
       setCheckingAccess(false);
-      await Promise.all([loadStats(), loadRequests(), loadConversations()]);
+      await Promise.all([loadStats(), loadRequests(), loadConversations(), loadCurrencyRates()]);
     })();
     return () => { active = false; };
   }, []);
@@ -343,6 +361,30 @@ export default function AdminPage() {
     setNotice("Conversation status updated.");
   };
 
+  const saveCurrencyRates = async () => {
+    if (!supabase || !canManageRates) return;
+    setError("");
+    const updates = currencyRows.map((row) => ({
+      currency_code: row.currency_code,
+      currency_name: row.currency_name,
+      symbol: row.symbol,
+      rate_to_usd: Number(currencyDrafts[row.currency_code]),
+      decimal_digits: row.decimal_digits,
+      is_active: row.is_active,
+    }));
+    if (updates.some((row) => !Number.isFinite(row.rate_to_usd) || row.rate_to_usd <= 0)) {
+      setError("Every exchange rate must be a number greater than zero.");
+      return;
+    }
+    const result = await supabase.from("exchange_rates").upsert(updates, { onConflict: "currency_code" });
+    if (result.error) {
+      setError(getSubmissionErrorMessage(result.error, "Exchange rates could not be saved."));
+      return;
+    }
+    setNotice("Exchange rates updated for the whole site.");
+    await loadCurrencyRates();
+  };
+
   if (checkingAccess) return <main className="admin-page"><div className="admin-loading">Opening AlpNile control room…</div></main>;
   if (accessError) return <main className="admin-page"><div className="admin-access-card"><span>✦</span><p className="admin-eyebrow">AlpNile / private area</p><h1>Control room access</h1><p>{accessError}</p><Link href="/" className="admin-button admin-button-secondary">Back to AlpNile</Link></div></main>;
 
@@ -368,6 +410,8 @@ export default function AdminPage() {
           {section === "requests" && <section className="admin-panel admin-full-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Guest operations</p><h2>Every request, one clear next step.</h2></div><button type="button" onClick={() => { void loadRequests(); void loadStats(); }}>Refresh ↻</button></div><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Guest</th><th>Route / request</th><th>Contact</th><th>Type</th><th>Status</th><th>Received</th></tr></thead><tbody>{requests.map((row) => <tr key={row.table + row.id}><td><strong>{row.name}</strong></td><td>{row.summary}</td><td>{row.contact}</td><td><span className={"admin-request-type " + row.source}>{row.source}</span></td><td><select value={row.status} onChange={(event) => void updateRequestStatus(row, event.target.value)} aria-label={"Update status for " + row.name}>{statusOptions.map((status) => <option key={status}>{status}</option>)}</select></td><td>{formatDate(row.created_at)}</td></tr>)}</tbody></table></div>{!requests.length && <div className="admin-empty">No requests found.</div>}</section>}
 
           {section === "inbox" && <section className="admin-inbox"><div className="admin-inbox-list admin-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Live support</p><h2>Guest inbox</h2></div><button type="button" onClick={() => void loadConversations()}>Refresh ↻</button></div>{conversations.map((conversation) => <button type="button" key={conversation.id} className={"admin-conversation-row " + (selectedConversationId === conversation.id ? "active" : "")} onClick={() => setSelectedConversationId(conversation.id)}><span className="admin-avatar">{(chatUserNames[conversation.user_id] || "G").slice(0, 1).toUpperCase()}</span><span><strong>{chatUserNames[conversation.user_id] || "Guest traveler"}</strong><small>{conversation.subject}</small><em>{conversation.status}</em></span><time>{formatDate(conversation.last_message_at)}</time></button>)}{!conversations.length && <div className="admin-empty">No chat channels yet. New conversations will appear here.</div>}</div><div className="admin-chat-panel admin-panel">{selectedConversation ? <><div className="admin-panel-head"><div><p className="admin-eyebrow">Conversation</p><h2>{chatUserNames[selectedConversation.user_id] || "Guest traveler"}</h2><small>{selectedConversation.id}</small></div><select value={selectedConversation.status} onChange={(event) => void changeChatStatus(event.target.value as ChatStatus)} aria-label="Conversation status">{(["open", "pending", "resolved", "closed"] as ChatStatus[]).map((status) => <option key={status}>{status}</option>)}</select></div><div className="admin-chat-messages">{chatMessages.map((message) => <article key={message.id} className={"admin-chat-message " + (message.sender_role === "staff" ? "staff" : "guest")}><div>{message.body && <p>{message.body}</p>}{message.attachment_name && <small>Attachment: {message.attachment_name}</small>}<time>{formatDate(message.created_at)}</time></div></article>)}</div><form className="admin-chat-composer" onSubmit={sendReply}><textarea rows={2} value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} placeholder="Reply with care…" aria-label="Reply message" /><div><label className="admin-attach-button">Attach file<input type="file" accept="image/*,.pdf,.txt,.doc,.docx" hidden onChange={(event) => setChatFile(event.target.files?.[0] ?? null)} /></label><span>{chatFile?.name || "Images and files up to 10 MB"}</span><button type="submit" className="admin-button" disabled={chatSending}>{chatSending ? "Sending…" : "Send reply ↗"}</button></div></form></> : <div className="admin-empty">Select a conversation to reply.</div>}</div></section>}
+
+          {section === "currency" && <section className="admin-panel admin-full-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Pricing intelligence</p><h2>Exchange rate studio</h2><p>Set one controlled rate and every displayed catalog price updates without changing your base prices.</p></div><div className="admin-panel-head-actions"><button type="button" onClick={() => void loadCurrencyRates()}>Refresh ↻</button>{canManageRates && <button type="button" className="admin-button" onClick={() => void saveCurrencyRates()}>Save rates</button>}</div></div><div className="admin-rate-layout"><div className="admin-rate-table">{currencyRows.map((row) => <label className="admin-rate-row" key={row.currency_code}><span className="admin-rate-code">{row.currency_code}</span><span className="admin-rate-name"><strong>{row.currency_name}</strong><small>1 USD equals</small></span><input type="number" min="0.000001" step="0.000001" value={currencyDrafts[row.currency_code] ?? row.rate_to_usd} disabled={!canManageRates} onChange={(event) => setCurrencyDrafts((current) => ({ ...current, [row.currency_code]: event.target.value }))} aria-label={`${row.currency_code} rate per US dollar`} /><span className="admin-rate-symbol">{row.symbol}</span></label>)}</div><aside className="admin-panel admin-rate-note"><p className="admin-eyebrow">How it works</p><h3>One source of truth.</h3><p>Catalog prices stay stored in their source currency. The public site converts them using these values and the visitor’s selected currency.</p><ul><li>USD, EUR, GBP, EGP and CHF are ready.</li><li>Visitors can choose currency independently from language.</li><li>Rates are protected by admin-only write policies.</li></ul></aside></div>{!canManageRates && <p className="admin-empty">Only an administrator can edit exchange rates.</p>}</section>}
 
           {["stays", "trips", "market", "vehicles"].includes(section) && <section className="admin-panel admin-full-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Content studio</p><h2>{collectionLabels[catalogCollection]}</h2><p>Update the records that power the AlpNile catalogue.</p></div><div className="admin-panel-head-actions">{canEditCatalog && <button type="button" className="admin-button" onClick={() => setEditor(blankEditor(catalogCollection))}>New record +</button>}<button type="button" onClick={() => void loadCatalog(catalogCollection)}>Refresh ↻</button></div></div>{catalogLoading ? <div className="admin-empty">Loading catalogue…</div> : <div className="admin-catalog-grid">{catalog.map((record) => <article className={"admin-catalog-card " + (!record.is_active ? "inactive" : "")} key={textValue(record, "id")}><div className="admin-catalog-card-media">{record.image_url ? <img src={String(record.image_url)} alt="" /> : <span>✦</span>}<span>{record.is_active ? "Live" : "Hidden"}</span></div><div><p className="admin-eyebrow">{textValue(record, "slug")}</p><h3>{recordLabel(record, catalogCollection)}</h3><p>{textValue(record, "description") || "No description yet."}</p><div className="admin-catalog-meta"><span>{catalogCollection === "products" ? "$" + textValue(record, "price") : "$" + (textValue(record, "price_from") || "—")}</span><span>Updated {formatDate(textValue(record, "updated_at"))}</span></div>{canEditCatalog && <button type="button" onClick={() => setEditor(editorFromRecord(record, catalogCollection))}>Edit record ↗</button>}</div></article>)}</div>}{!catalogLoading && !catalog.length && <div className="admin-empty">No records found. Run the catalog migrations and seed data first.</div>}</section>}
 

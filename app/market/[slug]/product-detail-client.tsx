@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { BazaarProduct, CartLine } from "../catalog";
+import { LocalizedPrice } from "../../components/currency";
 
 type Props = {
   product: BazaarProduct;
@@ -62,7 +63,7 @@ export default function ProductDetailClient({ product, gallery }: Props) {
             <h1>{product.name}</h1>
             <p className="bazaar-detail-note">{product.note}</p>
             <p className="bazaar-detail-description">{product.description}</p>
-            <div className="bazaar-detail-price"><span>Starting price</span><strong>${product.price}</strong></div>
+            <div className="bazaar-detail-price"><span>Starting price</span><strong><LocalizedPrice amount={product.price} /></strong></div>
             <dl className="bazaar-detail-specs"><div><dt>Made in</dt><dd>{product.origin}</dd></div><div><dt>Material</dt><dd>{product.material}</dd></div><div><dt>Collection</dt><dd>AlpNile Bazaar</dd></div></dl>
             <div className="bazaar-detail-actions"><button type="button" className="bazaar-primary-button" onClick={addToBag}>{added ? "Added to bag ✓" : "Add to bag"} <Arrow /></button><a className="bazaar-secondary-link" href={`mailto:hello@alpnile.com?subject=${encodeURIComponent(`Bazaar request: ${product.name}`)}`}>Ask about this piece <Arrow /></a></div>
             <p className="bazaar-detail-support"><span aria-hidden="true">✦</span> Handmade in Egypt · availability and shipping confirmed personally by AlpNile.</p>

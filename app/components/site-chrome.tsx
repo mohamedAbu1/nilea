@@ -9,6 +9,7 @@ import { localeOptions, useLanguage, type LocaleCode } from "./language";
 import AccountDialog, { type AuthMode } from "./account-dialog";
 import { accountProfileFromUser, supabase, type AccountProfile } from "../lib/supabase";
 import { subscribeToNewsletter } from "../lib/submissions";
+import { CurrencySwitcher } from "./currency";
 
 type NavKey = "home" | "about" | "contact" | "trips";
 
@@ -197,6 +198,7 @@ export function SiteHeader() {
               {localeOptions.map((option) => <button key={option.code} type="button" role="option" aria-selected={locale === option.code} className={locale === option.code ? "active" : ""} onClick={() => { setLocale(option.code); setLanguageOpen(false); }}>{option.native}<span aria-hidden="true">{locale === option.code ? "✓" : ""}</span></button>)}
             </div>}
           </div>
+          <CurrencySwitcher />
           <button ref={searchButtonRef} type="button" className="site-header-search" aria-label={t("Search AlpNile")} aria-expanded={searchOpen} aria-controls="site-search-panel" onClick={() => setSearchOpen((open) => !open)}>
             <span className="site-action-icon pharaonic-ui-icon pharaonic-ui-search" aria-hidden="true" />
           </button>
