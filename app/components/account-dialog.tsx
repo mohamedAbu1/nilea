@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { accountProfileFromUser, isSupabaseConfigured, supabase, type AccountProfile } from "../lib/supabase";
+import { getSubmissionErrorMessage } from "../lib/submissions";
 import { useDialogA11y } from "./dialog";
 import { StyledSelect } from "./styled-select";
 
@@ -184,7 +185,13 @@ export default function AccountDialog({ open, initialMode, initialError = "", on
         setForm((current) => ({ ...emptyForm, email: current.email }));
       }
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "Unable to complete this request.";
+      const message = getSubmissionErrorMessage(
+        caught,
+        "Unable to complete this request.",
+        mode === "register"
+          ? "We couldn’t reach the account service. Your account was not created. Check your connection and try again."
+          : "We couldn’t reach the account service. Nothing was changed. Check your connection and try again.",
+      );
       setError(message
         .replace("Invalid login credentials", "The email or password is not correct.")
         .replace("Email not confirmed", "Email confirmation is enabled in Supabase. Disable Confirm email in Auth settings, then try again."));

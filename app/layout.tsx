@@ -3,6 +3,7 @@ import "./globals.css";
 import { LanguageProvider } from "./components/language";
 import { HomeWelcomeGate } from "./components/home-welcome-gate";
 import { BackToTop, SiteFooter, SiteHeader } from "./components/site-chrome";
+import ChatWidget from "./components/chat-widget";
 
 export const metadata: Metadata = {
   title: "AlpNile — A Thousand Stories",
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           {children}
           <SiteFooter />
           <BackToTop />
+          <ChatWidget />
         </LanguageProvider>
       </body>
     </html>

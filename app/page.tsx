@@ -5,7 +5,7 @@ import Link from "next/link";
 import { StyledSelect } from "./components/styled-select";
 import { HomeHero, Icon, bookingLocations, type IconName } from "./components/home-hero";
 import { legacyCatalog } from "./lib/legacy-catalog";
-import { insertCarBooking, insertInquiry, insertReview, listPublishedReviews, toggleReviewLike } from "./lib/submissions";
+import { getSubmissionErrorMessage, insertCarBooking, insertInquiry, insertReview, listPublishedReviews, toggleReviewLike } from "./lib/submissions";
 import { supabase } from "./lib/supabase";
 
 type Category = {
@@ -101,7 +101,7 @@ const categories: Category[] = [
   { title: "Villas & Homes", label: "Stay with character", description: "Private spaces, heritage homes and river views.", image: "/alpnile-villas-v2.webp", href: "/stays-hotels", tone: "sand", icon: "home" },
   { title: "Experiences", label: "Make the day yours", description: "Sails, temples, food walks and local stories.", image: "/alpnile-experiences-v2.webp", href: "/tours-experiences", tone: "coral", icon: "spark" },
   { title: "Travel Market", label: "Take a piece home", description: "Artisan objects and considered souvenirs.", image: "/alpnile-products-v2.webp", href: "/market", tone: "violet", icon: "bag" },
-  { title: "Tourist Cars", label: "Move beautifully", description: "Comfortable cars for a smoother route.", image: "/alpnile-cars-v2.webp", href: "#car-booking", tone: "blue", icon: "car" },
+  { title: "Tourist Cars", label: "Move beautifully", description: "Comfortable cars for a smoother route.", image: "/alpnile-cars-v2.webp", href: "/travel-transport", tone: "blue", icon: "car" },
 ];
 
 const cities: City[] = [
@@ -283,12 +283,12 @@ export default function Home() {
       notes: value("notes") || undefined,
     });
     if (result.error) {
-      setBookingError("The request could not be saved to the archive, but WhatsApp will still open with your details.");
+      setBookingError(getSubmissionErrorMessage(result.error, "We couldn’t save the request to the archive, but WhatsApp is ready with your details. Send the message to continue."));
     }
     const whatsappUrl = `https://wa.me/${whatsAppNumber}?text=${encodeURIComponent(message)}`;
     setBookingSent(true);
     const popup = window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-    if (!popup) setBookingError("The request was saved, but your browser blocked WhatsApp. Please allow pop-ups.");
+    if (!popup) setBookingError(result.error ? "WhatsApp was blocked before you could send the unsaved request. Please allow pop-ups, then try again." : "The request was saved, but your browser blocked WhatsApp. Please allow pop-ups.");
     setBookingSubmitting(false);
   };
 
@@ -580,7 +580,7 @@ export default function Home() {
           <div className="home-car-background" aria-hidden="true" />
           <div className="home-car-shade" aria-hidden="true" />
           <div className="home-car-content">
-            <div className="home-car-copy"><p className="home-redesign-eyebrow">Your road, your rhythm</p><h2>Move through Egypt<br /><em>with ease.</em></h2><p>Book a comfortable tourist car and keep the day open for the moments that were not on the itinerary.</p><div className="home-car-points"><span><Icon name="car" size={16} /> Comfortable cars</span><span><Icon name="pin" size={16} /> Local route support</span><span><Icon name="spark" size={16} /> Flexible days</span></div></div>
+             <div className="home-car-copy"><p className="home-redesign-eyebrow">Your road, your rhythm</p><h2>Move through Egypt<br /><em>with ease.</em></h2><p>Book a comfortable tourist car and keep the day open for the moments that were not on the itinerary.</p><div className="home-car-points"><span><Icon name="car" size={16} /> Comfortable cars</span><span><Icon name="pin" size={16} /> Local route support</span><span><Icon name="spark" size={16} /> Flexible days</span></div><Link className="home-car-transport-link" href="/travel-transport">Explore Travel &amp; Transport</Link></div>
             <div className="home-car-booking-column">
               {!bookingOpen && <div className="home-car-booking-cta"><span className="home-car-booking-section-title">PRIVATE DRIVER · 24/7 SUPPORT</span><strong>Ready when your route is.</strong><p>Tell us where you are going and we will match you with the right car, timing and local support.</p><button type="button" className="home-redesign-primary-button home-whatsapp-button" onClick={openCarBooking}>Open car booking form <Icon name="arrow" size={16} /></button><small>Fast reply via WhatsApp · {whatsAppDisplayNumber}</small></div>}
             {bookingOpen && (isAuthenticated ? <form id="car-booking-form" className="home-car-booking-card" onSubmit={submitBooking}>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { insertTripBooking } from "../../lib/submissions";
+import { getSubmissionErrorMessage, insertTripBooking } from "../../lib/submissions";
 import { getSimilarTours, getTourGallery, type TourDetail } from "../../lib/tour-details";
 
 type BookingStep = "details" | "payment" | "success";
@@ -133,9 +133,19 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
       notes,
     });
     if (result.error) {
-      setError("We could not save this booking request. Please check your connection and try again.");
+      try {
+        window.localStorage.setItem("alpnile-trip-booking-draft-" + tour.slug, JSON.stringify({ tour: tour.slug, startDate, endDate, guests, paymentMethod, form, savedAt: new Date().toISOString() }));
+      } catch {
+        // The booking form remains available even when local storage is blocked.
+      }
+      setError(getSubmissionErrorMessage(result.error, "We couldn’t save this booking request. Your details are still in the form; please try again."));
       setSubmitting(false);
       return;
+    }
+    try {
+      window.localStorage.removeItem("alpnile-trip-booking-draft-" + tour.slug);
+    } catch {
+      // Ignore storage restrictions after a successful submission.
     }
     setSubmitting(false);
     setStep("success");
@@ -160,7 +170,7 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
               <button type="button" onClick={nextImage} aria-label="Next tour photo">›</button>
             </div>
             <div className="tour-detail-gallery-dots" aria-label="Choose tour photo">
-              {gallery.map((image, index) => <button key={image.src} type="button" className={index === activeImage ? "active" : ""} aria-label={`Show ${image.label}`} aria-current={index === activeImage ? "true" : undefined} onClick={() => setActiveImage(index)} />)}
+              {gallery.map((image, index) => <button key={`${image.src}-${index}`} type="button" className={index === activeImage ? "active" : ""} aria-label={`Show ${image.label}`} aria-current={index === activeImage ? "true" : undefined} onClick={() => setActiveImage(index)} />)}
             </div>
             <span className="tour-detail-gallery-caption">{gallery[activeImage].label}</span>
             <span className={`tour-detail-gallery-autoplay ${galleryPaused ? "paused" : ""}`} aria-live="polite">{galleryPaused ? "Paused" : "Auto play"}</span>

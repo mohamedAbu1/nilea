@@ -1,0 +1,380 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { getSubmissionErrorMessage } from "../lib/submissions";
+import {
+  listChatConversations,
+  listChatMessages,
+  sendChatMessage,
+  subscribeToChatConversation,
+  updateConversationStatus,
+  uploadChatAttachment,
+  type ChatConversation,
+  type ChatMessage,
+  type ChatStatus,
+} from "../lib/chat";
+import { supabase } from "../lib/supabase";
+
+type AccessRole = "traveler" | "support" | "editor" | "admin";
+type DashboardSection = "overview" | "inbox" | "requests" | "stays" | "trips" | "market" | "vehicles";
+type CatalogCollection = "stays" | "trips" | "products" | "vehicles";
+type Row = Record<string, unknown>;
+
+type RequestRow = {
+  id: string;
+  source: "inquiry" | "car" | "trip" | "stay";
+  name: string;
+  contact: string;
+  summary: string;
+  status: string;
+  created_at: string;
+  table: string;
+};
+
+type EditorState = {
+  id: string;
+  slug: string;
+  name: string;
+  title: string;
+  description: string;
+  image_url: string;
+  location_label: string;
+  duration_label: string;
+  stay_type: string;
+  vehicle_type: string;
+  price: string;
+  stock_quantity: string;
+  passenger_capacity: string;
+  max_guests: string;
+  is_active: boolean;
+  is_featured: boolean;
+};
+
+const navItems: { id: DashboardSection; label: string; caption: string; icon: string }[] = [
+  { id: "overview", label: "Overview", caption: "Control room", icon: "⌂" },
+  { id: "inbox", label: "Live inbox", caption: "Chat with guests", icon: "◌" },
+  { id: "requests", label: "Requests", caption: "Bookings & leads", icon: "▣" },
+  { id: "stays", label: "Stays & homes", caption: "Properties", icon: "⌂" },
+  { id: "trips", label: "Trips", caption: "Experiences", icon: "✦" },
+  { id: "market", label: "Bazaar", caption: "Products", icon: "◇" },
+  { id: "vehicles", label: "Vehicles", caption: "Fleet", icon: "▰" },
+];
+
+const collectionLabels: Record<CatalogCollection, string> = {
+  stays: "Stays & homes",
+  trips: "Trips & experiences",
+  products: "Bazaar products",
+  vehicles: "Private vehicles",
+};
+
+const statusOptions = ["new", "in_progress", "contacted", "quoted", "confirmed", "completed", "closed", "cancelled", "spam"];
+
+function textValue(row: Row, key: string) {
+  return String(row[key] ?? "");
+}
+function formatDate(value: string) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("en", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+}
+
+function recordLabel(record: Row, collection: CatalogCollection) {
+  return textValue(record, collection === "trips" ? "title" : "name") || textValue(record, "slug") || "Untitled record";
+}
+
+function editorFromRecord(record: Row, collection: CatalogCollection): EditorState {
+  return {
+    id: textValue(record, "id"),
+    slug: textValue(record, "slug"),
+    name: textValue(record, "name"),
+    title: textValue(record, "title"),
+    description: textValue(record, "description"),
+    image_url: textValue(record, "image_url"),
+    location_label: textValue(record, "location_label"),
+    duration_label: textValue(record, "duration_label"),
+    stay_type: textValue(record, "stay_type") || "villa",
+    vehicle_type: textValue(record, "vehicle_type") || "suv",
+    price: textValue(record, collection === "products" ? "price" : collection === "vehicles" ? "price_from" : "price_from"),
+    stock_quantity: textValue(record, "stock_quantity") || "0",
+    passenger_capacity: textValue(record, "passenger_capacity") || "4",
+    max_guests: textValue(record, "max_guests") || "4",
+    is_active: Boolean(record.is_active ?? true),
+    is_featured: Boolean(record.is_featured ?? false),
+  };
+}
+
+function blankEditor(collection: CatalogCollection): EditorState {
+  return editorFromRecord({
+    slug: "",
+    name: collection === "vehicles" ? "New vehicle" : collection === "products" ? "New product" : "New listing",
+    title: collection === "trips" ? "New experience" : "",
+    description: "",
+    is_active: true,
+    is_featured: false,
+  }, collection);
+}
+
+function chatPreview(messages: ChatMessage[]) {
+  const last = messages[messages.length - 1];
+  return last?.body || last?.attachment_name || "No messages yet";
+}
+
+export default function AdminPage() {
+  const [section, setSection] = useState<DashboardSection>("overview");
+  const [role, setRole] = useState<AccessRole | "">("");
+  const [profileName, setProfileName] = useState("");
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [accessError, setAccessError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const [stats, setStats] = useState<Record<string, number>>({});
+  const [requests, setRequests] = useState<RequestRow[]>([]);
+  const [catalog, setCatalog] = useState<Row[]>([]);
+  const [catalogCollection, setCatalogCollection] = useState<CatalogCollection>("stays");
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [editor, setEditor] = useState<EditorState | null>(null);
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatDraft, setChatDraft] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const [chatFile, setChatFile] = useState<File | null>(null);
+  const [chatUserNames, setChatUserNames] = useState<Record<string, string>>({});
+
+  const selectedConversation = conversations.find((item) => item.id === selectedConversationId) ?? null;
+  const canEditCatalog = role === "admin" || role === "editor";
+  const visibleNavItems = useMemo(() => role === "support" ? navItems.filter((item) => ["overview", "inbox", "requests"].includes(item.id)) : navItems, [role]);
+
+  const loadRequests = async () => {
+    if (!supabase) return;
+    const [inquiries, cars, trips, stays] = await Promise.all([
+      supabase.from("inquiries").select("id, full_name, email, phone, message, request_type, status, created_at").order("created_at", { ascending: false }).limit(80),
+      supabase.from("car_bookings").select("id, full_name, email, phone, pickup_label, dropoff_label, status, created_at").order("created_at", { ascending: false }).limit(80),
+      supabase.from("trip_bookings").select("id, full_name, email, phone, start_date, guests, status, created_at").order("created_at", { ascending: false }).limit(80),
+      supabase.from("stay_bookings").select("id, full_name, email, phone, check_in, check_out, guests, status, created_at").order("created_at", { ascending: false }).limit(80),
+    ]);
+    const rows: RequestRow[] = [
+      ...(inquiries.data ?? []).map((row) => ({ id: row.id, source: "inquiry" as const, name: row.full_name, contact: row.email || row.phone || "No contact", summary: row.message || row.request_type, status: row.status, created_at: row.created_at, table: "inquiries" })),
+      ...(cars.data ?? []).map((row) => ({ id: row.id, source: "car" as const, name: row.full_name, contact: row.phone || row.email || "No contact", summary: row.pickup_label + " → " + row.dropoff_label, status: row.status, created_at: row.created_at, table: "car_bookings" })),
+      ...(trips.data ?? []).map((row) => ({ id: row.id, source: "trip" as const, name: row.full_name, contact: row.phone || row.email || "No contact", summary: "Trip date " + (row.start_date || "open") + " · " + row.guests + " guests", status: row.status, created_at: row.created_at, table: "trip_bookings" })),
+      ...(stays.data ?? []).map((row) => ({ id: row.id, source: "stay" as const, name: row.full_name, contact: row.phone || row.email || "No contact", summary: "Stay " + row.check_in + " → " + row.check_out + " · " + row.guests + " guests", status: row.status, created_at: row.created_at, table: "stay_bookings" })),
+    ];
+    setRequests(rows.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)));
+    setStats((current) => ({ ...current, requests: rows.filter((row) => ["new", "in_progress", "contacted"].includes(row.status)).length }));
+  };
+
+  const loadStats = async () => {
+    if (!supabase) return;
+    const tables = ["inquiries", "car_bookings", "trip_bookings", "stay_bookings", "chat_conversations", "stays", "trips", "products", "vehicles"];
+    const counts = await Promise.all(tables.map(async (table) => {
+      const result = await supabase!.from(table).select("id", { count: "exact", head: true });
+      return [table, result.count ?? 0] as const;
+    }));
+    setStats(Object.fromEntries(counts));
+  };
+
+  const loadConversations = async () => {
+    const result = await listChatConversations();
+    if (result.error) {
+      setError(getSubmissionErrorMessage(result.error, "The inbox could not be loaded."));
+      return;
+    }
+    const items = result.data ?? [];
+    setConversations(items);
+    if (!selectedConversationId && items[0]) setSelectedConversationId(items[0].id);
+    if (items.length) {
+      const ids = Array.from(new Set(items.map((item) => item.user_id)));
+      const profiles = await supabase?.from("profiles").select("id, full_name").in("id", ids);
+      setChatUserNames(Object.fromEntries((profiles?.data ?? []).map((profile) => [profile.id, profile.full_name])));
+    }
+  };
+
+  const loadCatalog = async (collection: CatalogCollection) => {
+    if (!supabase) return;
+    setCatalogLoading(true);
+    const result = await supabase.from(collection).select("*").order("updated_at", { ascending: false }).limit(100);
+    if (result.error) setError(getSubmissionErrorMessage(result.error, "This catalog could not be loaded."));
+    setCatalog((result.data ?? []) as Row[]);
+    setCatalogLoading(false);
+  };
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      if (!supabase) {
+        setAccessError("Supabase is not configured. Add the public URL and anon key before using the control room.");
+        setCheckingAccess(false);
+        return;
+      }
+      const identity = await supabase.auth.getUser();
+      if (!active) return;
+      if (identity.error || !identity.data.user) {
+        setAccessError("Sign in with a staff account to enter the control room.");
+        setCheckingAccess(false);
+        return;
+      }
+      const profile = await supabase.from("profiles").select("full_name, access_role").eq("id", identity.data.user.id).single();
+      if (!active) return;
+      if (profile.error || !profile.data || !["support", "editor", "admin"].includes(profile.data.access_role)) {
+        setAccessError("This account does not have staff access. Ask an administrator to grant a role.");
+        setCheckingAccess(false);
+        return;
+      }
+      setProfileName(profile.data.full_name || identity.data.user.email || "AlpNile team");
+      setRole(profile.data.access_role as AccessRole);
+      setCheckingAccess(false);
+      await Promise.all([loadStats(), loadRequests(), loadConversations()]);
+    })();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!role || !["stays", "trips", "market", "vehicles"].includes(section)) return;
+    const collection = section === "market" ? "products" : section;
+    setCatalogCollection(collection as CatalogCollection);
+    void loadCatalog(collection as CatalogCollection);
+  }, [section, role]);
+
+  useEffect(() => {
+    if (!selectedConversationId) return;
+    let active = true;
+    let unsubscribe: () => void = () => undefined;
+    void (async () => {
+      const result = await listChatMessages(selectedConversationId);
+      if (!active) return;
+      setChatMessages(result.data ?? []);
+      unsubscribe = subscribeToChatConversation(selectedConversationId, (message) => {
+        setChatMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message]);
+      });
+    })();
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [selectedConversationId]);
+
+  const updateRequestStatus = async (row: RequestRow, status: string) => {
+    if (!supabase) return;
+    setError("");
+    const result = await supabase.from(row.table).update({ status }).eq("id", row.id);
+    if (result.error) {
+      setError(getSubmissionErrorMessage(result.error, "The status could not be updated."));
+      return;
+    }
+    setRequests((current) => current.map((item) => item.id === row.id && item.table === row.table ? { ...item, status } : item));
+    setNotice("Request status updated.");
+  };
+
+  const saveCatalog = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase || !editor || !canEditCatalog) return;
+    setError("");
+    const base: Row = {
+      slug: editor.slug.trim(),
+      description: editor.description.trim(),
+      image_url: editor.image_url.trim() || null,
+      is_active: editor.is_active,
+      is_featured: editor.is_featured,
+    };
+    if (catalogCollection === "trips") Object.assign(base, { title: editor.title.trim(), location_label: editor.location_label.trim() || "Egypt", duration_label: editor.duration_label.trim() || "Curated route" });
+    if (catalogCollection === "stays") Object.assign(base, { name: editor.name.trim(), location_label: editor.location_label.trim() || "Egypt", stay_type: editor.stay_type, max_guests: Number(editor.max_guests) || null });
+    if (catalogCollection === "products") Object.assign(base, { name: editor.name.trim(), price: Number(editor.price) || 0, stock_quantity: Number(editor.stock_quantity) || 0, currency: "USD" });
+    if (catalogCollection === "vehicles") Object.assign(base, { name: editor.name.trim(), vehicle_type: editor.vehicle_type, passenger_capacity: Number(editor.passenger_capacity) || 1, price_from: Number(editor.price) || 0, currency: "USD", with_driver: true });
+    const result = editor.id
+      ? await supabase.from(catalogCollection).update(base).eq("id", editor.id)
+      : await supabase.from(catalogCollection).insert(base);
+    if (result.error) {
+      setError(getSubmissionErrorMessage(result.error, "The catalog record could not be saved."));
+      return;
+    }
+    setNotice("Catalog changes saved.");
+    setEditor(null);
+    await loadCatalog(catalogCollection);
+  };
+
+  const sendReply = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase || !selectedConversation || !chatDraft.trim() && !chatFile) return;
+    const identity = await supabase.auth.getUser();
+    if (!identity.data.user) return;
+    setChatSending(true);
+    setError("");
+    let attachmentPath = "";
+    if (chatFile) {
+      const upload = await uploadChatAttachment(selectedConversation.user_id, selectedConversation.id, chatFile);
+      if (upload.error || !upload.data) {
+        setError(getSubmissionErrorMessage(upload.error, upload.error?.message ?? "The file could not be uploaded."));
+        setChatSending(false);
+        return;
+      }
+      attachmentPath = upload.data.path;
+    }
+    const result = await sendChatMessage({
+      conversationId: selectedConversation.id,
+      senderId: identity.data.user.id,
+      senderRole: "staff",
+      body: chatDraft.trim(),
+      messageType: chatFile ? (chatFile.type.startsWith("image/") ? "image" : "file") : "text",
+      attachmentPath: attachmentPath || undefined,
+      attachmentName: chatFile?.name,
+      attachmentMime: chatFile?.type,
+      attachmentSize: chatFile?.size,
+    });
+    if (result.error || !result.data) {
+      setError(getSubmissionErrorMessage(result.error, "The reply could not be sent."));
+      setChatSending(false);
+      return;
+    }
+    setChatMessages((current) => current.some((item) => item.id === result.data!.id) ? current : [...current, result.data!]);
+    setChatDraft("");
+    setChatFile(null);
+    setChatSending(false);
+    await loadConversations();
+  };
+
+  const changeChatStatus = async (status: ChatStatus) => {
+    if (!selectedConversation) return;
+    const result = await updateConversationStatus(selectedConversation.id, status);
+    if (result.error) {
+      setError(getSubmissionErrorMessage(result.error, "The conversation status could not be updated."));
+      return;
+    }
+    setConversations((current) => current.map((item) => item.id === selectedConversation.id ? { ...item, status } : item));
+    setNotice("Conversation status updated.");
+  };
+
+  if (checkingAccess) return <main className="admin-page"><div className="admin-loading">Opening AlpNile control room…</div></main>;
+  if (accessError) return <main className="admin-page"><div className="admin-access-card"><span>✦</span><p className="admin-eyebrow">AlpNile / private area</p><h1>Control room access</h1><p>{accessError}</p><Link href="/" className="admin-button admin-button-secondary">Back to AlpNile</Link></div></main>;
+
+  return (
+    <main className="admin-page">
+      <div className="admin-shell">
+        <aside className="admin-sidebar">
+          <Link href="/" className="admin-brand"><span>✦</span><strong>AlpNile</strong><small>Control room</small></Link>
+          <div className="admin-sidebar-user"><span className="admin-avatar">{profileName.slice(0, 1).toUpperCase()}</span><div><strong>{profileName}</strong><small>{role}</small></div></div>
+          <nav className="admin-nav" aria-label="Admin navigation">{visibleNavItems.map((item) => <button key={item.id} type="button" className={section === item.id ? "active" : ""} onClick={() => { setSection(item.id); setNotice(""); setError(""); }}><span>{item.icon}</span><strong>{item.label}</strong><small>{item.caption}</small>{item.id === "inbox" && stats.chat_conversations ? <b>{stats.chat_conversations}</b> : null}</button>)}</nav>
+          <div className="admin-sidebar-footer"><Link href="/">View live site ↗</Link><button type="button" onClick={() => void supabase?.auth.signOut()}>Sign out</button></div>
+        </aside>
+        <section className="admin-content">
+          <header className="admin-topbar"><div><p className="admin-eyebrow">ALPNILE / OPERATIONS</p><h1>{navItems.find((item) => item.id === section)?.label}</h1></div><div className="admin-topbar-actions"><span className="admin-live-dot" /> Live workspace <Link href="/travel-transport">Open customer view ↗</Link></div></header>
+          {(notice || error) && <div className={error ? "admin-flash error" : "admin-flash"} role={error ? "alert" : "status"}>{error || notice}<button type="button" onClick={() => { setError(""); setNotice(""); }}>×</button></div>}
+
+          {section === "overview" && <section className="admin-overview">
+            <div className="admin-welcome"><div><p className="admin-eyebrow">Good morning, {profileName.split(" ")[0] || "team"}</p><h2>Make every route feel considered.</h2><p>One calm place to answer guests, shape the catalogue and keep the river moving.</p></div><Link href="/trip-planner" className="admin-button">Open smart guide ↗</Link></div>
+            <div className="admin-stat-grid">{[{label:"Open requests",value:stats.requests ?? 0,detail:"Need a reply",tone:"gold"},{label:"Chat channels",value:stats.chat_conversations ?? 0,detail:"Guest conversations",tone:"teal"},{label:"Live stays",value:stats.stays ?? 0,detail:"Homes & hotels",tone:"blue"},{label:"Experiences",value:stats.trips ?? 0,detail:"Routes to discover",tone:"purple"}].map((item) => <article className={"admin-stat-card " + item.tone} key={item.label}><span>{item.label}</span><strong>{item.value}</strong><small>{item.detail}</small></article>)}</div>
+            <div className="admin-overview-grid"><div className="admin-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Guest pulse</p><h3>Recent requests</h3></div><button type="button" onClick={() => setSection("requests")}>View all ↗</button></div>{requests.slice(0, 5).map((row) => <div className="admin-request-row" key={row.table + row.id}><span className={"admin-request-type " + row.source}>{row.source}</span><div><strong>{row.name}</strong><small>{row.summary}</small></div><select value={row.status} onChange={(event) => void updateRequestStatus(row, event.target.value)} aria-label={"Update status for " + row.name}>{statusOptions.map((status) => <option key={status}>{status}</option>)}</select></div>)}{!requests.length && <div className="admin-empty">No requests yet.</div>}</div><div className="admin-panel admin-quick-panel"><p className="admin-eyebrow">Quick actions</p><h3>Shape the next moment.</h3><button type="button" onClick={() => { setSection("inbox"); void loadConversations(); }}>Reply to guests <span>↗</span></button><button type="button" onClick={() => { setSection("trips"); setEditor(null); }}>Edit experiences <span>↗</span></button><button type="button" onClick={() => { setSection("vehicles"); setEditor(null); }}>Update the fleet <span>↗</span></button></div></div>
+          </section>}
+
+          {section === "requests" && <section className="admin-panel admin-full-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Guest operations</p><h2>Every request, one clear next step.</h2></div><button type="button" onClick={() => { void loadRequests(); void loadStats(); }}>Refresh ↻</button></div><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Guest</th><th>Route / request</th><th>Contact</th><th>Type</th><th>Status</th><th>Received</th></tr></thead><tbody>{requests.map((row) => <tr key={row.table + row.id}><td><strong>{row.name}</strong></td><td>{row.summary}</td><td>{row.contact}</td><td><span className={"admin-request-type " + row.source}>{row.source}</span></td><td><select value={row.status} onChange={(event) => void updateRequestStatus(row, event.target.value)} aria-label={"Update status for " + row.name}>{statusOptions.map((status) => <option key={status}>{status}</option>)}</select></td><td>{formatDate(row.created_at)}</td></tr>)}</tbody></table></div>{!requests.length && <div className="admin-empty">No requests found.</div>}</section>}
+
+          {section === "inbox" && <section className="admin-inbox"><div className="admin-inbox-list admin-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Live support</p><h2>Guest inbox</h2></div><button type="button" onClick={() => void loadConversations()}>Refresh ↻</button></div>{conversations.map((conversation) => <button type="button" key={conversation.id} className={"admin-conversation-row " + (selectedConversationId === conversation.id ? "active" : "")} onClick={() => setSelectedConversationId(conversation.id)}><span className="admin-avatar">{(chatUserNames[conversation.user_id] || "G").slice(0, 1).toUpperCase()}</span><span><strong>{chatUserNames[conversation.user_id] || "Guest traveler"}</strong><small>{conversation.subject}</small><em>{conversation.status}</em></span><time>{formatDate(conversation.last_message_at)}</time></button>)}{!conversations.length && <div className="admin-empty">No chat channels yet. New conversations will appear here.</div>}</div><div className="admin-chat-panel admin-panel">{selectedConversation ? <><div className="admin-panel-head"><div><p className="admin-eyebrow">Conversation</p><h2>{chatUserNames[selectedConversation.user_id] || "Guest traveler"}</h2><small>{selectedConversation.id}</small></div><select value={selectedConversation.status} onChange={(event) => void changeChatStatus(event.target.value as ChatStatus)} aria-label="Conversation status">{(["open", "pending", "resolved", "closed"] as ChatStatus[]).map((status) => <option key={status}>{status}</option>)}</select></div><div className="admin-chat-messages">{chatMessages.map((message) => <article key={message.id} className={"admin-chat-message " + (message.sender_role === "staff" ? "staff" : "guest")}><div>{message.body && <p>{message.body}</p>}{message.attachment_name && <small>Attachment: {message.attachment_name}</small>}<time>{formatDate(message.created_at)}</time></div></article>)}</div><form className="admin-chat-composer" onSubmit={sendReply}><textarea rows={2} value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} placeholder="Reply with care…" aria-label="Reply message" /><div><label className="admin-attach-button">Attach file<input type="file" accept="image/*,.pdf,.txt,.doc,.docx" hidden onChange={(event) => setChatFile(event.target.files?.[0] ?? null)} /></label><span>{chatFile?.name || "Images and files up to 10 MB"}</span><button type="submit" className="admin-button" disabled={chatSending}>{chatSending ? "Sending…" : "Send reply ↗"}</button></div></form></> : <div className="admin-empty">Select a conversation to reply.</div>}</div></section>}
+
+          {["stays", "trips", "market", "vehicles"].includes(section) && <section className="admin-panel admin-full-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Content studio</p><h2>{collectionLabels[catalogCollection]}</h2><p>Update the records that power the AlpNile catalogue.</p></div><div className="admin-panel-head-actions">{canEditCatalog && <button type="button" className="admin-button" onClick={() => setEditor(blankEditor(catalogCollection))}>New record +</button>}<button type="button" onClick={() => void loadCatalog(catalogCollection)}>Refresh ↻</button></div></div>{catalogLoading ? <div className="admin-empty">Loading catalogue…</div> : <div className="admin-catalog-grid">{catalog.map((record) => <article className={"admin-catalog-card " + (!record.is_active ? "inactive" : "")} key={textValue(record, "id")}><div className="admin-catalog-card-media">{record.image_url ? <img src={String(record.image_url)} alt="" /> : <span>✦</span>}<span>{record.is_active ? "Live" : "Hidden"}</span></div><div><p className="admin-eyebrow">{textValue(record, "slug")}</p><h3>{recordLabel(record, catalogCollection)}</h3><p>{textValue(record, "description") || "No description yet."}</p><div className="admin-catalog-meta"><span>{catalogCollection === "products" ? "$" + textValue(record, "price") : "$" + (textValue(record, "price_from") || "—")}</span><span>Updated {formatDate(textValue(record, "updated_at"))}</span></div>{canEditCatalog && <button type="button" onClick={() => setEditor(editorFromRecord(record, catalogCollection))}>Edit record ↗</button>}</div></article>)}</div>}{!catalogLoading && !catalog.length && <div className="admin-empty">No records found. Run the catalog migrations and seed data first.</div>}</section>}
+
+          {editor && <div className="admin-editor-overlay" role="dialog" aria-modal="true" aria-label="Edit catalog record"><form className="admin-editor-card" onSubmit={saveCatalog}><div className="admin-panel-head"><div><p className="admin-eyebrow">Content editor</p><h2>{editor.id ? "Edit record" : "Create record"}</h2></div><button type="button" onClick={() => setEditor(null)} aria-label="Close editor">×</button></div><div className="admin-editor-grid"><label>Slug<input value={editor.slug} onChange={(event) => setEditor({ ...editor, slug: event.target.value })} required /></label>{catalogCollection === "trips" ? <label>Title<input value={editor.title} onChange={(event) => setEditor({ ...editor, title: event.target.value })} required /></label> : <label>Name<input value={editor.name} onChange={(event) => setEditor({ ...editor, name: event.target.value })} required /></label>}<label className="wide">Description<textarea rows={4} value={editor.description} onChange={(event) => setEditor({ ...editor, description: event.target.value })} required /></label><label>Image URL<input value={editor.image_url} onChange={(event) => setEditor({ ...editor, image_url: event.target.value })} placeholder="/alpnile-image.webp" /></label>{catalogCollection === "trips" && <><label>Location<input value={editor.location_label} onChange={(event) => setEditor({ ...editor, location_label: event.target.value })} /></label><label>Duration<input value={editor.duration_label} onChange={(event) => setEditor({ ...editor, duration_label: event.target.value })} /></label></>}{catalogCollection === "stays" && <><label>Location<input value={editor.location_label} onChange={(event) => setEditor({ ...editor, location_label: event.target.value })} /></label><label>Stay type<select value={editor.stay_type} onChange={(event) => setEditor({ ...editor, stay_type: event.target.value })}><option>hotel</option><option>villa</option><option>home</option><option>residence</option></select></label><label>Max guests<input type="number" min="1" value={editor.max_guests} onChange={(event) => setEditor({ ...editor, max_guests: event.target.value })} /></label></>}{catalogCollection === "products" && <><label>Price<input type="number" min="0" value={editor.price} onChange={(event) => setEditor({ ...editor, price: event.target.value })} /></label><label>Stock quantity<input type="number" min="0" value={editor.stock_quantity} onChange={(event) => setEditor({ ...editor, stock_quantity: event.target.value })} /></label></>}{catalogCollection === "vehicles" && <><label>Vehicle type<select value={editor.vehicle_type} onChange={(event) => setEditor({ ...editor, vehicle_type: event.target.value })}><option>suv</option><option>van</option><option>sedan</option><option>minibus</option></select></label><label>Passenger capacity<input type="number" min="1" value={editor.passenger_capacity} onChange={(event) => setEditor({ ...editor, passenger_capacity: event.target.value })} /></label><label>Price from<input type="number" min="0" value={editor.price} onChange={(event) => setEditor({ ...editor, price: event.target.value })} /></label></>} {(catalogCollection !== "products" && catalogCollection !== "vehicles") && <label>Price from<input type="number" min="0" value={editor.price} onChange={(event) => setEditor({ ...editor, price: event.target.value })} /></label>}<label className="admin-check"><input type="checkbox" checked={editor.is_active} onChange={(event) => setEditor({ ...editor, is_active: event.target.checked })} /> Visible on the site</label><label className="admin-check"><input type="checkbox" checked={editor.is_featured} onChange={(event) => setEditor({ ...editor, is_featured: event.target.checked })} /> Featured record</label></div><div className="admin-editor-actions"><button type="button" className="admin-button admin-button-secondary" onClick={() => setEditor(null)}>Cancel</button><button type="submit" className="admin-button">Save changes ↗</button></div></form></div>}
+        </section>
+      </div>
+    </main>
+  );
+}
+

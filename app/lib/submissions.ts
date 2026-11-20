@@ -1,5 +1,21 @@
 import { supabase } from "./supabase";
 
+export function isNetworkError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return /failed to fetch|fetch failed|networkerror|network request failed|enotfound|no such host|dns/i.test(message);
+}
+
+export function getSubmissionErrorMessage(error: unknown, fallback: string, networkFallback?: string) {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  if (/supabase is not configured/i.test(message)) {
+    return "The booking service is not configured yet. Nothing was submitted. Please try again later.";
+  }
+  if (isNetworkError(error)) {
+    return networkFallback ?? "We couldn’t reach the AlpNile booking service. Nothing was submitted. Check your connection and try again.";
+  }
+  return fallback;
+}
+
 export type InquiryPayload = {
   request_type: "trip" | "stay" | "car" | "market" | "contact";
   full_name: string;
@@ -12,8 +28,12 @@ export type InquiryPayload = {
 
 export async function currentUserId() {
   if (!supabase) return null;
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id ?? null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    return data.user?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function insertInquiry(payload: InquiryPayload) {

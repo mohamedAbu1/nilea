@@ -28,9 +28,19 @@ reviews 1──* review_likes
 5. Run `migrations/202611150001_secure_public_mutations.sql`.
 6. Run `seed.sql` for the curated AlpNile starter records.
 7. Run `migrations/202611150002_public_catalog_import.sql` to import the sanitized public catalog from the supplied SQL export (31 trips, day plans, inclusions and anonymized reviews).
-8. Keep the browser client configured with the public URL and anon key only. Never put a service-role key in `.env.local` exposed to the browser.
+8. Run `migrations/202611200001_chat_and_admin_dashboard.sql` to enable the private support inbox, attachment storage, Realtime messages and staff permissions.
+9. Promote the first staff member from the SQL Editor, replacing the placeholder UUID with the authenticated profile id:
 
-The migration enables Row Level Security. Public visitors can read active catalog records and submit requests, while authenticated users can read only their own profile, bookings, inquiries, orders and saved items. Catalog changes should be made from the Supabase dashboard or a protected server-side process.
+   ```sql
+   update public.profiles
+   set access_role = 'admin'
+   where id = '00000000-0000-0000-0000-000000000000';
+   ```
+
+   Staff can then open `/admin`. Use `support` for inbox and request handling, `editor` for catalog management, and `admin` for both plus role administration.
+10. Keep the browser client configured with the public URL and anon key only. Never put a service-role key in `.env.local` exposed to the browser.
+
+The migrations enable Row Level Security. Public visitors can read active catalog records and submit requests, while authenticated users can read only their own profile, bookings, inquiries, orders, saved items and chat conversations. Staff access is controlled by `profiles.access_role`; never grant that role from a client-side form. Catalog changes can be made from `/admin` after the role is granted, the Supabase dashboard or another protected server-side process.
 
 The supplied `messages.sql`, `notifications.sql`, `purchases.sql` and `push_tokens.sql` exports are intentionally not imported into the public website. They contain private operational records, contact details and device tokens; keep them in a protected back-office workflow with separate access controls.
 
