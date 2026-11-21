@@ -8,6 +8,8 @@ export type AccountProfile = {
   gender: "male" | "female" | "";
 };
 
+export type DeviceType = "phone" | "computer";
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -22,6 +24,20 @@ export const supabase = isSupabaseConfigured
       },
     })
   : null;
+
+export function detectDeviceType(): DeviceType {
+  if (typeof navigator === "undefined") return "computer";
+  return /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(navigator.userAgent) ? "phone" : "computer";
+}
+
+export async function syncProfileDeviceType(userId: string, deviceType = detectDeviceType()) {
+  if (!supabase || !userId) return;
+  try {
+    await supabase.from("profiles").update({ device_type: deviceType, last_seen_at: new Date().toISOString() }).eq("id", userId);
+  } catch {
+    // The profile context migration may not be applied yet; auth should remain usable.
+  }
+}
 
 export function accountProfileFromUser(user: User | null): AccountProfile | null {
   if (!user) return null;

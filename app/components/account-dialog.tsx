@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { accountProfileFromUser, isSupabaseConfigured, supabase, type AccountProfile } from "../lib/supabase";
+import { accountProfileFromUser, detectDeviceType, isSupabaseConfigured, supabase, type AccountProfile } from "../lib/supabase";
 import { getSubmissionErrorMessage } from "../lib/submissions";
 import { useDialogA11y } from "./dialog";
 import { StyledSelect } from "./styled-select";
@@ -172,7 +172,7 @@ export default function AccountDialog({ open, initialMode, initialError = "", on
       const result = await supabase.auth.signUp({
         email,
         password: form.password,
-        options: { emailRedirectTo: window.location.origin, data: { full_name: form.name.trim(), phone: form.phone.trim(), gender: form.gender, avatar_url: avatarPreview } },
+        options: { emailRedirectTo: window.location.origin, data: { full_name: form.name.trim(), phone: form.phone.trim(), gender: form.gender, avatar_url: avatarPreview, device_type: detectDeviceType() } },
       });
       if (result.error) throw result.error;
       const profile = accountProfileFromUser(result.data.user);

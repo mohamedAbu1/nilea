@@ -34,7 +34,8 @@ reviews 1──* review_likes
    - `mohamedahmed33m11@gmail.com`
    - `kanow54@gmail.com`
    The migration updates existing profiles and applies the same allowlist to future sign-ups.
-11. Promote any additional staff member from the SQL Editor, replacing the placeholder UUID with the authenticated profile id:
+11. Run `migrations/202611210001_profile_context.sql` to add the generated `account_type` (`user`/`admin`), the last-known `device_type` (`phone`/`computer`), `last_seen_at`, and the existing `gender` field to `profiles`.
+12. Promote any additional staff member from the SQL Editor, replacing the placeholder UUID with the authenticated profile id:
 
    ```sql
    update public.profiles
@@ -43,7 +44,7 @@ reviews 1──* review_likes
    ```
 
    Staff can then open `/admin`. Use `support` for inbox and request handling, `editor` for catalog management, and `admin` for both plus role administration.
-12. Keep the browser client configured with the public URL and anon key only. Never put a service-role key in `.env.local` exposed to the browser.
+13. Keep the browser client configured with the public URL and anon key only. Never put a service-role key in `.env.local` exposed to the browser.
 
 The migrations enable Row Level Security. Public visitors can read active catalog records, active exchange rates and submit requests, while authenticated users can read only their own profile, bookings, inquiries, orders, saved items and chat conversations. Staff access is controlled by `profiles.access_role`; never grant that role from a client-side form. Catalog changes and exchange-rate changes can be made from `/admin` after the role is granted, the Supabase dashboard or another protected server-side process. Catalog amounts are treated as USD by the frontend unless a record explicitly carries another source currency; exchange-rate values represent how many units of the target currency equal one USD.
 

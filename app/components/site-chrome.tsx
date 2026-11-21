@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { BrandLogo } from "./brand-logo";
 import { localeOptions, useLanguage, type LocaleCode } from "./language";
 import AccountDialog, { type AuthMode } from "./account-dialog";
-import { accountProfileFromUser, supabase, type AccountProfile } from "../lib/supabase";
+import { accountProfileFromUser, supabase, syncProfileDeviceType, type AccountProfile } from "../lib/supabase";
 import { subscribeToNewsletter } from "../lib/submissions";
 import { CurrencySwitcher } from "./currency";
 
@@ -106,8 +106,8 @@ export function SiteHeader() {
   useEffect(() => {
     if (!supabase) return;
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => { if (mounted) setAccount(accountProfileFromUser(data.session?.user ?? null)); });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { if (mounted) setAccount(accountProfileFromUser(session?.user ?? null)); });
+    supabase.auth.getSession().then(({ data }) => { if (mounted) { setAccount(accountProfileFromUser(data.session?.user ?? null)); if (data.session?.user) void syncProfileDeviceType(data.session.user.id); } });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { if (mounted) { setAccount(accountProfileFromUser(session?.user ?? null)); if (session?.user) window.setTimeout(() => { void syncProfileDeviceType(session.user.id); }, 0); } });
     const params = new URLSearchParams(window.location.search);
     const oauthError = params.get("error_description") || params.get("error");
     if (oauthError) {
