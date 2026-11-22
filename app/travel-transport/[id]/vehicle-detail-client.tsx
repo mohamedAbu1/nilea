@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Vehicle } from "../vehicle-data";
 import { LocalizedPrice } from "../../components/currency";
+import { catalogGalleryLabel, readCatalogGallery } from "../../lib/catalog-gallery";
 
 function DetailMark({ type }: { type: "seat" | "bag" | "route" | "check" }) {
   if (type === "seat") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v8a3 3 0 0 0 3 3h7a3 3 0 0 0 3-3V9" /><path d="M6 16v3M18 16v3M9 5a2 2 0 1 1 4 0v6H9V5ZM4 19h16" /></svg>;
@@ -14,7 +15,28 @@ function DetailMark({ type }: { type: "seat" | "bag" | "route" | "check" }) {
 
 export default function VehicleDetailClient({ vehicle }: { vehicle: Vehicle }) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const activeImage = vehicle.images[activeImageIndex];
+  const [databaseGallery, setDatabaseGallery] = useState<string[] | null>(null);
+  const images = databaseGallery?.length
+    ? databaseGallery.map((src, index) => ({ src, label: catalogGalleryLabel(index, "Vehicle image") }))
+    : vehicle.images;
+  const activeImage = images[activeImageIndex] ?? images[0];
+
+  useEffect(() => {
+    let active = true;
+    void fetch(`/api/catalog?type=vehicles&slug=${encodeURIComponent(vehicle.id)}`, { cache: "no-store" })
+      .then((response) => response.ok ? response.json() as Promise<Array<{ metadata?: unknown }>> : [])
+      .then((rows) => {
+        if (active) setDatabaseGallery(readCatalogGallery(rows[0]?.metadata));
+      })
+      .catch(() => {
+        if (active) setDatabaseGallery([]);
+      });
+    return () => { active = false; };
+  }, [vehicle.id]);
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [vehicle.id, databaseGallery]);
 
   return (
     <main className="vehicle-detail-page">
@@ -27,14 +49,14 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: Vehicle }) {
           <div className="vehicle-detail-hero-facts"><span><DetailMark type="seat" />{vehicle.seats}</span><span><DetailMark type="bag" />{vehicle.luggage}</span><span><DetailMark type="route" />Egypt-wide routes</span></div>
           <div className="vehicle-detail-price"><strong><LocalizedPrice amount={vehicle.price} /></strong><span>from / route</span></div>
         </div>
-        <div className="vehicle-detail-hero-image"><img src={vehicle.images[0].src} alt={`${vehicle.name} front three-quarter view`} /><span className="vehicle-detail-hero-badge">Ready for your route</span></div>
+        <div className="vehicle-detail-hero-image"><img src={images[0].src} alt={`${vehicle.name} front three-quarter view`} /><span className="vehicle-detail-hero-badge">Ready for your route</span></div>
       </section>
 
       <section className="vehicle-detail-showcase" aria-label={`${vehicle.name} gallery`}>
         <div className="vehicle-detail-gallery-panel">
           <div className="vehicle-detail-main-image"><img src={activeImage.src} alt={`${vehicle.name} — ${activeImage.label}`} /><span>{activeImage.label}</span></div>
           <div className="vehicle-detail-thumbs">
-            {vehicle.images.map((image, index) => <button key={image.src} type="button" className={index === activeImageIndex ? "active" : ""} onClick={() => setActiveImageIndex(index)} aria-label={`Show ${image.label}`}><img src={image.src} alt="" /></button>)}
+            {images.map((image, index) => <button key={`${image.src}-${index}`} type="button" className={index === activeImageIndex ? "active" : ""} onClick={() => setActiveImageIndex(index)} aria-label={`Show ${image.label}`}><img src={image.src} alt="" /></button>)}
           </div>
         </div>
         <div className="vehicle-detail-information">

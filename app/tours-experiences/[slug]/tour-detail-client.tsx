@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { getSubmissionErrorMessage, insertTripBooking } from "../../lib/submissions";
 import { getSimilarTours, getTourGallery, type TourDetail } from "../../lib/tour-details";
+import { catalogGalleryLabel, readCatalogGallery } from "../../lib/catalog-gallery";
 import { useCurrency, type CurrencyCode } from "../../components/currency";
 import { trackCatalogEvent } from "../../lib/intelligence-client";
 
@@ -53,7 +54,10 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
   const { format } = useCurrency();
   const formatMoney = (amount: number, currency: string) => format(amount, (currency || "USD") as CurrencyCode);
   const today = useMemo(() => dateKeyForDate(new Date()), []);
-  const gallery = useMemo(() => getTourGallery(tour), [tour]);
+  const [databaseGallery, setDatabaseGallery] = useState<string[] | null>(null);
+  const gallery = useMemo(() => databaseGallery?.length
+    ? databaseGallery.map((src, index) => ({ src, label: catalogGalleryLabel(index, "Tour image") }))
+    : getTourGallery(tour), [databaseGallery, tour]);
   const similarTours = useMemo(() => getSimilarTours(tour), [tour]);
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
@@ -72,6 +76,20 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
 
   useEffect(() => {
     setActiveImage(0);
+  }, [tour.slug]);
+
+  useEffect(() => {
+    let active = true;
+    setDatabaseGallery(null);
+    void fetch(`/api/catalog?type=trips&slug=${encodeURIComponent(tour.slug)}`, { cache: "no-store" })
+      .then((response) => response.ok ? response.json() as Promise<Array<{ metadata?: unknown }>> : [])
+      .then((rows) => {
+        if (active) setDatabaseGallery(readCatalogGallery(rows[0]?.metadata));
+      })
+      .catch(() => {
+        if (active) setDatabaseGallery([]);
+      });
+    return () => { active = false; };
   }, [tour.slug]);
 
   useEffect(() => {

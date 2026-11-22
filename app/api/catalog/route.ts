@@ -25,17 +25,26 @@ export async function GET(request: Request) {
     }
 
     if (type === "stays") {
-      const rows = await query<Record<string, unknown>[]>("SELECT s.id, s.slug, s.name, s.location_label, s.stay_type, s.description, s.image_url, s.price_from, s.currency, s.rating, s.review_count, s.amenities, s.max_guests, s.is_featured, s.metadata, c.name AS city_name FROM stays s LEFT JOIN cities c ON c.id = s.city_id WHERE s.is_active = 1 ORDER BY s.is_featured DESC, s.updated_at DESC, s.name ASC");
+      const values: unknown[] = [];
+      const slugFilter = slug ? " AND s.slug = ?" : "";
+      if (slug) values.push(slug);
+      const rows = await query<Record<string, unknown>[]>(`SELECT s.id, s.slug, s.name, s.location_label, s.stay_type, s.description, s.image_url, s.price_from, s.currency, s.rating, s.review_count, s.amenities, s.max_guests, s.is_featured, s.metadata, c.name AS city_name FROM stays s LEFT JOIN cities c ON c.id = s.city_id WHERE s.is_active = 1${slugFilter} ORDER BY s.is_featured DESC, s.updated_at DESC, s.name ASC`, values);
       return Response.json(rows.map((row) => ({ ...row, amenities: jsonValue(row.amenities), metadata: jsonValue(row.metadata) })));
     }
 
     if (type === "vehicles") {
-      const rows = await query<Record<string, unknown>[]>("SELECT id, slug, name, vehicle_type, description, image_url, passenger_capacity, luggage_capacity, price_from, currency, with_driver, metadata FROM vehicles WHERE is_active = 1 ORDER BY name ASC");
+      const values: unknown[] = [];
+      const slugFilter = slug ? " AND slug = ?" : "";
+      if (slug) values.push(slug);
+      const rows = await query<Record<string, unknown>[]>(`SELECT id, slug, name, vehicle_type, description, image_url, passenger_capacity, luggage_capacity, price_from, currency, with_driver, metadata FROM vehicles WHERE is_active = 1${slugFilter} ORDER BY name ASC`, values);
       return Response.json(rows.map((row) => ({ ...row, metadata: jsonValue(row.metadata) })));
     }
 
     if (type === "products") {
-      const rows = await query<Record<string, unknown>[]>("SELECT id, slug, name, description, image_url, price, currency, stock_quantity, is_featured, category, origin, material, four_k_image_url, note, metadata FROM products WHERE is_active = 1 ORDER BY is_featured DESC, updated_at DESC, name ASC");
+      const values: unknown[] = [];
+      const slugFilter = slug ? " AND slug = ?" : "";
+      if (slug) values.push(slug);
+      const rows = await query<Record<string, unknown>[]>(`SELECT id, slug, name, description, image_url, price, currency, stock_quantity, is_featured, category, origin, material, four_k_image_url, note, metadata FROM products WHERE is_active = 1${slugFilter} ORDER BY is_featured DESC, updated_at DESC, name ASC`, values);
       return Response.json(rows.map((row) => ({ ...row, metadata: jsonValue(row.metadata) })));
     }
 

@@ -82,8 +82,11 @@ export async function POST(request: Request) {
       const collection = input.collection as typeof catalogTables[number];
       if (!catalogTables.includes(collection)) throw new Error("Invalid catalog collection.");
       const values = input.values ?? {};
-      const allowed = collection === "trips" ? ["slug", "title", "description", "image_url", "location_label", "duration_label", "is_active", "is_featured"] : collection === "stays" ? ["slug", "name", "description", "image_url", "location_label", "stay_type", "max_guests", "is_active", "is_featured"] : collection === "products" ? ["slug", "name", "description", "image_url", "price", "stock_quantity", "currency", "is_active", "is_featured"] : ["slug", "name", "description", "image_url", "vehicle_type", "passenger_capacity", "price_from", "currency", "with_driver", "is_active"];
-      const clean = Object.fromEntries(allowed.filter((key) => key in values).map((key) => [key, values[key] === "" ? null : values[key]]));
+      const allowed = collection === "trips" ? ["slug", "title", "description", "image_url", "location_label", "duration_label", "metadata", "is_active", "is_featured"] : collection === "stays" ? ["slug", "name", "description", "image_url", "location_label", "stay_type", "max_guests", "metadata", "is_active", "is_featured"] : collection === "products" ? ["slug", "name", "description", "image_url", "price", "stock_quantity", "currency", "metadata", "is_active", "is_featured"] : ["slug", "name", "description", "image_url", "vehicle_type", "passenger_capacity", "price_from", "currency", "with_driver", "metadata", "is_active"];
+      const clean = Object.fromEntries(allowed.filter((key) => key in values).map((key) => {
+        const value = values[key];
+        return [key, key === "metadata" && value && typeof value !== "string" ? JSON.stringify(value) : value === "" ? null : value];
+      }));
       if (!input.id) {
         const defaults: Record<string, unknown> = collection === "trips" ? { id: randomUUID(), city_id: null, location_label: "Egypt", duration_label: "Curated route", currency: "USD" } : collection === "stays" ? { id: randomUUID(), city_id: null, location_label: "Egypt", stay_type: "villa", currency: "USD" } : collection === "products" ? { id: randomUUID(), currency: "USD", price: 0, stock_quantity: 0 } : { id: randomUUID(), vehicle_type: "suv", passenger_capacity: 1, currency: "USD", with_driver: 1 };
         const merged = { ...defaults, ...clean };

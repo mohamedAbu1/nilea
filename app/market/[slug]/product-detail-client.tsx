@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { BazaarProduct, CartLine } from "../catalog";
 import { LocalizedPrice } from "../../components/currency";
+import { catalogGalleryLabel, readCatalogGallery } from "../../lib/catalog-gallery";
 
 type Props = {
   product: BazaarProduct;
@@ -19,6 +20,20 @@ export default function ProductDetailClient({ product, gallery }: Props) {
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const [cartReady, setCartReady] = useState(false);
   const [added, setAdded] = useState(false);
+  const [databaseGallery, setDatabaseGallery] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void fetch(`/api/catalog?type=products&slug=${encodeURIComponent(product.slug)}`, { cache: "no-store" })
+      .then((response) => response.ok ? response.json() as Promise<Array<{ metadata?: unknown }>> : [])
+      .then((rows) => {
+        if (active) setDatabaseGallery(readCatalogGallery(rows[0]?.metadata));
+      })
+      .catch(() => {
+        if (active) setDatabaseGallery([]);
+      });
+    return () => { active = false; };
+  }, [product.slug]);
 
   useEffect(() => {
     try {
@@ -39,6 +54,7 @@ export default function ProductDetailClient({ product, gallery }: Props) {
   }, [cartLines, cartReady]);
 
   const cartCount = cartLines.reduce((total, line) => total + line.quantity, 0);
+  const activeGallery = databaseGallery?.length ? databaseGallery : gallery;
 
   const addToBag = () => {
     setCartLines((lines) => {
@@ -55,8 +71,8 @@ export default function ProductDetailClient({ product, gallery }: Props) {
         <div className="bazaar-product-detail-topbar"><Link href="/market#bazaar-catalog">← Back to the bazaar</Link><Link href="/market#bazaar-catalog" className="bazaar-detail-bag">Shopping bag <strong>{cartCount}</strong></Link></div>
         <div className="bazaar-product-detail-layout">
           <section className="bazaar-detail-gallery" aria-label={`${product.name} product gallery`}>
-            <div className="bazaar-detail-main-image"><img src={gallery[activeView]} alt={`${product.name}, ${["front three-quarter view", "left profile view", "rear three-quarter view", "right profile view"][activeView]}`} /><span>{String(activeView + 1).padStart(2, "0")} / 04</span></div>
-            <div className="bazaar-detail-thumbnails">{gallery.map((image, index) => <button type="button" key={image} className={activeView === index ? "active" : ""} onClick={() => setActiveView(index)} aria-label={`Show ${product.name} ${["front", "left", "back", "right"][index]} view`}><img src={image} alt="" /><span>{["Front", "Left", "Back", "Right"][index]}</span></button>)}</div>
+            <div className="bazaar-detail-main-image"><img src={activeGallery[activeView] ?? activeGallery[0]} alt={`${product.name}, ${catalogGalleryLabel(activeView, "Product image")}`} /><span>{String(activeView + 1).padStart(2, "0")} / {String(activeGallery.length).padStart(2, "0")}</span></div>
+            <div className="bazaar-detail-thumbnails">{activeGallery.map((image, index) => <button type="button" key={`${image}-${index}`} className={activeView === index ? "active" : ""} onClick={() => setActiveView(index)} aria-label={`Show ${product.name} ${catalogGalleryLabel(index, "image")} view`}><img src={image} alt="" /><span>{catalogGalleryLabel(index, "Image")}</span></button>)}</div>
           </section>
           <section className="bazaar-product-detail-copy">
             <p className="bazaar-kicker">{product.category} · {product.origin}</p>

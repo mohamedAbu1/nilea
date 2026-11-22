@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const action = params.get("action");
     if (action === "conversations") {
       if (!["support", "editor", "admin"].includes(user.accessRole)) throw new Error("Staff access required.");
-      const rows = await query("SELECT * FROM chat_conversations ORDER BY last_message_at DESC");
+      const rows = await query("SELECT c.* FROM chat_conversations c LEFT JOIN profiles p ON p.id = c.user_id WHERE COALESCE(p.access_role, 'traveler') NOT IN ('admin', 'support', 'editor') ORDER BY c.last_message_at DESC");
       return Response.json({ data: rows });
     }
     if (action === "messages") {

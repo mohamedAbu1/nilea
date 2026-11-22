@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { getSubmissionErrorMessage, insertInquiry } from "../lib/submissions";
 import { getDestinationLabel, normalizeDestinationId } from "../lib/travel-availability";
 import { LocalizedPrice, useCurrency } from "../components/currency";
+import { catalogGalleryLabel, readCatalogGallery } from "../lib/catalog-gallery";
 
 type IconName = "arrow" | "balloon" | "bath" | "bed" | "boat" | "calendar" | "check" | "close" | "heart" | "horse" | "kitchen" | "lock" | "map" | "pin" | "pool" | "search" | "share" | "star" | "sun" | "users" | "wifi";
 
@@ -425,7 +426,10 @@ function StayListingPage() {
 function VillaDetailPage({ slug }: { slug: string }) {
   const activeStay = catalogStays.find((stay) => stay.slug === slug) ?? catalogStays[0];
   const { format } = useCurrency();
-  const stayGallery = activeStay.gallery ?? galleryImages;
+  const [databaseGallery, setDatabaseGallery] = useState<string[] | null>(null);
+  const stayGallery = databaseGallery?.length
+    ? databaseGallery.map((source, index) => ({ index: 900 + index, label: catalogGalleryLabel(index, "Stay image"), alt: `${activeStay.title} internal image ${index + 1}`, source }))
+    : activeStay.gallery ?? galleryImages;
   const initialCheckIn = dateInput(14);
   const initialCheckOut = dateInput(17);
   const [checkIn, setCheckIn] = useState(initialCheckIn);
@@ -446,6 +450,20 @@ function VillaDetailPage({ slug }: { slug: string }) {
   const bookingExtras = [...extras, ...activeStay.activities.map((activity) => ({ id: activity.id, label: activity.title, detail: `${activity.duration} · ${activity.detail}`, price: activity.price }))];
   const externalListings = externalListingLinks(activeStay);
   const blockedDates = activeStay.blockedDates ?? [];
+
+  useEffect(() => {
+    let active = true;
+    setDatabaseGallery(null);
+    void fetch(`/api/catalog?type=stays&slug=${encodeURIComponent(activeStay.slug)}`, { cache: "no-store" })
+      .then((response) => response.ok ? response.json() as Promise<Array<{ metadata?: unknown }>> : [])
+      .then((rows) => {
+        if (active) setDatabaseGallery(readCatalogGallery(rows[0]?.metadata));
+      })
+      .catch(() => {
+        if (active) setDatabaseGallery([]);
+      });
+    return () => { active = false; };
+  }, [activeStay.slug]);
 
   useEffect(() => {
     const nextCheckIn = dateInput(14);
