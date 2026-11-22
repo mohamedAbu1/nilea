@@ -10,6 +10,7 @@ import AccountDialog, { type AuthMode } from "./account-dialog";
 import { getAuthSession, signOut as signOutFromApi, syncProfileDeviceType, type AccountProfile } from "../lib/auth-client";
 import { subscribeToNewsletter } from "../lib/submissions";
 import { CurrencySwitcher } from "./currency";
+import { AdminDashboardIcon } from "./admin-dashboard-icon";
 
 type NavKey = "home" | "about" | "contact" | "trips";
 
@@ -82,6 +83,7 @@ export function SiteHeader() {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const searchPanelRef = useRef<HTMLDivElement>(null);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
+  const isAdmin = account?.accessRole === "admin";
 
   useEffect(() => {
     setMenuOpen(false);
@@ -156,6 +158,13 @@ export function SiteHeader() {
     };
   }, [searchOpen]);
 
+  useEffect(() => {
+    if (!isAdmin) return;
+    setLanguageOpen(false);
+    setSearchOpen(false);
+    setSearchQuery("");
+  }, [isAdmin]);
+
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return searchItems;
@@ -188,18 +197,20 @@ export function SiteHeader() {
           </nav>
         )}
         <div className="site-header-actions">
-          <div className="site-language-picker" data-no-translate>
-            <span className="site-language-globe" aria-hidden="true">◎</span>
-            <button type="button" className="site-language-trigger" aria-label={t("Language")} aria-haspopup="listbox" aria-expanded={languageOpen} onClick={() => setLanguageOpen((open) => !open)}>{localeOptions.find((option) => option.code === locale)?.native ?? "English"}</button>
-            <span className="site-language-chevron" aria-hidden="true">⌄</span>
-            {languageOpen && <div className="site-language-menu" role="listbox" aria-label={t("Language")}>
-              {localeOptions.map((option) => <button key={option.code} type="button" role="option" aria-selected={locale === option.code} className={locale === option.code ? "active" : ""} onClick={() => { setLocale(option.code); setLanguageOpen(false); }}>{option.native}<span aria-hidden="true">{locale === option.code ? "✓" : ""}</span></button>)}
-            </div>}
-          </div>
-          <CurrencySwitcher />
-          <button ref={searchButtonRef} type="button" className="site-header-search" aria-label={t("Search AlpNile")} aria-expanded={searchOpen} aria-controls="site-search-panel" onClick={() => setSearchOpen((open) => !open)}>
-            <span className="site-action-icon pharaonic-ui-icon pharaonic-ui-search" aria-hidden="true" />
-          </button>
+          {!isAdmin && <>
+            <div className="site-language-picker" data-no-translate>
+              <span className="site-language-globe" aria-hidden="true">◎</span>
+              <button type="button" className="site-language-trigger" aria-label={t("Language")} aria-haspopup="listbox" aria-expanded={languageOpen} onClick={() => setLanguageOpen((open) => !open)}>{localeOptions.find((option) => option.code === locale)?.native ?? "English"}</button>
+              <span className="site-language-chevron" aria-hidden="true">⌄</span>
+              {languageOpen && <div className="site-language-menu" role="listbox" aria-label={t("Language")}>
+                {localeOptions.map((option) => <button key={option.code} type="button" role="option" aria-selected={locale === option.code} className={locale === option.code ? "active" : ""} onClick={() => { setLocale(option.code); setLanguageOpen(false); }}>{option.native}<span aria-hidden="true">{locale === option.code ? "✓" : ""}</span></button>)}
+              </div>}
+            </div>
+            <CurrencySwitcher />
+            <button ref={searchButtonRef} type="button" className="site-header-search" aria-label={t("Search AlpNile")} aria-expanded={searchOpen} aria-controls="site-search-panel" onClick={() => setSearchOpen((open) => !open)}>
+              <span className="site-action-icon pharaonic-ui-icon pharaonic-ui-search" aria-hidden="true" />
+            </button>
+          </>}
           {showPrimaryNavigation && (
             <button className="site-header-menu" type="button" onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? t("Close menu") : t("Open menu")} aria-expanded={menuOpen}>
               <span className={`site-action-icon pharaonic-ui-icon ${menuOpen ? "pharaonic-ui-close" : "pharaonic-ui-menu"}`} aria-hidden="true" />
@@ -207,8 +218,8 @@ export function SiteHeader() {
           )}
           <div className="site-user-area">
              <button type="button" className="site-user-profile" aria-label={account ? `Open traveler profile for ${account.name}` : "Open account access"} aria-expanded={accountMenuOpen} onClick={() => account ? setAccountMenuOpen((open) => !open) : openAccount("login")}><img src={account?.avatar ?? "/alpnile-profile-avatar.webp"} alt={account ? `${account.name} profile` : "Traveler avatar"} /><span><small>{account ? "Signed in" : "Traveler access"}</small><strong>{account?.name ?? "Traveler"}</strong></span></button>
-            {account ? <button type="button" className="site-header-login" onClick={signOut}>Log out <span aria-hidden="true">↗</span></button> : <button type="button" className="site-header-login" onClick={() => openAccount("login")}>Log in <span className="site-plan-icon pharaonic-ui-icon pharaonic-ui-arrow" aria-hidden="true" /></button>}
-            {account && accountMenuOpen && <div className="site-account-popover" role="dialog" aria-label="Traveler profile"><div className="site-account-popover-head"><img src={account.avatar} alt="" /><span><small>Traveler account</small><strong>{account.name}</strong></span></div><p>{account.email}</p><button type="button" onClick={() => openAccount("login")}>Manage account <span aria-hidden="true">↗</span></button></div>}
+            {account ? (isAdmin ? <Link href="/admin" className="site-header-login site-admin-dashboard-button" aria-label="Open admin dashboard"><AdminDashboardIcon size={19} /><span>Dashboard</span></Link> : <button type="button" className="site-header-login" onClick={signOut}>Log out <span aria-hidden="true">↗</span></button>) : <button type="button" className="site-header-login" onClick={() => openAccount("login")}>Log in <span className="site-plan-icon pharaonic-ui-icon pharaonic-ui-arrow" aria-hidden="true" /></button>}
+            {account && accountMenuOpen && <div className="site-account-popover" role="dialog" aria-label="Traveler profile"><div className="site-account-popover-head"><img src={account.avatar} alt="" /><span><small>{isAdmin ? "Admin control" : "Traveler account"}</small><strong>{account.name}</strong></span></div><p>{account.email}</p><button type="button" onClick={signOut}>Log out <span aria-hidden="true">↗</span></button></div>}
           </div>
         </div>
         {searchOpen && (

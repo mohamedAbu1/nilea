@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { StyledSelect } from "./styled-select";
+import { AdminDashboardIcon } from "./admin-dashboard-icon";
 
 export type IconName = "arrow" | "calendar" | "car" | "compass" | "home" | "pin" | "spark" | "bag";
 
@@ -38,9 +39,10 @@ export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
 type HomeHeroProps = {
   onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
   secondaryHref?: string;
+  isAdmin?: boolean;
 };
 
-export function HomeHero({ onSubmit, secondaryHref = "/#categories" }: HomeHeroProps) {
+export function HomeHero({ onSubmit, secondaryHref = "/#categories", isAdmin = false }: HomeHeroProps) {
   const router = useRouter();
   const [heroSlide, setHeroSlide] = useState(0);
   const [heroPaused, setHeroPaused] = useState(false);
@@ -78,14 +80,14 @@ export function HomeHero({ onSubmit, secondaryHref = "/#categories" }: HomeHeroP
           </div>
         </div>
         <div className="home-redesign-hero-note"><span>0{heroSlide + 1}</span><p>{currentHero.note.split(" / ")[0]}<br />{currentHero.note.split(" / ").slice(1).join(" / ")}</p></div>
-        <form className="home-redesign-hero-booker" onSubmit={handleSubmit}>
+        {isAdmin ? <div className="home-redesign-hero-booker home-admin-hero-card" role="region" aria-label="Admin workspace"><div className="home-admin-card-mark"><AdminDashboardIcon size={27} /></div><div><span className="home-admin-card-eyebrow">ADMIN WORKSPACE · LIVE</span><strong>Keep every route moving.</strong><p>Review requests, conversations, catalogue records and exchange rates from one control room.</p></div><Link href="/admin" className="home-admin-card-link"><AdminDashboardIcon size={17} /> Open dashboard <Icon name="arrow" size={14} /></Link></div> : <form className="home-redesign-hero-booker" onSubmit={handleSubmit}>
           <div className="home-redesign-booker-fields">
             <div className="home-redesign-booker-field"><span><Icon name="compass" size={14} /> I want to arrange</span><StyledSelect name="heroIntent" value={heroIntent} onChange={(nextValue) => setHeroIntent(nextValue as "trip" | "stay" | "car")} ariaLabel="I want to arrange" options={[{ value: "trip", label: "A trip or experience" }, { value: "stay", label: "A villa or home" }, { value: "car", label: "A tourist car" }]} /></div>
             <div className="home-redesign-booker-field"><span><Icon name="pin" size={14} /> Where in Egypt</span><StyledSelect name="heroCity" defaultValue="open" ariaLabel="Where in Egypt" options={[{ value: "open", label: "Help me choose" }, ...bookingLocations.map(([value, label]) => ({ value, label }))]} /></div>
             <div className="home-redesign-booker-field"><span><Icon name="calendar" size={14} /> Timing</span><StyledSelect name="heroTiming" defaultValue="flexible" ariaLabel="Timing" options={[{ value: "flexible", label: "I am flexible" }, { value: "soon", label: "Next 30 days" }, { value: "season", label: "This season" }]} /></div>
             <button type="submit" className="home-redesign-booker-submit" aria-label="Open smart journey form"><span className="home-papyrus-glyph" aria-hidden="true">𓂀</span><span className="home-booker-submit-label">Open smart form</span><Icon name="arrow" size={15} /></button>
           </div>
-        </form>
+        </form>}
         <div className="home-redesign-hero-metric"><strong>0{heroSlide + 1}</strong><span>Curated<br />chapter</span></div>
         <div className="home-hero-slider-controls" aria-label="Hero stories">
           <span className="home-hero-slider-count">0{heroSlide + 1}<i />0{heroSlides.length}</span>

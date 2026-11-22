@@ -4323,6 +4323,10 @@ body::-webkit-scrollbar-thumb:hover {
 .site-account-popover-head strong { color: #f5cf87; font-size: 13px; font-weight: 600; }
 .site-account-popover > p { color: rgba(246,239,223,.55); font-size: 10px; overflow-wrap: anywhere; }
 .site-account-popover > button { min-height: 34px; border: 1px solid rgba(241,198,120,.34); border-radius: 999px; color: #f5cf87; background: rgba(241,198,120,.08); font-size: 10px; cursor: pointer; }
+.site-account-popover > button:hover { border-color: rgba(121,217,203,.7); color: #a7e7c5; background: rgba(121,217,203,.1); }
+.admin-dashboard-icon { display: block; flex: 0 0 auto; filter: drop-shadow(0 5px 7px rgba(24, 13, 3, .28)); }
+.site-admin-dashboard-button { gap: 7px; padding-inline: 12px; text-decoration: none; }
+.site-admin-dashboard-button span { font-size: 9px; }
 
 .account-dialog-backdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 24px; background: rgba(1,7,12,.78); backdrop-filter: blur(16px); animation: account-backdrop-in 220ms ease both; }
 .account-dialog { display: grid; width: min(920px, 100%); height: min(720px, calc(100dvh - 48px)); max-height: min(720px, calc(100dvh - 48px)); min-height: 0; overflow: hidden; border: 1px solid rgba(241,198,120,.38); border-radius: 26px; grid-template-columns: minmax(280px, .83fr) minmax(360px, 1fr); background: #071723; box-shadow: 26px 32px 80px rgba(0,0,0,.5), inset 0 1px rgba(255,255,255,.12); animation: account-dialog-in 360ms var(--motion-spring) both; }
@@ -6276,6 +6280,41 @@ h4,
 .home-whatsapp-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(180deg, #a6ebc8, #5fcf9d); }
 .home-whatsapp-mark { display: inline-grid; width: 18px; height: 18px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: 13px; line-height: 1; }
 .home-car-success { margin: 0; color: #a7e7c5; font-size: 10px; line-height: 1.5; }
+
+/* Admins get a focused operations surface instead of customer intake controls. */
+.home-admin-hero-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 92px;
+  padding: 15px 17px;
+  background: linear-gradient(135deg, rgba(9, 36, 47, .94), rgba(4, 16, 26, .9));
+  box-shadow: 0 25px 45px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.12), 0 0 35px rgba(117,212,201,.08);
+}
+.home-admin-card-mark { display: grid; width: 52px; height: 52px; place-items: center; border: 1px solid rgba(244,197,119,.52); border-radius: 16px 11px 15px 10px; background: linear-gradient(145deg, rgba(244,197,119,.18), rgba(117,212,201,.08)); box-shadow: inset 0 1px rgba(255,255,255,.16), 0 10px 24px rgba(0,0,0,.2); transform: rotate(-3deg); }
+.home-admin-card-eyebrow { display: block; color: #79d9cb; font-size: 8px; letter-spacing: .18em; text-transform: uppercase; }
+.home-admin-hero-card strong { display: block; margin-top: 5px; color: #f6d18d; font-family: Georgia, "Times New Roman", serif; font-size: 24px; font-weight: 400; letter-spacing: -.05em; line-height: 1; }
+.home-admin-hero-card p { max-width: 410px; margin-top: 5px; color: rgba(246,239,223,.58); font-size: 10px; line-height: 1.5; }
+.home-admin-card-link { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 13px; border: 1px solid rgba(117,212,201,.52); border-radius: 12px 17px 11px 15px; color: #0b252c; background: linear-gradient(180deg, #a7ebd5, #5cc8b8); box-shadow: 0 10px 22px rgba(41,161,147,.2), inset 0 1px rgba(255,255,255,.48); font-size: 9px; font-weight: 800; text-decoration: none; white-space: nowrap; transition: transform 180ms ease, filter 180ms ease; }
+.home-admin-card-link:hover { filter: brightness(1.08); transform: translateY(-2px); }
+.home-admin-section { position: relative; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(270px, .8fr); align-items: center; gap: 35px; min-height: 430px; margin-top: clamp(100px, 14vw, 185px); overflow: hidden; padding: clamp(38px, 7vw, 82px); border: 1px solid rgba(241,198,120,.3); border-radius: 27px; background: radial-gradient(circle at 82% 28%, rgba(117,212,201,.16), transparent 25%), radial-gradient(circle at 12% 92%, rgba(244,197,119,.1), transparent 31%), linear-gradient(145deg, #0b2b37, #04121e 72%); box-shadow: 22px 30px 55px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.1); isolation: isolate; }
+.home-admin-section::before { position: absolute; inset: 15px; content: ""; border: 1px solid rgba(117,212,201,.13); border-radius: 20px; pointer-events: none; }
+.home-admin-section-orbit { position: absolute; top: -45%; right: -8%; width: 57%; aspect-ratio: 1; border: 1px solid rgba(244,197,119,.24); border-radius: 50%; transform: rotateX(63deg) rotateZ(-18deg); box-shadow: 0 0 0 22px rgba(244,197,119,.025), 0 0 80px rgba(117,212,201,.1); }
+.home-admin-section-orbit::before, .home-admin-section-orbit::after { position: absolute; width: 8px; height: 8px; content: ""; border-radius: 50%; background: #f6d18d; box-shadow: 0 0 16px #f6d18d; }
+.home-admin-section-orbit::before { top: 12%; left: 17%; }
+.home-admin-section-orbit::after { right: 16%; bottom: 9%; background: #79d9cb; box-shadow: 0 0 16px #79d9cb; }
+.home-admin-section-copy, .home-admin-section-grid { position: relative; z-index: 1; }
+.home-admin-section-copy { max-width: 600px; }
+.home-admin-section-copy h2 { margin-top: 14px; color: #f5cf87; font-family: Georgia, "Times New Roman", serif; font-size: clamp(45px, 5.8vw, 77px); font-weight: 400; letter-spacing: -.075em; line-height: .87; }
+.home-admin-section-copy h2 em { color: rgba(246,239,223,.72); font-style: normal; }
+.home-admin-section-copy > p:not(.home-redesign-eyebrow) { max-width: 470px; margin-top: 22px; color: rgba(246,239,223,.64); font-size: 13px; line-height: 1.75; }
+.home-admin-section-link { display: inline-flex; align-items: center; gap: 8px; margin-top: 28px; border: 0; text-decoration: none; }
+.home-admin-section-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.home-admin-section-grid span { display: grid; min-height: 110px; align-content: space-between; padding: 15px; border: 1px solid rgba(117,212,201,.2); border-radius: 16px 11px 17px 13px; background: linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.025)); box-shadow: inset 0 1px rgba(255,255,255,.1); }
+.home-admin-section-grid strong { color: #f5cf87; font-family: Georgia, "Times New Roman", serif; font-size: 25px; font-weight: 400; }
+.home-admin-section-grid small { color: rgba(246,239,223,.62); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.home-reviews-layout-admin { grid-template-columns: 1fr; }
 
 .home-redesign-closing { display: grid; justify-items: center; padding: clamp(120px, 16vw, 220px) 20px; text-align: center; }
 .home-redesign-closing h2 { font-size: clamp(50px, 7vw, 96px); }
@@ -8421,6 +8460,20 @@ form .site-select:focus,
 .home-redesign-booker-fields > .home-redesign-booker-submit { position: relative; z-index: 31; }
 .home-redesign-body { position: relative; z-index: 1; }
 .home-redesign-hero .alpnile-select-menu { z-index: 200; }
+
+@media (max-width: 780px) {
+  .home-admin-section { grid-template-columns: 1fr; }
+  .home-admin-section-grid { max-width: 520px; }
+}
+
+@media (max-width: 640px) {
+  .home-admin-hero-card { grid-template-columns: auto minmax(0, 1fr); }
+  .home-admin-card-link { grid-column: 2; justify-self: start; }
+  .home-admin-section { min-height: 0; margin-top: 100px; padding: 36px 24px 30px; border-radius: 20px; }
+  .home-admin-section::before { inset: 10px; }
+  .home-admin-section-grid { gap: 8px; }
+  .home-admin-section-grid span { min-height: 90px; padding: 12px; }
+}
 
 /* Shared home-style hero for interior pages. It keeps the same visual language
    without duplicating each page's data or interaction model. */

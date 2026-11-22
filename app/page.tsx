@@ -7,6 +7,8 @@ import { HomeHero, Icon, bookingLocations, type IconName } from "./components/ho
 import { legacyCatalog } from "./lib/legacy-catalog";
 import { getSubmissionErrorMessage, insertCarBooking, insertInquiry, insertReview, listPublishedReviews, toggleReviewLike } from "./lib/submissions";
 import { getAuthSession } from "./lib/auth-client";
+import type { AccountProfile } from "./lib/auth-client";
+import { AdminDashboardIcon } from "./components/admin-dashboard-icon";
 
 type Category = {
   title: string;
@@ -156,6 +158,26 @@ function AuthGate({ title, description, onLogin }: { title: string; description:
   );
 }
 
+function AdminWorkspaceSection() {
+  return (
+    <section className="home-admin-section" aria-labelledby="admin-workspace-title">
+      <div className="home-admin-section-orbit" aria-hidden="true" />
+      <div className="home-admin-section-copy">
+        <p className="home-redesign-eyebrow">AlpNile control room</p>
+        <h2 id="admin-workspace-title">The river is moving.<br /><em>Stay in command.</em></h2>
+        <p>Guest requests, live conversations, catalogue content and pricing are ready in one focused workspace.</p>
+        <Link href="/admin" className="home-redesign-primary-button home-admin-section-link"><AdminDashboardIcon size={20} /> Open admin dashboard <Icon name="arrow" size={15} /></Link>
+      </div>
+      <div className="home-admin-section-grid" aria-label="Admin workspace areas">
+        <span><strong>01</strong><small>Guest inbox</small></span>
+        <span><strong>02</strong><small>Requests</small></span>
+        <span><strong>03</strong><small>Catalogue</small></span>
+        <span><strong>04</strong><small>Rates</small></span>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const [bookingSent, setBookingSent] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
@@ -171,16 +193,19 @@ export default function Home() {
   const [bookingError, setBookingError] = useState("");
   const [likingReviewIds, setLikingReviewIds] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [accountRole, setAccountRole] = useState<AccountProfile["accessRole"]>("traveler");
   const [storyAudioOpen, setStoryAudioOpen] = useState(false);
   const [authGateMessage, setAuthGateMessage] = useState("");
 
   useEffect(() => {
     let mounted = true;
-    const refresh = () => { void getAuthSession().then((session) => { if (mounted) { setIsAuthenticated(Boolean(session)); if (session) setAuthGateMessage(""); } }); };
+    const refresh = () => { void getAuthSession().then((session) => { if (mounted) { setIsAuthenticated(Boolean(session)); setAccountRole(session?.user.accessRole ?? "traveler"); if (session) setAuthGateMessage(""); } }); };
     refresh();
     window.addEventListener("alpnile:auth-changed", refresh);
     return () => { mounted = false; window.removeEventListener("alpnile:auth-changed", refresh); };
   }, []);
+
+  const isAdmin = accountRole === "admin";
 
   useEffect(() => {
     let active = true;
@@ -408,7 +433,7 @@ export default function Home() {
   const activeInquiry = inquiryModes.find((mode) => mode.key === inquiryMode) ?? inquiryModes[0];
   return (
     <main className="home-redesign">
-      <HomeHero onSubmit={openTripBrief} secondaryHref="#categories" />
+      <HomeHero onSubmit={openTripBrief} secondaryHref="#categories" isAdmin={isAdmin} />
 
       <div className="home-redesign-body">
         <section className="home-redesign-section home-redesign-categories" id="categories">
@@ -426,7 +451,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="home-concierge-section" id="concierge">
+        {isAdmin ? <AdminWorkspaceSection /> : <section className="home-concierge-section" id="concierge">
           <div className="home-concierge-visual" style={{ backgroundImage: "url('" + (inquiryMode === "contact" ? "/alpnile-contact-studio-v2.webp" : "/alpnile-concierge-v2.webp") + "')" }}>
             <div className="home-concierge-visual-overlay" />
             <div className="home-concierge-visual-caption"><span>ALPNILE CONCIERGE</span><strong>One thoughtful<br />conversation.</strong></div>
@@ -465,7 +490,7 @@ export default function Home() {
               {inquiryError && <p className="home-form-error" role="alert">{inquiryError}</p>}
             </form> : <AuthGate title="Your route starts with an account." description="Sign in before sending a request so we can keep your preferences, messages and WhatsApp follow-up together." onLogin={() => requestLogin("use the AlpNile concierge")} />}
           </div>
-        </section>
+        </section>}
 
         <section className="home-redesign-section home-cities-section" id="cities">
           <SectionHeading eyebrow="Six cities · one living route" title="Where will you begin?" description="Each city opens a different door into Egypt — choose the light, rhythm or silence that fits your trip." action={{ label: "Explore all destinations", href: "/destinations" }} />
@@ -543,7 +568,7 @@ export default function Home() {
             </div>
             <span className="home-reviews-rating"><strong>4.9</strong><span>★★★★★<small>Trusted by curious travellers</small></span></span>
           </div>
-          <div className="home-reviews-layout">
+          <div className={`home-reviews-layout ${isAdmin ? "home-reviews-layout-admin" : ""}`}>
             <div className="home-review-grid">
               {reviews.slice(0, 3).map((review, index) => (
                 <article className={`home-review-card home-review-card-${index + 1}`} key={`${review.name}-${index}`}>
@@ -553,7 +578,7 @@ export default function Home() {
                 </article>
               ))}
             </div>
-            {isAuthenticated ? <form className="home-review-form" onSubmit={submitReview}>
+            {!isAdmin && (isAuthenticated ? <form className="home-review-form" onSubmit={submitReview}>
               <input name="website" className="form-honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" />
               <div><p className="home-redesign-eyebrow">Leave a field note</p><h3>Share your<br /><em>Egypt story.</em></h3></div>
               <label>Your name<input name="name" required placeholder="Your name" /></label>
@@ -563,11 +588,11 @@ export default function Home() {
               <button className="home-review-submit" type="submit" disabled={reviewSubmitting}>{reviewSubmitting ? "Saving note…" : "Submit for review"} <Icon name="arrow" size={15} /></button>
               {reviewSent && <p className="home-review-success" role="status">Thank you. Your field note was submitted for review.</p>}
               {reviewError && <p className="home-form-error" role="alert">{reviewError}</p>}
-            </form> : <AuthGate title="Your story belongs to your account." description="Log in to publish a field note and keep your travel memories connected to your AlpNile profile." onLogin={() => requestLogin("share a field note")} />}
+            </form> : <AuthGate title="Your story belongs to your account." description="Log in to publish a field note and keep your travel memories connected to your AlpNile profile." onLogin={() => requestLogin("share a field note")} />)}
           </div>
         </section>
 
-        <section className="home-car-section" id="car-booking">
+        {!isAdmin && <section className="home-car-section" id="car-booking">
           <div className="home-car-background" aria-hidden="true" />
           <div className="home-car-shade" aria-hidden="true" />
           <div className="home-car-content">
@@ -586,7 +611,7 @@ export default function Home() {
             </form> : <AuthGate title="Reserve your ride with a traveler account." description="Log in before booking so your route details and WhatsApp confirmation stay connected to you." onLogin={() => requestLogin("reserve a car")} />)}
             </div>
           </div>
-        </section>
+        </section>}
 
       </div>
     </main>
