@@ -26,7 +26,13 @@ export async function POST(request: Request) {
     if (!allowedMimeTypes.has(file.type)) return Response.json({ error: "This file type is not supported." }, { status: 415 });
     const extension = path.extname(file.name).toLowerCase().replace(/[^a-z0-9.]/g, "").slice(0, 8);
     const relative = `/uploads/chat/${user.id}/${conversationId}/${randomUUID()}${extension}`;
-    const target = path.join(process.cwd(), "public", relative.replace(/^\//, ""));
+    // Hostinger can replace the active deployment directory on every release. When a
+    // persistent web-served root is configured, keep uploads outside that directory.
+    const storageRoot = path.resolve(process.env.CHAT_UPLOAD_DIR?.trim() || path.join(process.cwd(), "public"));
+    const target = path.resolve(storageRoot, relative.replace(/^\/+/, ""));
+    if (target !== storageRoot && !target.startsWith(`${storageRoot}${path.sep}`)) {
+      return Response.json({ error: "The upload path is invalid." }, { status: 400 });
+    }
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, Buffer.from(await file.arrayBuffer()));
     return Response.json({ data: { path: relative } });
