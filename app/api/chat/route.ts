@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { getCurrentUser } from "../../lib/auth-server";
 import { query } from "../../lib/mysql";
+import { notifyAdmins } from "../../lib/notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,6 +58,17 @@ export async function POST(request: Request) {
       const id = randomUUID();
       await query("INSERT INTO chat_messages (id, conversation_id, sender_id, sender_role, body, message_type, attachment_path, attachment_name, attachment_mime, attachment_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [id, conversationId, user.id, senderRole, String(input.body ?? ""), input.messageType || "text", input.attachmentPath || null, input.attachmentName || null, input.attachmentMime || null, input.attachmentSize || null]);
       await query("UPDATE chat_conversations SET last_message_at = UTC_TIMESTAMP(6) WHERE id = ?", [conversationId]);
+      if (!staff) {
+        notifyAdmins({
+          eventType: "chat_message",
+          title: "New support message",
+          body: `${user.name} sent a new message to AlpNile support${String(input.body ?? "").trim() ? `: ${String(input.body).trim().slice(0, 140)}` : "."}`,
+          userId: user.id,
+          entityType: "conversation",
+          entityId: conversationId,
+          metadata: { messageId: id, messageType: input.messageType || "text" },
+        });
+      }
       const created = await query("SELECT * FROM chat_messages WHERE id = ?", [id]);
       return Response.json({ data: created[0] });
     }

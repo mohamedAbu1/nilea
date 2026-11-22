@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { getSubmissionErrorMessage, insertTripBooking } from "../../lib/submissions";
+import { getAuthSession } from "../../lib/auth-client";
 import { getSimilarTours, getTourGallery, type TourDetail } from "../../lib/tour-details";
 import { catalogGalleryLabel, readCatalogGallery } from "../../lib/catalog-gallery";
 import { useCurrency, type CurrencyCode } from "../../components/currency";
@@ -73,6 +74,11 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
   const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    void getAuthSession().then((session) => setIsAdmin(session?.user.accessRole === "admin"));
+  }, []);
 
   useEffect(() => {
     setActiveImage(0);
@@ -232,7 +238,7 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
             <section className="tour-detail-trust"><div className="tour-detail-trust-mark">𓂀</div><div><strong>Thoughtful planning, clear confirmation.</strong><p>Your date request is saved first. The AlpNile team confirms availability and sends the secure payment step before any charge is made.</p></div></section>
           </div>
 
-          <aside className="tour-booking-card" id="booking">
+          {isAdmin ? <aside className="tour-booking-card admin-public-booking-gate" id="booking"><span className="tour-booking-card-lock" aria-hidden="true">✦</span><p className="tour-booking-card-kicker">ALPNILE / CONTROL ROOM</p><h2>Guest bookings are hidden in admin view.</h2><p>Use the requests workspace to review traveler bookings and customer history.</p><Link href="/admin" className="tour-detail-primary-button">Open admin requests <span>→</span></Link></aside> : <aside className="tour-booking-card" id="booking">
             <span className="tour-booking-card-orbit tour-booking-card-orbit-one" aria-hidden="true" />
             <span className="tour-booking-card-orbit tour-booking-card-orbit-two" aria-hidden="true" />
             <span className="tour-booking-card-lock" aria-hidden="true">𓂀</span>
@@ -245,7 +251,7 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
             {step === "payment" && <form className="tour-payment-form" onSubmit={submitBooking}><button type="button" className="tour-booking-edit" onClick={() => setStep("details")}>← Edit booking details</button><div className="tour-booking-summary"><div><span>{formatDate(startDate)}{endDate ? ` — ${formatDate(endDate)}` : ""}</span><small>{guests} guest{guests === 1 ? "" : "s"} · {tour.duration}</small></div><strong>{formatMoney(totalAmount, tour.currency)}</strong></div><p className="tour-payment-heading">Select how you would like to continue</p><label className={`tour-payment-option ${paymentMethod === "card" ? "selected" : ""}`}><input type="radio" name="payment" checked={paymentMethod === "card"} onChange={() => setPaymentMethod("card")} /><span><strong>Secure card checkout</strong><small>We will send a protected payment link after availability is confirmed.</small></span><b>↗</b></label><label className={`tour-payment-option ${paymentMethod === "pay-later" ? "selected" : ""}`}><input type="radio" name="payment" checked={paymentMethod === "pay-later"} onChange={() => setPaymentMethod("pay-later")} /><span><strong>Pay later with AlpNile</strong><small>Confirm the route first, then settle securely with our team.</small></span><b>◌</b></label><div className="tour-payment-breakdown"><div><span>Experience · {guests} guests</span><strong>{formatMoney(baseAmount, tour.currency)}</strong></div><div><span>Service &amp; support</span><strong>{formatMoney(serviceFee, tour.currency)}</strong></div><div className="total"><span>Total estimate</span><strong>{formatMoney(totalAmount, tour.currency)}</strong></div></div><p className="tour-payment-note">Your request is recorded without storing card numbers or security codes. A confirmed availability message and secure payment instruction will follow.</p><button className="tour-detail-primary-button" type="submit" disabled={submitting}>{submitting ? "Saving your request…" : "Confirm booking request"} <span>→</span></button>{error && <p className="tour-detail-error" role="alert">{error}</p>}</form>}
 
             {step === "success" && <div className="tour-booking-success"><div className="tour-booking-success-icon">✓</div><h3>Your journey is in motion.</h3><p>We saved your request for <strong>{formatDate(startDate)}</strong> and opened WhatsApp so the AlpNile team can confirm availability and the secure payment step.</p><div className="tour-booking-success-summary"><span>{tour.name}</span><span>{guests} guest{guests === 1 ? "" : "s"} · {formatMoney(totalAmount, tour.currency)} estimate</span></div><Link href="/tours-experiences" className="tour-detail-secondary-button">Explore more experiences</Link></div>}
-          </aside>
+          </aside>}
         </div>
 
         {similarTours.length > 0 && <section className="tour-similar-section"><div className="tour-similar-heading"><div><p className="tour-detail-eyebrow">Same city &amp; category</p><h2>More routes that fit your journey</h2></div><span>{similarTours.length} related experiences</span></div><div className="tour-similar-grid">{similarTours.map((relatedTour) => <Link href={`/tours-experiences/${relatedTour.slug}`} className="tour-similar-card" key={relatedTour.slug}><div className="tour-similar-card-media"><img src={relatedTour.image} alt={relatedTour.name} /><span>{relatedTour.categories.find((category) => tour.categories.includes(category)) ?? relatedTour.category}</span></div><div className="tour-similar-card-copy"><strong>{relatedTour.name}</strong><span>{relatedTour.city}</span><div><small>★ {relatedTour.rating === "New" ? "New" : `${relatedTour.rating} (${relatedTour.reviews})`}</small><b>From {formatMoney(relatedTour.priceFrom, relatedTour.currency)}</b></div></div></Link>)}</div></section>}

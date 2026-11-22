@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { StyledSelect } from "../components/styled-select";
 import { insertInquiry } from "../lib/submissions";
+import { getAuthSession } from "../lib/auth-client";
 
 const contactChannels = [
   { kicker: "Email", value: "hello@alpnile.com", detail: "A thoughtful reply within one working day.", href: "mailto:hello@alpnile.com", icon: "✉" },
@@ -16,6 +17,11 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    void getAuthSession().then((session) => setIsAdmin(session?.user.accessRole === "admin"));
+  }, []);
 
   const submitForm = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -67,6 +73,8 @@ export default function ContactPage() {
               <p>Thank you for reaching out. We’ll be in touch soon with a thoughtful next step.</p>
               <button type="button" className="info-secondary-action" onClick={() => setSubmitted(false)}>Send another note</button>
             </div>
+          ) : isAdmin ? (
+            <div className="admin-public-gate"><span className="admin-public-gate-icon">✦</span><p className="info-eyebrow">ALPNILE CONTROL ROOM</p><h3>Guest contact is closed in admin view.</h3><p>Manage requests, customer files and support conversations from the dedicated operations workspace.</p><Link href="/admin" className="info-primary-action">Open control room ↗</Link></div>
           ) : (
             <form className="contact-form" onSubmit={submitForm}>
               <input name="website" className="form-honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" />

@@ -5,7 +5,7 @@ import { query } from "../../lib/mysql";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const eventTypes = new Set(["view", "search", "open_details", "save", "unsave", "inquiry", "booking", "planner_complete", "recommendation_click"]);
+const eventTypes = new Set(["view", "search", "open_details", "save", "unsave", "like", "unlike", "inquiry", "booking", "purchase", "review", "planner_complete", "recommendation_click"]);
 const entityTypes = new Set(["trip", "stay", "product", "city", "vehicle", "site"]);
 
 function errorResponse(error: unknown, status = 400) {

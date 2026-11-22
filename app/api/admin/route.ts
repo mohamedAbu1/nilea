@@ -40,7 +40,13 @@ export async function GET(request: Request) {
     if (action === "stats") {
       const tables = ["inquiries", "car_bookings", "trip_bookings", "stay_bookings", "chat_conversations", "stays", "trips", "products", "vehicles"];
       const counts = await Promise.all(tables.map(async (table) => { const rows = await query<{ count: number }[]>(`SELECT COUNT(*) AS count FROM \`${table}\``); return [table, Number(rows[0]?.count ?? 0)] as const; }));
-      return Response.json({ data: Object.fromEntries(counts) });
+      const [customers, unreadNotifications, bookings, orders] = await Promise.all([
+        query<{ count: number }[]>("SELECT COUNT(*) AS count FROM users u LEFT JOIN profiles p ON p.id = u.id WHERE COALESCE(p.access_role, 'traveler') = 'traveler'"),
+        query<{ count: number }[]>("SELECT COUNT(*) AS count FROM admin_notifications WHERE is_read = 0"),
+        query<{ count: number }[]>("SELECT COUNT(*) AS count FROM (SELECT id FROM trip_bookings WHERE created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY) UNION ALL SELECT id FROM stay_bookings WHERE created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY) UNION ALL SELECT id FROM car_bookings WHERE created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)) recent_bookings"),
+        query<{ count: number }[]>("SELECT COUNT(*) AS count FROM product_orders WHERE created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)"),
+      ]);
+      return Response.json({ data: { ...Object.fromEntries(counts), customers: Number(customers[0]?.count ?? 0), unread_notifications: Number(unreadNotifications[0]?.count ?? 0), recent_bookings: Number(bookings[0]?.count ?? 0), recent_orders: Number(orders[0]?.count ?? 0) } });
     }
     if (action === "profiles") {
       const ids = (params.get("ids") || "").split(",").map((id) => id.trim()).filter((id) => /^[a-f0-9-]{36}$/i.test(id));
@@ -55,6 +61,77 @@ export async function GET(request: Request) {
       const rows = await query(`SELECT * FROM \`${collection}\` ORDER BY updated_at DESC LIMIT 100`);
       return Response.json({ data: rows });
     }
+    if (action === "notifications") {
+      const [rows, unread] = await Promise.all([
+        query("SELECT id, event_type, title, body, user_id, entity_type, entity_id, metadata, is_read, created_at FROM admin_notifications ORDER BY created_at DESC LIMIT 40"),
+        query<{ count: number }[]>("SELECT COUNT(*) AS count FROM admin_notifications WHERE is_read = 0"),
+      ]);
+      return Response.json({ data: { rows, unread_count: Number(unread[0]?.count ?? 0) } });
+    }
+    if (action === "users") {
+      const rows = await query(`
+        SELECT u.id, u.email, u.full_name, u.phone, u.created_at, u.last_login_at,
+               COALESCE(p.access_role, 'traveler') AS access_role, p.last_seen_at,
+               (SELECT COUNT(*) FROM catalog_events ce WHERE ce.user_id = u.id) AS event_count,
+               (SELECT COUNT(*) FROM catalog_events ce WHERE ce.user_id = u.id AND ce.event_type = 'search') AS search_count,
+               (SELECT COUNT(*) FROM catalog_events ce WHERE ce.user_id = u.id AND ce.event_type = 'like') AS like_count,
+               (SELECT MAX(ce.occurred_at) FROM catalog_events ce WHERE ce.user_id = u.id) AS last_activity_at,
+               (SELECT COUNT(*) FROM trip_bookings b WHERE b.user_id = u.id) +
+               (SELECT COUNT(*) FROM stay_bookings b WHERE b.user_id = u.id) +
+               (SELECT COUNT(*) FROM car_bookings b WHERE b.user_id = u.id) AS booking_count,
+               (SELECT COUNT(*) FROM product_orders o WHERE o.user_id = u.id) AS purchase_count,
+               (SELECT COUNT(*) FROM reviews r WHERE r.user_id = u.id) AS review_count,
+               (SELECT COUNT(*) FROM chat_conversations c WHERE c.user_id = u.id) AS conversation_count
+          FROM users u
+          LEFT JOIN profiles p ON p.id = u.id
+         WHERE COALESCE(p.access_role, 'traveler') = 'traveler'
+         ORDER BY COALESCE((SELECT MAX(ce.occurred_at) FROM catalog_events ce WHERE ce.user_id = u.id), u.created_at) DESC
+         LIMIT 200`);
+      return Response.json({ data: rows });
+    }
+    if (action === "user-profile") {
+      const userId = params.get("id") || "";
+      if (!/^[a-f0-9-]{36}$/i.test(userId)) throw new Error("Invalid user id.");
+      const [userRows, preferences, events, bookings, orders, orderItems, reviews, conversations, saved] = await Promise.all([
+        query("SELECT u.id, u.email, u.full_name, u.phone, u.avatar_url, u.created_at, u.last_login_at, p.preferred_locale, p.gender, p.last_seen_at FROM users u LEFT JOIN profiles p ON p.id = u.id WHERE u.id = ? AND COALESCE(p.access_role, 'traveler') = 'traveler' LIMIT 1", [userId]),
+        query("SELECT * FROM user_preferences WHERE user_id = ? LIMIT 1", [userId]),
+        query("SELECT id, event_type, entity_type, entity_id, entity_slug, search_query, metadata, occurred_at FROM catalog_events WHERE user_id = ? ORDER BY occurred_at DESC LIMIT 120", [userId]),
+        query(`
+          SELECT 'trip' AS source, b.id, b.trip_id AS entity_id, COALESCE(t.title, 'Trip request') AS label, b.status, b.start_date AS start_date, b.end_date AS end_date, b.guests, b.created_at
+            FROM trip_bookings b LEFT JOIN trips t ON t.id = b.trip_id WHERE b.user_id = ?
+          UNION ALL
+          SELECT 'stay' AS source, b.id, b.stay_id AS entity_id, COALESCE(s.name, 'Stay request') AS label, b.status, b.check_in AS start_date, b.check_out AS end_date, b.guests, b.created_at
+            FROM stay_bookings b LEFT JOIN stays s ON s.id = b.stay_id WHERE b.user_id = ?
+          UNION ALL
+          SELECT 'car' AS source, b.id, b.vehicle_id AS entity_id, COALESCE(v.name, 'Car request') AS label, b.status, b.pickup_date AS start_date, b.return_date AS end_date, b.passengers AS guests, b.created_at
+            FROM car_bookings b LEFT JOIN vehicles v ON v.id = b.vehicle_id WHERE b.user_id = ?
+          ORDER BY created_at DESC LIMIT 100`, [userId, userId, userId]),
+        query("SELECT id, delivery_country, status, contact_preference, created_at FROM product_orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 100", [userId]),
+        query("SELECT order_id, product_name, quantity, unit_price FROM product_order_items WHERE order_id IN (SELECT id FROM product_orders WHERE user_id = ?) ORDER BY created_at DESC", [userId]),
+        query("SELECT id, full_name, city_country, rating, journey, body, status, like_count, created_at FROM reviews WHERE user_id = ? ORDER BY created_at DESC LIMIT 100", [userId]),
+        query("SELECT c.id, c.subject, c.status, c.last_message_at, c.created_at, (SELECT COUNT(*) FROM chat_messages m WHERE m.conversation_id = c.id) AS message_count FROM chat_conversations c WHERE c.user_id = ? ORDER BY c.last_message_at DESC LIMIT 50", [userId]),
+        Promise.all([
+          query<{ count: number }[]>("SELECT COUNT(*) AS count FROM saved_destinations WHERE user_id = ?", [userId]),
+          query<{ count: number }[]>("SELECT COUNT(*) AS count FROM saved_trips WHERE user_id = ?", [userId]),
+          query<{ count: number }[]>("SELECT COUNT(*) AS count FROM saved_stays WHERE user_id = ?", [userId]),
+          query<{ count: number }[]>("SELECT COUNT(*) AS count FROM saved_products WHERE user_id = ?", [userId]),
+        ]),
+      ]);
+      if (!userRows[0]) throw new Error("User file not found.");
+      const interestRows = await query("SELECT entity_type, entity_slug, COUNT(*) AS count FROM catalog_events WHERE user_id = ? AND entity_slug IS NOT NULL GROUP BY entity_type, entity_slug ORDER BY count DESC LIMIT 20", [userId]);
+      return Response.json({ data: {
+        user: userRows[0],
+        preferences: preferences[0] ?? null,
+        events,
+        bookings,
+        orders,
+        order_items: orderItems,
+        reviews,
+        conversations,
+        saved: { destinations: Number(saved[0][0]?.count ?? 0), trips: Number(saved[1][0]?.count ?? 0), stays: Number(saved[2][0]?.count ?? 0), products: Number(saved[3][0]?.count ?? 0) },
+        interests: interestRows,
+      } });
+    }
     if (action === "rates") {
       const rows = await query("SELECT currency_code, currency_name, symbol, rate_to_usd, decimal_digits, is_active, updated_at FROM exchange_rates ORDER BY currency_code");
       return Response.json({ data: rows });
@@ -66,7 +143,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await staff();
-    const input = await request.json() as { action?: string; table?: string; id?: string; status?: string; collection?: string; values?: Record<string, unknown>; rates?: Array<Record<string, unknown>> };
+    const input = await request.json() as { action?: string; table?: string; id?: string; status?: string; collection?: string; values?: Record<string, unknown>; rates?: Array<Record<string, unknown>>; notificationIds?: string[]; markAll?: boolean };
     if (input.action === "update-status") {
       if (!requestTables.includes(input.table as typeof requestTables[number])) throw new Error("Invalid request table.");
       await query(`UPDATE \`${input.table}\` SET status = ? WHERE id = ?`, [input.status, input.id]);
@@ -98,6 +175,21 @@ export async function POST(request: Request) {
         await query(`UPDATE \`${collection}\` SET ${columns.map((column) => `\`${column}\` = ?`).join(", ")} WHERE id = ?`, [...columns.map((column) => typeof clean[column] === "boolean" ? (clean[column] ? 1 : 0) : clean[column]), input.id]);
       }
       return Response.json({ data: { saved: true } });
+    }
+    if (input.action === "delete-catalog") {
+      if (user.accessRole !== "admin") throw new Error("Administrator access required.");
+      const collection = input.collection as typeof catalogTables[number];
+      if (!catalogTables.includes(collection) || !input.id) throw new Error("Invalid catalog record.");
+      await query(`UPDATE \`${collection}\` SET is_active = 0, updated_at = UTC_TIMESTAMP(6) WHERE id = ?`, [input.id]);
+      return Response.json({ data: { archived: true } });
+    }
+    if (input.action === "mark-notifications-read") {
+      if (input.markAll) await query("UPDATE admin_notifications SET is_read = 1 WHERE is_read = 0");
+      else if (input.notificationIds?.length) {
+        const ids = input.notificationIds.filter((id) => /^[a-f0-9-]{36}$/i.test(id));
+        if (ids.length) await query(`UPDATE admin_notifications SET is_read = 1 WHERE id IN (${ids.map(() => "?").join(",")})`, ids);
+      }
+      return Response.json({ data: { updated: true } });
     }
     return fail(new Error("Unknown admin action."));
   } catch (error) { return fail(error, 401); }

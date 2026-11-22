@@ -14,6 +14,7 @@ import {
   type ChatMessage,
 } from "../lib/chat";
 import { getSubmissionErrorMessage } from "../lib/submissions";
+import { getAuthSession } from "../lib/auth-client";
 
 const emojis = ["😊", "👋", "✨", "❤️", "📍", "🚗", "🏡", "🗺️", "🙏", "👍"];
 
@@ -39,9 +40,15 @@ export default function ChatWidget() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [staffViewer, setStaffViewer] = useState(false);
 
   useEffect(() => {
     if (pathname.startsWith("/admin")) return;
+    void getAuthSession().then((session) => setStaffViewer(["admin", "support", "editor"].includes(session?.user.accessRole ?? "")));
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname.startsWith("/admin") || staffViewer) return;
     let unsubscribe: () => void = () => undefined;
     if (!open) return () => unsubscribe();
     let active = true;
@@ -80,9 +87,9 @@ export default function ChatWidget() {
       active = false;
       unsubscribe();
     };
-  }, [open, pathname]);
+  }, [open, pathname, staffViewer]);
 
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/admin") || staffViewer) return null;
 
   const askUserToSignIn = () => {
     window.dispatchEvent(new CustomEvent("alpnile:open-account", { detail: { mode: "login" } }));

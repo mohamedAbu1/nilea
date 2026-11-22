@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { createHash, randomBytes, randomUUID, scrypt as nodeScrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { query, withTransaction } from "./mysql";
+import { notifyAdmins } from "./notifications";
 
 const scrypt = promisify(nodeScrypt);
 const SESSION_COOKIE = "alpnile_session";
@@ -81,7 +82,10 @@ export async function getCurrentUser() {
   const token = await getSessionToken();
   if (!token) return null;
   const rows = await query<(AuthRow & { session_id: string })[]>("SELECT s.id AS session_id, u.id, u.email, u.full_name, u.phone, u.avatar_url, p.gender, p.access_role FROM auth_sessions s JOIN users u ON u.id = s.user_id LEFT JOIN profiles p ON p.id = u.id WHERE s.id = ? AND s.expires_at > UTC_TIMESTAMP(6) LIMIT 1", [token]);
-  return rows[0] ? profileFromRow(rows[0]) : null;
+  if (!rows[0]) return null;
+  const profile = profileFromRow(rows[0]);
+  void query("UPDATE profiles SET last_seen_at = UTC_TIMESTAMP(6) WHERE id = ?", [profile.id]).catch(() => undefined);
+  return profile;
 }
 
 export async function requireUser(roles?: AccessRole[]) {
@@ -121,6 +125,15 @@ export async function register(input: { name: string; email: string; phone?: str
     await connection.execute("INSERT INTO profiles (id, full_name, phone, avatar_url, gender, device_type) VALUES (?, ?, ?, ?, ?, ?)", [id, input.name.trim() || "Traveler", input.phone?.trim() || null, input.avatarUrl || null, input.gender === "male" || input.gender === "female" ? input.gender : null, input.deviceType === "phone" ? "phone" : "computer"]);
   });
   await setSession(id);
+  notifyAdmins({
+    eventType: "account_created",
+    title: "New traveler account",
+    body: `${input.name.trim() || "A new traveler"} created an AlpNile account.`,
+    userId: id,
+    entityType: "user",
+    entityId: id,
+    metadata: { email },
+  });
   return profileFromRow({ id, email, full_name: input.name.trim() || "Traveler", phone: input.phone || null, avatar_url: input.avatarUrl || null, gender: input.gender || null, access_role: "traveler" });
 }
 
