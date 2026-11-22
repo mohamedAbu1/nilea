@@ -56,7 +56,14 @@ export const categories: ProductCategory[] = ["All objects", "Travel keepsakes",
 export const galleryViews = ["front", "left", "back", "right"] as const;
 
 export function getProductGallery(slug: string) {
-  return galleryViews.map((view) => `/images/bazaar/gallery/${slug}-${view}.webp`);
+  // The catalogue ships one web preview plus the original and 4K variants.
+  // Keep the detail gallery grounded in files that actually exist instead of
+  // pointing at the old, never-generated `/images/bazaar/gallery` folder.
+  return [
+    `/images/bazaar/web/${slug}.webp`,
+    `/images/bazaar/4k/${slug}-4k.png`,
+    `/images/bazaar/source/${slug}.png`,
+  ];
 }
 
 export function getBazaarProduct(slug: string) {
