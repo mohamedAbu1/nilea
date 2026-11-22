@@ -18,7 +18,10 @@ import { deleteAdminCatalog, getAdminCatalog, getAdminNotifications, getAdminPro
 import { getAuthSession, signOut } from "../lib/auth-client";
 import { currencyOptions, type CurrencyCode, type ExchangeRate } from "../components/currency";
 import { CurrencyCoin } from "../components/currency-coin";
-import { parseCatalogMetadata, readCatalogGallery } from "../lib/catalog-gallery";
+import { parseCatalogMetadata, getStayGalleryDefaults, readCatalogGallery, readCatalogGalleryOverride } from "../lib/catalog-gallery";
+import { getTourDetail, getTourGallery } from "../lib/tour-details";
+import { getProductGallery } from "../market/catalog";
+import { getVehicle } from "../travel-transport/vehicle-data";
 
 type AccessRole = "traveler" | "support" | "editor" | "admin";
 type DashboardSection = "overview" | "inbox" | "requests" | "users" | "stays" | "trips" | "market" | "vehicles" | "currency";
@@ -91,8 +94,23 @@ function recordLabel(record: Row, collection: CatalogCollection) {
   return textValue(record, collection === "trips" ? "title" : "name") || textValue(record, "slug") || "Untitled record";
 }
 
+function defaultCatalogGallery(record: Row, collection: CatalogCollection) {
+  const slug = textValue(record, "slug");
+  if (collection === "stays") return getStayGalleryDefaults(slug);
+  if (collection === "trips") {
+    const tour = getTourDetail(slug);
+    return tour ? getTourGallery(tour).map((image) => image.src) : [];
+  }
+  if (collection === "products") return getProductGallery(slug);
+  if (collection === "vehicles") return getVehicle(slug)?.images.map((image) => image.src) ?? [];
+  return [];
+}
+
 function editorFromRecord(record: Row, collection: CatalogCollection): EditorState {
   const metadata = parseCatalogMetadata(record.metadata);
+  const storedGallery = readCatalogGallery(record.metadata);
+  const hasExplicitGallery = readCatalogGalleryOverride(record.metadata) !== null;
+  const galleryImages = hasExplicitGallery || storedGallery.length ? storedGallery : defaultCatalogGallery(record, collection);
   return {
     id: textValue(record, "id"),
     slug: textValue(record, "slug"),
@@ -111,7 +129,7 @@ function editorFromRecord(record: Row, collection: CatalogCollection): EditorSta
     is_active: Boolean(record.is_active ?? true),
     is_featured: Boolean(record.is_featured ?? false),
     metadata,
-    gallery_images: readCatalogGallery(record.metadata),
+    gallery_images: galleryImages,
   };
 }
 

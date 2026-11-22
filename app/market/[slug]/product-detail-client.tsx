@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { BazaarProduct, CartLine } from "../catalog";
 import { LocalizedPrice } from "../../components/currency";
-import { catalogGalleryLabel, readCatalogGallery } from "../../lib/catalog-gallery";
+import { catalogGalleryLabel, readCatalogGalleryState } from "../../lib/catalog-gallery";
 
 type Props = {
   product: BazaarProduct;
@@ -20,17 +20,17 @@ export default function ProductDetailClient({ product, gallery }: Props) {
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const [cartReady, setCartReady] = useState(false);
   const [added, setAdded] = useState(false);
-  const [databaseGallery, setDatabaseGallery] = useState<string[] | null>(null);
+  const [databaseGallery, setDatabaseGallery] = useState<{ configured: boolean; images: string[] } | null>(null);
 
   useEffect(() => {
     let active = true;
     void fetch(`/api/catalog?type=products&slug=${encodeURIComponent(product.slug)}`, { cache: "no-store" })
       .then((response) => response.ok ? response.json() as Promise<Array<{ metadata?: unknown }>> : [])
       .then((rows) => {
-        if (active) setDatabaseGallery(readCatalogGallery(rows[0]?.metadata));
+        if (active) setDatabaseGallery(readCatalogGalleryState(rows[0]?.metadata));
       })
       .catch(() => {
-        if (active) setDatabaseGallery([]);
+        if (active) setDatabaseGallery({ configured: false, images: [] });
       });
     return () => { active = false; };
   }, [product.slug]);
@@ -54,7 +54,7 @@ export default function ProductDetailClient({ product, gallery }: Props) {
   }, [cartLines, cartReady]);
 
   const cartCount = cartLines.reduce((total, line) => total + line.quantity, 0);
-  const activeGallery = databaseGallery?.length ? databaseGallery : gallery;
+  const activeGallery = databaseGallery?.configured ? (databaseGallery.images.length ? databaseGallery.images : gallery.slice(0, 1)) : gallery;
 
   const addToBag = () => {
     setCartLines((lines) => {

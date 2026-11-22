@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { getSubmissionErrorMessage, insertTripBooking } from "../../lib/submissions";
 import { getAuthSession } from "../../lib/auth-client";
 import { getSimilarTours, getTourGallery, type TourDetail } from "../../lib/tour-details";
-import { catalogGalleryLabel, readCatalogGallery } from "../../lib/catalog-gallery";
+import { catalogGalleryLabel, readCatalogGalleryState } from "../../lib/catalog-gallery";
 import { useCurrency, type CurrencyCode } from "../../components/currency";
 import { trackCatalogEvent } from "../../lib/intelligence-client";
 
@@ -55,10 +55,12 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
   const { format } = useCurrency();
   const formatMoney = (amount: number, currency: string) => format(amount, (currency || "USD") as CurrencyCode);
   const today = useMemo(() => dateKeyForDate(new Date()), []);
-  const [databaseGallery, setDatabaseGallery] = useState<string[] | null>(null);
-  const gallery = useMemo(() => databaseGallery?.length
-    ? databaseGallery.map((src, index) => ({ src, label: catalogGalleryLabel(index, "Tour image") }))
-    : getTourGallery(tour), [databaseGallery, tour]);
+  const [databaseGallery, setDatabaseGallery] = useState<{ configured: boolean; images: string[] } | null>(null);
+  const gallery = useMemo(() => {
+    if (!databaseGallery?.configured) return getTourGallery(tour);
+    const sources = databaseGallery.images.length ? databaseGallery.images : [tour.image];
+    return sources.map((src, index) => ({ src, label: catalogGalleryLabel(index, "Tour image") }));
+  }, [databaseGallery, tour]);
   const similarTours = useMemo(() => getSimilarTours(tour), [tour]);
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
@@ -90,10 +92,10 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
     void fetch(`/api/catalog?type=trips&slug=${encodeURIComponent(tour.slug)}`, { cache: "no-store" })
       .then((response) => response.ok ? response.json() as Promise<Array<{ metadata?: unknown }>> : [])
       .then((rows) => {
-        if (active) setDatabaseGallery(readCatalogGallery(rows[0]?.metadata));
+        if (active) setDatabaseGallery(readCatalogGalleryState(rows[0]?.metadata));
       })
       .catch(() => {
-        if (active) setDatabaseGallery([]);
+        if (active) setDatabaseGallery({ configured: false, images: [] });
       });
     return () => { active = false; };
   }, [tour.slug]);

@@ -6,7 +6,7 @@ import { getSubmissionErrorMessage, insertInquiry } from "../lib/submissions";
 import { getAuthSession } from "../lib/auth-client";
 import { getDestinationLabel, normalizeDestinationId } from "../lib/travel-availability";
 import { LocalizedPrice, useCurrency } from "../components/currency";
-import { catalogGalleryLabel, readCatalogGallery } from "../lib/catalog-gallery";
+import { catalogGalleryLabel, readCatalogGalleryState } from "../lib/catalog-gallery";
 
 type IconName = "arrow" | "balloon" | "bath" | "bed" | "boat" | "calendar" | "check" | "close" | "heart" | "horse" | "kitchen" | "lock" | "map" | "pin" | "pool" | "search" | "share" | "star" | "sun" | "users" | "wifi";
 
@@ -427,9 +427,11 @@ function StayListingPage() {
 function VillaDetailPage({ slug }: { slug: string }) {
   const activeStay = catalogStays.find((stay) => stay.slug === slug) ?? catalogStays[0];
   const { format } = useCurrency();
-  const [databaseGallery, setDatabaseGallery] = useState<string[] | null>(null);
-  const stayGallery = databaseGallery?.length
-    ? databaseGallery.map((source, index) => ({ index: 900 + index, label: catalogGalleryLabel(index, "Stay image"), alt: `${activeStay.title} internal image ${index + 1}`, source }))
+  const [databaseGallery, setDatabaseGallery] = useState<{ configured: boolean; images: string[] } | null>(null);
+  const stayGallery = databaseGallery?.configured
+    ? (databaseGallery.images.length
+      ? databaseGallery.images.map((source, index) => ({ index: 900 + index, label: catalogGalleryLabel(index, "Stay image"), alt: `${activeStay.title} internal image ${index + 1}`, source }))
+      : [{ index: 0, label: "Catalog cover", alt: `${activeStay.title} cover image`, source: activeStay.image }])
     : activeStay.gallery ?? galleryImages;
   const initialCheckIn = dateInput(14);
   const initialCheckOut = dateInput(17);
@@ -463,10 +465,10 @@ function VillaDetailPage({ slug }: { slug: string }) {
     void fetch(`/api/catalog?type=stays&slug=${encodeURIComponent(activeStay.slug)}`, { cache: "no-store" })
       .then((response) => response.ok ? response.json() as Promise<Array<{ metadata?: unknown }>> : [])
       .then((rows) => {
-        if (active) setDatabaseGallery(readCatalogGallery(rows[0]?.metadata));
+        if (active) setDatabaseGallery(readCatalogGalleryState(rows[0]?.metadata));
       })
       .catch(() => {
-        if (active) setDatabaseGallery([]);
+        if (active) setDatabaseGallery({ configured: false, images: [] });
       });
     return () => { active = false; };
   }, [activeStay.slug]);

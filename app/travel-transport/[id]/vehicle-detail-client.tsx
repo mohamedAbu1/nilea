@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Vehicle } from "../vehicle-data";
 import { LocalizedPrice } from "../../components/currency";
-import { catalogGalleryLabel, readCatalogGallery } from "../../lib/catalog-gallery";
+import { catalogGalleryLabel, readCatalogGalleryState } from "../../lib/catalog-gallery";
 
 function DetailMark({ type }: { type: "seat" | "bag" | "route" | "check" }) {
   if (type === "seat") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v8a3 3 0 0 0 3 3h7a3 3 0 0 0 3-3V9" /><path d="M6 16v3M18 16v3M9 5a2 2 0 1 1 4 0v6H9V5ZM4 19h16" /></svg>;
@@ -15,9 +15,11 @@ function DetailMark({ type }: { type: "seat" | "bag" | "route" | "check" }) {
 
 export default function VehicleDetailClient({ vehicle }: { vehicle: Vehicle }) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [databaseGallery, setDatabaseGallery] = useState<string[] | null>(null);
-  const images = databaseGallery?.length
-    ? databaseGallery.map((src, index) => ({ src, label: catalogGalleryLabel(index, "Vehicle image") }))
+  const [databaseGallery, setDatabaseGallery] = useState<{ configured: boolean; images: string[] } | null>(null);
+  const images = databaseGallery?.configured
+    ? (databaseGallery.images.length
+      ? databaseGallery.images.map((src, index) => ({ src, label: catalogGalleryLabel(index, "Vehicle image") }))
+      : vehicle.images.slice(0, 1))
     : vehicle.images;
   const activeImage = images[activeImageIndex] ?? images[0];
 
@@ -26,17 +28,17 @@ export default function VehicleDetailClient({ vehicle }: { vehicle: Vehicle }) {
     void fetch(`/api/catalog?type=vehicles&slug=${encodeURIComponent(vehicle.id)}`, { cache: "no-store" })
       .then((response) => response.ok ? response.json() as Promise<Array<{ metadata?: unknown }>> : [])
       .then((rows) => {
-        if (active) setDatabaseGallery(readCatalogGallery(rows[0]?.metadata));
+        if (active) setDatabaseGallery(readCatalogGalleryState(rows[0]?.metadata));
       })
       .catch(() => {
-        if (active) setDatabaseGallery([]);
+        if (active) setDatabaseGallery({ configured: false, images: [] });
       });
     return () => { active = false; };
   }, [vehicle.id]);
 
   useEffect(() => {
     setActiveImageIndex(0);
-  }, [vehicle.id, databaseGallery]);
+  }, [vehicle.id]);
 
   return (
     <main className="vehicle-detail-page">
