@@ -99,7 +99,9 @@ export default function AccountDialog({ open, initialMode, initialError = "", on
   const signInWithGoogle = async () => {
     setError("");
     setSuccess("");
-    setError("Google sign-in is not enabled in the MySQL authentication setup yet. Use email and password.");
+    setBusy(true);
+    const returnTo = `${window.location.pathname}${window.location.search}`;
+    window.location.assign(`/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`);
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {

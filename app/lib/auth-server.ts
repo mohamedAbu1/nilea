@@ -111,6 +111,60 @@ export async function login(email: string, password: string) {
   return profileFromRow(user);
 }
 
+export async function loginWithGoogle(input: { subject: string; email: string; name?: string; avatarUrl?: string }) {
+  const email = normalizeEmail(input.email);
+  const subject = input.subject.trim();
+  const name = input.name?.trim() || email.split("@")[0] || "Traveler";
+  const avatarUrl = input.avatarUrl?.trim() || null;
+  if (!subject || !/^\S+@\S+\.\S+$/.test(email)) throw new Error("Google did not return a valid account identity.");
+
+  const rows = await query<(AuthRow & { password_hash: string | null })[]>(
+    "SELECT u.id, u.email, u.password_hash, u.full_name, u.phone, u.avatar_url, p.gender, p.access_role FROM users u LEFT JOIN profiles p ON p.id = u.id WHERE (u.auth_provider = 'google' AND u.auth_provider_subject = ?) OR u.email = ? LIMIT 1",
+    [subject, email],
+  );
+  const existing = rows[0];
+  const userId = existing?.id ?? randomUUID();
+
+  await withTransaction(async (connection) => {
+    if (existing) {
+      await connection.execute(
+        "UPDATE users SET email = ?, full_name = ?, avatar_url = COALESCE(?, avatar_url), auth_provider = 'google', auth_provider_subject = ?, email_verified_at = COALESCE(email_verified_at, UTC_TIMESTAMP(6)), last_login_at = UTC_TIMESTAMP(6) WHERE id = ?",
+        [email, name, avatarUrl, subject, userId],
+      );
+      await connection.execute(
+        "INSERT INTO profiles (id, full_name, avatar_url) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), avatar_url = COALESCE(VALUES(avatar_url), avatar_url), updated_at = UTC_TIMESTAMP(6)",
+        [userId, name, avatarUrl],
+      );
+      return;
+    }
+
+    await connection.execute(
+      "INSERT INTO users (id, email, password_hash, full_name, avatar_url, auth_provider, auth_provider_subject, email_verified_at, last_login_at) VALUES (?, ?, NULL, ?, ?, 'google', ?, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))",
+      [userId, email, name, avatarUrl, subject],
+    );
+    await connection.execute(
+      "INSERT INTO profiles (id, full_name, avatar_url, device_type) VALUES (?, ?, ?, 'computer')",
+      [userId, name, avatarUrl],
+    );
+  });
+
+  await setSession(userId);
+  if (!existing) {
+    notifyAdmins({
+      eventType: "account_created",
+      title: "New traveler account",
+      body: `${name} joined AlpNile with Google.`,
+      userId,
+      entityType: "user",
+      entityId: userId,
+      metadata: { email, provider: "google" },
+    });
+  }
+  const profile = await getCurrentUser();
+  if (!profile) throw new Error("The Google account was accepted, but the AlpNile session could not be created.");
+  return profile;
+}
+
 export async function register(input: { name: string; email: string; phone?: string; gender?: string; avatarUrl?: string; password: string; deviceType?: string }) {
   const email = normalizeEmail(input.email);
   if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error("Please enter a valid email address.");
