@@ -1,5 +1,8 @@
 import { getAuthSession } from "./auth-client";
 
+export const OFFICIAL_ADMIN_AVATAR = "/chat/alpnile-admin-official.png";
+export const DEFAULT_CHAT_AVATAR = "/alpnile-profile-avatar.webp";
+
 export type ChatStatus = "open" | "pending" | "resolved" | "closed";
 export type ChatMessageType = "text" | "emoji" | "image" | "file";
 
@@ -12,6 +15,8 @@ export type ChatConversation = {
   last_message_at: string;
   created_at: string;
   updated_at: string;
+  user_name?: string;
+  user_avatar?: string | null;
 };
 
 export type ChatMessage = {
@@ -28,19 +33,21 @@ export type ChatMessage = {
   read_at: string | null;
   created_at: string;
   attachment_url?: string;
+  sender_name?: string;
+  sender_avatar?: string | null;
 };
 
 type ApiBody<T> = { data?: T; error?: string };
 
 async function get<T>(url: string) {
-  const response = await fetch(url, { credentials: "same-origin" });
+  const response = await fetch(url, { credentials: "same-origin", cache: "no-store" });
   const body = await response.json().catch(() => ({})) as ApiBody<T>;
   if (!response.ok) throw new Error(body.error || "Chat is unavailable.");
   return body.data as T;
 }
 
 async function post<T>(payload: Record<string, unknown>) {
-  const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify(payload) });
+  const response = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", cache: "no-store", body: JSON.stringify(payload) });
   const body = await response.json().catch(() => ({})) as ApiBody<T>;
   if (!response.ok) throw new Error(body.error || "Chat is unavailable.");
   return body.data as T;
@@ -68,7 +75,7 @@ export async function listChatConversations() {
 export async function listChatMessages(conversationId: string) {
   try {
     const messages = await get<ChatMessage[]>(`/api/chat?action=messages&conversationId=${encodeURIComponent(conversationId)}`);
-    return { data: messages, error: null };
+    return { data: messages.map((message) => message.attachment_path ? { ...message, attachment_url: message.attachment_path } : message), error: null };
   } catch (error) { return { data: [], error: error instanceof Error ? error : new Error("Could not load messages.") }; }
 }
 
@@ -98,15 +105,15 @@ export async function updateConversationStatus(conversationId: string, status: C
 
 export function subscribeToChatConversation(conversationId: string, onMessage: (message: ChatMessage) => void | Promise<void>) {
   let stopped = false;
-  let lastSeen = "";
+  const seenMessageIds = new Set<string>();
   const poll = async () => {
     if (stopped) return;
     const result = await listChatMessages(conversationId);
     const next = result.data ?? [];
-    const fresh = lastSeen ? next.filter((message) => message.id !== lastSeen && Date.parse(message.created_at) >= Date.parse(lastSeen)) : [];
-    if (next.length) lastSeen = next[next.length - 1].id;
+    const fresh = next.filter((message) => !seenMessageIds.has(message.id));
+    next.forEach((message) => seenMessageIds.add(message.id));
     for (const message of fresh) await onMessage(message);
-    if (!stopped) window.setTimeout(() => void poll(), 5000);
+    if (!stopped) window.setTimeout(() => void poll(), 1500);
   };
   void poll();
   return () => { stopped = true; };

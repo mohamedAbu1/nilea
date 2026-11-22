@@ -15,6 +15,17 @@ async function authorizedConversation(id: string, userId: string, staff: boolean
   return rows[0] ?? null;
 }
 
+async function getChatMessage(id: string) {
+  const rows = await query(`
+    SELECT m.*, u.full_name AS sender_name, COALESCE(u.avatar_url, p.avatar_url) AS sender_avatar
+      FROM chat_messages m
+      JOIN users u ON u.id = m.sender_id
+      LEFT JOIN profiles p ON p.id = m.sender_id
+     WHERE m.id = ?
+     LIMIT 1`, [id]);
+  return rows[0] ?? null;
+}
+
 export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
@@ -23,13 +34,25 @@ export async function GET(request: Request) {
     const action = params.get("action");
     if (action === "conversations") {
       if (!["support", "editor", "admin"].includes(user.accessRole)) throw new Error("Staff access required.");
-      const rows = await query("SELECT c.* FROM chat_conversations c LEFT JOIN profiles p ON p.id = c.user_id WHERE COALESCE(p.access_role, 'traveler') NOT IN ('admin', 'support', 'editor') ORDER BY c.last_message_at DESC");
+      const rows = await query(`
+        SELECT c.*, u.full_name AS user_name, COALESCE(u.avatar_url, p.avatar_url) AS user_avatar
+          FROM chat_conversations c
+          JOIN users u ON u.id = c.user_id
+          LEFT JOIN profiles p ON p.id = c.user_id
+         WHERE COALESCE(p.access_role, 'traveler') NOT IN ('admin', 'support', 'editor')
+         ORDER BY c.last_message_at DESC`);
       return Response.json({ data: rows });
     }
     if (action === "messages") {
       const id = params.get("conversationId") || "";
       if (!await authorizedConversation(id, user.id, ["support", "editor", "admin"].includes(user.accessRole))) throw new Error("Conversation not found.");
-      const rows = await query("SELECT * FROM chat_messages WHERE conversation_id = ? ORDER BY created_at ASC", [id]);
+      const rows = await query(`
+        SELECT m.*, u.full_name AS sender_name, COALESCE(u.avatar_url, p.avatar_url) AS sender_avatar
+          FROM chat_messages m
+          JOIN users u ON u.id = m.sender_id
+          LEFT JOIN profiles p ON p.id = m.sender_id
+         WHERE m.conversation_id = ?
+         ORDER BY m.created_at ASC`, [id]);
       return Response.json({ data: rows });
     }
     return errorResponse(new Error("Unknown chat query."));
@@ -69,8 +92,7 @@ export async function POST(request: Request) {
           metadata: { messageId: id, messageType: input.messageType || "text" },
         });
       }
-      const created = await query("SELECT * FROM chat_messages WHERE id = ?", [id]);
-      return Response.json({ data: created[0] });
+      return Response.json({ data: await getChatMessage(id) });
     }
     if (action === "status") {
       if (!["support", "editor", "admin"].includes(user.accessRole)) throw new Error("Staff access required.");

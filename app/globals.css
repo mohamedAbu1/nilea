@@ -10493,20 +10493,29 @@ footer.site-market-chrome .site-footer-newsletter-success { color: #abd9b2; }
 .alpnile-chat-panel { display: grid; grid-template-rows: auto 1fr auto; width: min(370px, calc(100vw - 30px)); height: min(570px, calc(100vh - 130px)); overflow: hidden; border: 1px solid rgba(121, 217, 203, .32); border-radius: 22px; background: #071b25; box-shadow: 0 28px 80px rgba(0, 0, 0, .48); }
 .alpnile-chat-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; border-bottom: 1px solid rgba(121, 217, 203, .14); padding: 17px 18px; background: linear-gradient(135deg, rgba(14, 58, 64, .96), rgba(5, 25, 35, .96)); }
 .alpnile-chat-head > div { display: flex; align-items: center; gap: 10px; }
+.alpnile-chat-head-avatar, .alpnile-chat-avatar { display: grid; place-items: center; flex: 0 0 auto; overflow: hidden; border: 1px solid rgba(244, 197, 119, .48); border-radius: 50%; background: #071827; box-shadow: 0 6px 16px rgba(0, 0, 0, .24); }
+.alpnile-chat-head-avatar { width: 36px; height: 36px; }
+.alpnile-chat-head-avatar img, .alpnile-chat-avatar { width: 36px; height: 36px; object-fit: cover; }
 .alpnile-chat-head > div > div { display: grid; gap: 4px; }
 .alpnile-chat-head strong { color: #f5d394; font-size: 14px; }
 .alpnile-chat-head small { color: rgba(244, 238, 225, .58); font-size: 10px; }
 .alpnile-chat-head button { border: 0; color: rgba(244, 238, 225, .65); background: transparent; font-size: 23px; cursor: pointer; }
 .alpnile-chat-status-dot { width: 9px; height: 9px; border-radius: 50%; background: #79d9cb; box-shadow: 0 0 0 5px rgba(121, 217, 203, .12); }
 .alpnile-chat-messages { display: grid; align-content: start; gap: 10px; overflow-y: auto; padding: 18px; }
-.alpnile-chat-message { display: flex; }
+.alpnile-chat-message { display: flex; align-items: end; gap: 7px; }
 .alpnile-chat-message.mine { justify-content: end; }
+.alpnile-chat-message.mine .alpnile-chat-avatar { order: 2; border-color: rgba(244, 197, 119, .7); }
+.alpnile-chat-message.theirs .alpnile-chat-avatar { border-color: rgba(121, 217, 203, .52); }
 .alpnile-chat-message > div { max-width: 84%; border-radius: 15px 15px 15px 4px; padding: 10px 12px; color: rgba(244, 238, 225, .82); background: rgba(255, 255, 255, .055); }
 .alpnile-chat-message.mine > div { border-radius: 15px 15px 4px 15px; color: #24180b; background: linear-gradient(135deg, #f7d38e, #d99542); }
 .alpnile-chat-message p { margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.alpnile-chat-message-author { display: block; margin-bottom: 4px; color: #79d9cb; font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.alpnile-chat-message.mine .alpnile-chat-message-author { color: rgba(36, 24, 11, .68); }
 .alpnile-chat-message time { display: block; margin-top: 5px; color: rgba(244, 238, 225, .42); font-size: 9px; }
 .alpnile-chat-message.mine time { color: rgba(36, 24, 11, .58); }
 .alpnile-chat-message img { display: block; max-width: 220px; max-height: 180px; margin-top: 6px; border-radius: 10px; object-fit: cover; }
+.alpnile-chat-message img.alpnile-chat-avatar { margin-top: 0; }
+.alpnile-chat-attachment-image { width: 220px; height: auto; border: 1px solid rgba(255, 255, 255, .16); }
 .alpnile-chat-file { display: flex; align-items: center; gap: 8px; margin-top: 3px; color: inherit; text-decoration: none; }
 .alpnile-chat-file > span:first-child { font-size: 19px; }
 .alpnile-chat-file > span:last-child { display: grid; gap: 3px; }
@@ -10626,13 +10635,17 @@ footer.site-market-chrome .site-footer-newsletter-success { color: #abd9b2; }
 .admin-chat-panel > .admin-panel-head { margin-bottom: 0; }
 .admin-chat-panel > .admin-panel-head small { color: rgba(244, 238, 225, .35); font-size: 9px; }
 .admin-chat-messages { display: grid; align-content: start; gap: 10px; overflow-y: auto; min-height: 340px; padding: 18px 0; }
-.admin-chat-message { display: flex; }
+.admin-chat-message { display: flex; align-items: end; gap: 8px; }
 .admin-chat-message.guest { justify-content: start; }
 .admin-chat-message.staff { justify-content: end; }
+.admin-chat-avatar { display: block; width: 34px; height: 34px; flex: 0 0 34px; border: 1px solid rgba(121, 217, 203, .38); border-radius: 50%; object-fit: cover; background: #071827; }
+.admin-chat-message.staff .admin-chat-avatar { order: 2; border-color: rgba(244, 197, 119, .72); }
 .admin-chat-message > div { max-width: 78%; border-radius: 13px; padding: 10px 12px; background: rgba(255, 255, 255, .055); }
 .admin-chat-message.staff > div { color: #24180b; background: #f4c577; }
 .admin-chat-message p { margin: 0; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
 .admin-chat-message-author { margin-top: 0 !important; color: rgba(244, 238, 225, .58) !important; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.admin-chat-attachment-image { display: block; width: min(260px, 100%); max-height: 220px; margin-top: 8px; border: 1px solid rgba(121, 217, 203, .28); border-radius: 10px; object-fit: cover; }
+.admin-chat-file { display: block; margin-top: 8px; color: #79d9cb; font-size: 11px; overflow-wrap: anywhere; }
 .admin-chat-message small, .admin-chat-message time { display: block; margin-top: 5px; color: rgba(244, 238, 225, .47); font-size: 9px; }
 .admin-chat-message.staff time { color: rgba(36, 24, 11, .52); }
 .admin-chat-composer { border-top: 1px solid rgba(121, 217, 203, .13); padding-top: 14px; }
@@ -10641,6 +10654,7 @@ footer.site-market-chrome .site-footer-newsletter-success { color: #abd9b2; }
 .admin-attach-button { display: inline-flex; border: 1px solid rgba(244, 197, 119, .25); border-radius: 999px; padding: 7px 10px; color: #f4d18a; cursor: pointer; }
 .admin-attach-button input { display: none; }
 .admin-chat-composer .admin-button { margin-left: auto; }
+.admin-avatar-image { display: block; width: 34px; height: 34px; flex: 0 0 34px; border: 1px solid rgba(121, 217, 203, .34); border-radius: 50%; object-fit: cover; background: #071827; }
 .admin-catalog-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .admin-pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(121, 217, 203, .13); }
 .admin-pagination > button, .admin-pagination-pages button { border: 1px solid rgba(121, 217, 203, .2); border-radius: 9px; padding: 8px 11px; color: rgba(244, 238, 225, .7); background: rgba(121, 217, 203, .04); font: inherit; font-size: 10px; cursor: pointer; transition: border-color .2s ease, color .2s ease, background .2s ease, transform .2s ease; }
