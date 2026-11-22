@@ -318,6 +318,27 @@ function dateInput(offset: number) {
   return date.toISOString().slice(0, 10);
 }
 
+function initialStayDateRange(blockedDates: readonly string[]) {
+  const blocked = new Set(blockedDates);
+  const firstCandidate = new Date(`${dateInput(14)}T12:00:00`);
+
+  for (const nights of [3, 2, 1]) {
+    for (let offset = 0; offset < 180; offset += 1) {
+      const checkInDate = new Date(firstCandidate);
+      checkInDate.setDate(firstCandidate.getDate() + offset);
+      const checkIn = dateKey(checkInDate);
+      const checkOutDate = new Date(checkInDate);
+      checkOutDate.setDate(checkInDate.getDate() + nights);
+      const checkOut = dateKey(checkOutDate);
+      const rangeIsBlocked = blockedDates.some((value) => value >= checkIn && value <= checkOut);
+
+      if (!blocked.has(checkIn) && !rangeIsBlocked) return { checkIn, checkOut };
+    }
+  }
+
+  return { checkIn: dateInput(14), checkOut: dateInput(17) };
+}
+
 function dateKey(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -433,8 +454,10 @@ function VillaDetailPage({ slug }: { slug: string }) {
       ? databaseGallery.images.map((source, index) => ({ index: 900 + index, label: catalogGalleryLabel(index, "Stay image"), alt: `${activeStay.title} internal image ${index + 1}`, source }))
       : [{ index: 0, label: "Catalog cover", alt: `${activeStay.title} cover image`, source: activeStay.image }])
     : activeStay.gallery ?? galleryImages;
-  const initialCheckIn = dateInput(14);
-  const initialCheckOut = dateInput(17);
+  const blockedDates = activeStay.blockedDates ?? [];
+  const initialRange = initialStayDateRange(blockedDates);
+  const initialCheckIn = initialRange.checkIn;
+  const initialCheckOut = initialRange.checkOut;
   const [checkIn, setCheckIn] = useState(initialCheckIn);
   const [checkOut, setCheckOut] = useState(initialCheckOut);
   const [calendarMonth, setCalendarMonth] = useState(() => monthStart(initialCheckIn));
@@ -453,7 +476,6 @@ function VillaDetailPage({ slug }: { slug: string }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const bookingExtras = [...extras, ...activeStay.activities.map((activity) => ({ id: activity.id, label: activity.title, detail: `${activity.duration} · ${activity.detail}`, price: activity.price }))];
   const externalListings = externalListingLinks(activeStay);
-  const blockedDates = activeStay.blockedDates ?? [];
 
   useEffect(() => {
     void getAuthSession().then((session) => setIsAdmin(session?.user.accessRole === "admin"));
@@ -474,10 +496,10 @@ function VillaDetailPage({ slug }: { slug: string }) {
   }, [activeStay.slug]);
 
   useEffect(() => {
-    const nextCheckIn = dateInput(14);
-    setCheckIn(nextCheckIn);
-    setCheckOut(dateInput(17));
-    setCalendarMonth(monthStart(nextCheckIn));
+    const nextRange = initialStayDateRange(activeStay.blockedDates ?? []);
+    setCheckIn(nextRange.checkIn);
+    setCheckOut(nextRange.checkOut);
+    setCalendarMonth(monthStart(nextRange.checkIn));
     setSaved(window.localStorage.getItem(`alpnile-stay-saved-${activeStay.slug}`) === "true");
     setSavedLoaded(true);
   }, [activeStay.slug]);
