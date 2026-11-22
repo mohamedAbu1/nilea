@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useLanguage, type LocaleCode } from "./language";
-import { supabase } from "../lib/supabase";
 
 export type CurrencyCode = "USD" | "EUR" | "GBP" | "EGP" | "CHF";
 
@@ -56,18 +55,18 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshRates = async () => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
-    const result = await supabase.from("exchange_rates").select("currency_code, currency_name, symbol, rate_to_usd, decimal_digits, is_active, updated_at").eq("is_active", true);
-    if (!result.error && result.data?.length) {
+    try {
+      const response = await fetch("/api/currency", { credentials: "same-origin" });
+      const rows = response.ok ? await response.json() as ExchangeRate[] : [];
+      if (rows.length) {
       const nextRates = { ...fallbackRates };
-      const rows = result.data as ExchangeRate[];
       rows.forEach((row) => { if (row.currency_code in nextRates) nextRates[row.currency_code] = Number(row.rate_to_usd) || nextRates[row.currency_code]; });
       setRates(nextRates);
       setRateRows(rateRowsFromMap(nextRates).map((row) => rows.find((item) => item.currency_code === row.currency_code) ?? row));
+      }
+    } catch {
+      // The static rates remain available while the database is unreachable.
     }
     setLoading(false);
   };

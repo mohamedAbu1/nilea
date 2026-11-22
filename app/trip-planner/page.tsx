@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getMatchingStays, getMatchingVehicles } from "../lib/travel-availability";
+import { saveUserPreferences, trackCatalogEvent } from "../lib/intelligence-client";
 
 type IconName = "calendar" | "chevron" | "sun" | "culture" | "adventure" | "luxury" | "family" | "sparkle" | "bookmark" | "share" | "plus" | "arrow" | "route" | "compass" | "clock" | "car" | "guide" | "utensils" | "accessibility" | "paw" | "users" | "check" | "minus" | "beach" | "wellness" | "nature";
 type TravelStyle = "Culture" | "Adventure" | "Beach" | "Nature" | "Food" | "Wellness" | "Luxury" | "Family";
@@ -307,6 +308,7 @@ export default function TripPlannerPage() {
 
   const saveItinerary = () => {
     window.localStorage.setItem("alpnile-smart-itinerary", JSON.stringify({ duration, selectedStyle, budget, travelers, startDate, food, accessibilityNeeds, pets, dayPlans: plannedDays }));
+    saveUserPreferences({ tripStyles: [selectedStyle], preferredCities: plannedDays.map((plan) => destinations.find((destination) => destination.id === plan.destinationId)?.name).filter(Boolean), durationMin: duration, durationMax: duration, budgetLevel: budget <= 1000 ? "essential" : budget <= 2500 ? "balanced" : "premium", dietaryPreferences: food ? [food] : [], accessibilityNeeds, travelingWithPets: pets });
     flashNotice("Your plan is saved on this device.");
   };
 
@@ -323,6 +325,7 @@ export default function TripPlannerPage() {
 
   const buildJourney = () => {
     saveItinerary();
+    trackCatalogEvent({ eventType: "planner_complete", entityType: "site", metadata: { duration, selectedStyle, budget, travelers, food, accessibilityNeeds, pets, destinations: plannedDays.map((plan) => plan.destinationId) } });
     setJourneyBuilt(true);
     flashNotice("Your personalized journey is ready.");
   };

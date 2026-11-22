@@ -10,6 +10,7 @@ import { insertInquiry } from "../lib/submissions";
 import { slugifyTourName } from "../lib/tour-details";
 import { catalogTripFixes, cleanCatalogText, normalizeCatalogCity } from "../lib/tour-fixes";
 import { useCurrency } from "../components/currency";
+import { trackCatalogEvent } from "../lib/intelligence-client";
 
 type IconName = "search" | "menu" | "close" | "arrow" | "pin" | "calendar" | "users" | "heart" | "clock" | "heritage" | "desert" | "nile" | "food" | "family" | "all";
 type CuratedCategory = "Heritage" | "Desert" | "Nile" | "Food" | "Family";
@@ -160,6 +161,33 @@ const addedExperiences: Experience[] = addedTours.map((tour) => ({
   reviewDetails: tour.reviewDetails,
 }));
 
+function databaseTripToExperience(trip: Record<string, unknown>): Experience {
+  const metadata = trip.metadata && typeof trip.metadata === "object" ? trip.metadata as Record<string, unknown> : {};
+  const sourceCities = Array.isArray(metadata.sourceCities) ? metadata.sourceCities.filter((value): value is string => typeof value === "string") : [String(trip.city_name ?? trip.location_label ?? "Egypt")];
+  const sourceCategories = Array.isArray(metadata.sourceCategories) ? metadata.sourceCategories.filter((value): value is string => typeof value === "string") : [String(trip.category_name ?? "Egypt")];
+  const rating = trip.rating === null || trip.rating === undefined ? "New" : Number(trip.rating).toFixed(1);
+  const reviews = Number(trip.review_count ?? 0) > 0 ? String(trip.review_count) : "New";
+  return {
+    slug: String(trip.slug),
+    name: String(trip.title),
+    city: String(trip.location_label ?? sourceCities.join(" · ")),
+    sourceCities,
+    category: sourceCategories.some((value) => value.toLowerCase().includes("nile")) ? "Nile" : sourceCategories.some((value) => value.toLowerCase().includes("family")) ? "Family" : sourceCategories.some((value) => value.toLowerCase().includes("adventure") || value.toLowerCase().includes("desert")) ? "Desert" : "Heritage",
+    sourceCategories,
+    rating,
+    reviews,
+    duration: String(trip.duration_label ?? "Flexible route"),
+    price: `From $${trip.price_from ?? 0} ${String(trip.currency ?? "USD")}`,
+    image: String(trip.image_url ?? "/trips/curated-night-at-the-temple.png"),
+    description: String(trip.description ?? ""),
+    source: "catalog",
+    soloPrice: trip.solo_price == null ? undefined : `$${trip.solo_price} ${String(trip.currency ?? "USD")}`,
+    groupPrice: trip.price_from == null ? undefined : `$${trip.price_from} ${String(trip.currency ?? "USD")}`,
+    discountPercent: trip.discount_percent == null ? undefined : Number(trip.discount_percent),
+    priceLevel: trip.price_level == null ? undefined : String(trip.price_level),
+  };
+}
+
 // The public catalog is the 31 imported SQL trips plus the 19 new AlpNile routes.
 // The seven editorial experiences remain available on their direct pages and
 // on the home page, but do not inflate the catalog's 50-route count.
@@ -231,7 +259,23 @@ export default function ToursExperiencesPage() {
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState("");
+  const [databaseExperiences, setDatabaseExperiences] = useState<Experience[] | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+
+  const catalogExperiencesFromDatabase = useMemo(() => databaseExperiences ?? experiences, [databaseExperiences]);
+  const allExperiencesFromDatabase = useMemo(() => [...curatedExperiences, ...catalogExperiencesFromDatabase], [catalogExperiencesFromDatabase]);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/catalog?type=trips", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("catalog unavailable")))
+      .then((rows: unknown) => {
+        if (!active || !Array.isArray(rows) || !rows.length) return;
+        setDatabaseExperiences(rows.map((row) => databaseTripToExperience(row as Record<string, unknown>)));
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const requestedDestination = searchParams.get("destination");
@@ -248,14 +292,14 @@ export default function ToursExperiencesPage() {
     const experienceName = requestedExperience ? experienceQueryMap[requestedExperience] : undefined;
     const requestedTrip = searchParams.get("trip");
     const matchingExperience = experienceName
-      ? allExperiences.find((experience) => experience.name === experienceName)
-      : requestedTrip ? allExperiences.find((experience) => experience.slug === requestedTrip) : undefined;
+      ? allExperiencesFromDatabase.find((experience) => experience.name === experienceName)
+      : requestedTrip ? allExperiencesFromDatabase.find((experience) => experience.slug === requestedTrip) : undefined;
     if (matchingExperience) {
       setActiveCategory("All");
       setDestination(matchingExperience.city);
       setSelectedExperience(matchingExperience);
     }
-  }, [searchParams]);
+  }, [allExperiencesFromDatabase, searchParams]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("alpnile-tour-favorites");
@@ -268,18 +312,18 @@ export default function ToursExperiencesPage() {
 
   const visibleExperiences = useMemo(() => {
     const guestCount = guests.startsWith("4") ? 4 : Number.parseInt(guests, 10) || 1;
-    return experiences.filter((experience) =>
+    return catalogExperiencesFromDatabase.filter((experience) =>
       (activeCategory === "All" || experience.sourceCategories?.includes(activeCategory) || experience.category === activeCategory) &&
       (destination === "All Egypt" || (experience.sourceCities ?? [experience.city]).includes(destination)) &&
       (date === "Any date" || !experience.availableOn || experience.availableOn.includes(date as "This weekend" | "Next 30 days")) &&
       (experience.maxGuests === undefined || experience.maxGuests >= guestCount),
     );
-  }, [activeCategory, date, destination, guests]);
+  }, [activeCategory, catalogExperiencesFromDatabase, date, destination, guests]);
   const totalPages = Math.max(1, Math.ceil(visibleExperiences.length / PAGE_SIZE));
   const pagedExperiences = useMemo(() => visibleExperiences.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [page, visibleExperiences]);
   const recommendedExperiences = useMemo(() => {
     const currentPageKeys = new Set(pagedExperiences.map((experience) => experience.slug ?? experience.name));
-    const candidatePool = visibleExperiences.length ? visibleExperiences : experiences;
+    const candidatePool = visibleExperiences.length ? visibleExperiences : catalogExperiencesFromDatabase;
     const alternatePool = candidatePool.filter((experience) => !currentPageKeys.has(experience.slug ?? experience.name));
     const pool = alternatePool.length >= 5 ? alternatePool : candidatePool;
     return [...pool]
@@ -291,11 +335,21 @@ export default function ToursExperiencesPage() {
         return rightRating - leftRating || rightReviews - leftReviews;
       })
       .slice(0, 5);
-  }, [pagedExperiences, visibleExperiences]);
+  }, [catalogExperiencesFromDatabase, pagedExperiences, visibleExperiences]);
   const recommendationSubtitle = activeCategory === "All" && destination === "All Egypt" ? "Popular next stops" : "Matched to your current filters";
   useEffect(() => { setPage(1); }, [activeCategory, date, destination, guests]);
   useEffect(() => { if (page > totalPages) setPage(totalPages); }, [page, totalPages]);
-  const toggleFavorite = (name: string) => setFavorites((items) => items.includes(name) ? items.filter((item) => item !== name) : [...items, name]);
+  const openExperience = (experience: Experience) => {
+    const slug = experience.slug ?? slugifyTourName(experience.name);
+    trackCatalogEvent({ eventType: "open_details", entityType: "trip", entitySlug: slug, metadata: { name: experience.name, city: experience.city } });
+    router.push(`/tours-experiences/${slug}`);
+  };
+
+  const toggleFavorite = (experience: Experience) => {
+    const saved = favorites.includes(experience.name);
+    setFavorites((items) => saved ? items.filter((item) => item !== experience.name) : [...items, experience.name]);
+    trackCatalogEvent({ eventType: saved ? "unsave" : "save", entityType: "trip", entitySlug: experience.slug, metadata: { name: experience.name, city: experience.city } });
+  };
   const submitExperienceRequest = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedExperience) return;
@@ -325,17 +379,17 @@ export default function ToursExperiencesPage() {
     <main className="tour-shell">
       <section className="tour-content-section">
         <div className="mx-auto w-full max-w-[1500px] px-4 pb-14 pt-12 sm:px-7 sm:pt-14 lg:px-12 lg:pt-6">
-          <div className="tour-search-panel mt-6 rounded-[18px] p-2 sm:mt-5 sm:p-2"><div className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr_170px] sm:gap-0"><label className="tour-search-control rounded-xl px-4 text-left"><small>Destination</small><span className="tour-search-select-wrap"><Icon name="pin" size={17} /><StyledSelect value={destination} onChange={(nextValue) => { setDestination(nextValue); setSearched(false); }} ariaLabel="Destination">{destinationOptions.map((option) => <option key={option}>{option}</option>)}</StyledSelect></span></label><label className="tour-search-control rounded-xl px-4 text-left"><small>Date</small><span className="tour-search-select-wrap"><Icon name="calendar" size={17} /><StyledSelect value={date} onChange={setDate} ariaLabel="Date"><option>Any date</option><option>This weekend</option><option>Next 30 days</option></StyledSelect></span></label><label className="tour-search-control rounded-xl px-4 text-left"><small>Guests</small><span className="tour-search-select-wrap"><Icon name="users" size={17} /><StyledSelect value={guests} onChange={setGuests} ariaLabel="Guests"><option>1 adult</option><option>2 adults</option><option>3 adults</option><option>4+ adults</option></StyledSelect></span></label><button type="button" onClick={() => { setSearched(true); document.getElementById("featured")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="tour-search-button rounded-xl px-4 text-[12px] font-semibold">Search Experiences <Icon name="search" size={15} /></button></div></div>
+          <div className="tour-search-panel mt-6 rounded-[18px] p-2 sm:mt-5 sm:p-2"><div className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr_170px] sm:gap-0"><label className="tour-search-control rounded-xl px-4 text-left"><small>Destination</small><span className="tour-search-select-wrap"><Icon name="pin" size={17} /><StyledSelect value={destination} onChange={(nextValue) => { setDestination(nextValue); setSearched(false); }} ariaLabel="Destination">{destinationOptions.map((option) => <option key={option}>{option}</option>)}</StyledSelect></span></label><label className="tour-search-control rounded-xl px-4 text-left"><small>Date</small><span className="tour-search-select-wrap"><Icon name="calendar" size={17} /><StyledSelect value={date} onChange={setDate} ariaLabel="Date"><option>Any date</option><option>This weekend</option><option>Next 30 days</option></StyledSelect></span></label><label className="tour-search-control rounded-xl px-4 text-left"><small>Guests</small><span className="tour-search-select-wrap"><Icon name="users" size={17} /><StyledSelect value={guests} onChange={setGuests} ariaLabel="Guests"><option>1 adult</option><option>2 adults</option><option>3 adults</option><option>4+ adults</option></StyledSelect></span></label><button type="button" onClick={() => { setSearched(true); trackCatalogEvent({ eventType: "search", entityType: "trip", searchQuery: `${destination} · ${date} · ${guests} · ${activeCategory}`, metadata: { destination, date, guests, category: activeCategory } }); document.getElementById("featured")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="tour-search-button rounded-xl px-4 text-[12px] font-semibold">Search Experiences <Icon name="search" size={15} /></button></div></div>
 
           <div className="tour-category-tabs no-scrollbar">{categories.map((category, index) => <button key={`${category.label}-${index}`} onClick={() => { setActiveCategory(category.label); setSearched(false); }} className={`tour-category-tab ${activeCategory === category.label ? "active" : ""}`} aria-pressed={activeCategory === category.label}><span className="tour-category-icon"><Icon name={category.icon} size={19} /></span><span>{category.label}</span></button>)}</div>
 
           <section id="featured" className="tour-featured-section scroll-mt-28"><div className="mb-3 flex items-end justify-between gap-4"><div><h2 className="font-display text-[34px] text-[#f2ca84] sm:text-[42px]">Curated for your route</h2><p className="tour-results-count">{visibleExperiences.length} experiences match your current filters</p></div><button type="button" onClick={() => { setActiveCategory("All"); setDestination("All Egypt"); setSearched(true); }} className="hidden items-center gap-2 text-[11px] text-white/65 transition hover:text-[#f4c577] sm:flex">View all experiences <Icon name="arrow" size={13} /></button></div>
-            <div className="tour-featured-grid">{visibleExperiences.length ? pagedExperiences.map((experience) => <article key={experience.slug ?? experience.name} className="tour-card"><div className="tour-card-media" style={{ backgroundImage: `linear-gradient(180deg, rgba(4, 10, 16, .02) 24%, rgba(3, 9, 15, .74) 100%), url('${experience.image}')` }}><button onClick={() => toggleFavorite(experience.name)} className={`tour-heart ${favorites.includes(experience.name) ? "saved" : ""}`} aria-label={`${favorites.includes(experience.name) ? "Remove" : "Save"} ${experience.name}`} aria-pressed={favorites.includes(experience.name)}><Icon name="heart" size={17} /></button></div><div className="tour-card-content"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="tour-card-title font-display text-[21px] leading-tight text-[#f3d08e]">{experience.name}</h3><p className="mt-1 truncate text-[10px] text-white/55">{experience.city}</p></div><span className="tour-card-category shrink-0">{experience.sourceCategories?.[0] ?? experience.category}</span></div><div className="mt-3 flex items-center gap-4 text-[10px] text-white/70"><span className={experience.rating === "New" ? "text-white/60" : "text-[#f9c34f]"}>{experience.rating === "New" ? "New" : `★ ${experience.rating}`}</span><span>{experience.reviews === "New" ? "No reviews yet" : `(${experience.reviews})`}</span><span className="flex items-center gap-1"><Icon name="clock" size={13} /> {experience.duration}</span></div><p className="mt-3 font-display text-[17px] text-[#f4cf8d]"><ExperiencePrice value={experience.price} /></p><button onClick={() => router.push(`/tours-experiences/${experience.slug ?? slugifyTourName(experience.name)}`)} className="tour-book-button mt-3 w-full rounded-full px-4 py-2.5 text-[11px] font-semibold">View & request <Icon name="arrow" size={14} /></button></div></article>) : <div className="tour-empty-state"><strong>No experiences found</strong><span>Try another destination or category.</span></div>}</div>
+            <div className="tour-featured-grid">{visibleExperiences.length ? pagedExperiences.map((experience) => <article key={experience.slug ?? experience.name} className="tour-card"><div className="tour-card-media" style={{ backgroundImage: `linear-gradient(180deg, rgba(4, 10, 16, .02) 24%, rgba(3, 9, 15, .74) 100%), url('${experience.image}')` }}><button onClick={() => toggleFavorite(experience)} className={`tour-heart ${favorites.includes(experience.name) ? "saved" : ""}`} aria-label={`${favorites.includes(experience.name) ? "Remove" : "Save"} ${experience.name}`} aria-pressed={favorites.includes(experience.name)}><Icon name="heart" size={17} /></button></div><div className="tour-card-content"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="tour-card-title font-display text-[21px] leading-tight text-[#f3d08e]">{experience.name}</h3><p className="mt-1 truncate text-[10px] text-white/55">{experience.city}</p></div><span className="tour-card-category shrink-0">{experience.sourceCategories?.[0] ?? experience.category}</span></div><div className="mt-3 flex items-center gap-4 text-[10px] text-white/70"><span className={experience.rating === "New" ? "text-white/60" : "text-[#f9c34f]"}>{experience.rating === "New" ? "New" : `★ ${experience.rating}`}</span><span>{experience.reviews === "New" ? "No reviews yet" : `(${experience.reviews})`}</span><span className="flex items-center gap-1"><Icon name="clock" size={13} /> {experience.duration}</span></div><p className="mt-3 font-display text-[17px] text-[#f4cf8d]"><ExperiencePrice value={experience.price} /></p><button onClick={() => openExperience(experience)} className="tour-book-button mt-3 w-full rounded-full px-4 py-2.5 text-[11px] font-semibold">View & request <Icon name="arrow" size={14} /></button></div></article>) : <div className="tour-empty-state"><strong>No experiences found</strong><span>Try another destination or category.</span></div>}</div>
             {visibleExperiences.length > PAGE_SIZE && <nav className="tour-pagination" aria-label="Experience pages"><button type="button" className="tour-pagination-arrow" disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))} aria-label="Previous page">‹</button>{Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => <button key={pageNumber} type="button" className={pageNumber === page ? "active" : ""} onClick={() => { setPage(pageNumber); document.getElementById("featured")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} aria-current={pageNumber === page ? "page" : undefined}>{pageNumber}</button>)}<button type="button" className="tour-pagination-arrow" disabled={page === totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} aria-label="Next page">›</button></nav>}
             {searched && <div className="tour-notice mt-4 rounded-full px-4 py-2 text-[11px] text-[#f4cf8d]" role="status">Showing {activeCategory === "All" ? "all experiences" : activeCategory.toLowerCase()} in {destination} · {guests}</div>}
           </section>
 
-          <section className="tour-recommendations"><div className="mb-4 flex items-center justify-between"><div><p className="text-[10px] uppercase tracking-[0.3em] text-[#e6b567]">A thoughtful next chapter</p><h2 className="mt-2 font-display text-[28px] text-[#f2ca84] sm:text-[33px]">Recommended for You</h2></div><span className="hidden text-[10px] text-white/50 sm:block">{recommendationSubtitle}</span></div><div className="tour-recommendation-grid">{recommendedExperiences.map((recommendation) => <button key={recommendation.slug ?? recommendation.name} type="button" aria-label={`View ${recommendation.name}`} onClick={() => router.push(`/tours-experiences/${recommendation.slug ?? slugifyTourName(recommendation.name)}`)} className="tour-recommendation-card text-left"><span className="tour-recommendation-image" style={{ backgroundImage: `url('${recommendation.image}')` }} /><span><strong>{recommendation.name}</strong><small>{recommendation.city}</small><em><b>★</b> {recommendation.rating === "New" ? "New" : `${recommendation.rating} (${recommendation.reviews})`}</em><small className="tour-recommendation-price"><ExperiencePrice value={recommendation.price} /></small></span><Icon name="arrow" size={14} /></button>)}</div></section>
+          <section className="tour-recommendations"><div className="mb-4 flex items-center justify-between"><div><p className="text-[10px] uppercase tracking-[0.3em] text-[#e6b567]">A thoughtful next chapter</p><h2 className="mt-2 font-display text-[28px] text-[#f2ca84] sm:text-[33px]">Recommended for You</h2></div><span className="hidden text-[10px] text-white/50 sm:block">{recommendationSubtitle}</span></div><div className="tour-recommendation-grid">{recommendedExperiences.map((recommendation) => <button key={recommendation.slug ?? recommendation.name} type="button" aria-label={`View ${recommendation.name}`} onClick={() => openExperience(recommendation)} className="tour-recommendation-card text-left"><span className="tour-recommendation-image" style={{ backgroundImage: `url('${recommendation.image}')` }} /><span><strong>{recommendation.name}</strong><small>{recommendation.city}</small><em><b>★</b> {recommendation.rating === "New" ? "New" : `${recommendation.rating} (${recommendation.reviews})`}</em><small className="tour-recommendation-price"><ExperiencePrice value={recommendation.price} /></small></span><Icon name="arrow" size={14} /></button>)}</div></section>
         </div>
       </section>
 

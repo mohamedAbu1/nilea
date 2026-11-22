@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { accountProfileFromUser, detectDeviceType, isSupabaseConfigured, supabase, type AccountProfile } from "../lib/supabase";
+import { detectDeviceType, dispatchAuthChanged, requestPasswordReset, signIn, signUp, type AccountProfile, updatePassword } from "../lib/auth-client";
 import { getSubmissionErrorMessage } from "../lib/submissions";
 import { useDialogA11y } from "./dialog";
 import { StyledSelect } from "./styled-select";
@@ -99,34 +99,13 @@ export default function AccountDialog({ open, initialMode, initialError = "", on
   const signInWithGoogle = async () => {
     setError("");
     setSuccess("");
-    if (!isSupabaseConfigured || !supabase) {
-      setError("Supabase is not configured yet. Add the public Supabase URL and anon key to .env.local.");
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const result = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin },
-      });
-      if (result.error) throw result.error;
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "Unable to start Google sign-in.";
-      setError(message.includes("provider") || message.includes("Google") ? "Google sign-in is not available yet. Check that Google is enabled in Supabase Auth and that http://localhost:3000 is on the redirect URL allow-list." : message);
-      setBusy(false);
-    }
+    setError("Google sign-in is not enabled in the MySQL authentication setup yet. Use email and password.");
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     setSuccess("");
-    if (!isSupabaseConfigured || !supabase) {
-      setError("Supabase is not configured yet. Add the public Supabase URL and anon key to .env.local.");
-      return;
-    }
-
     const email = form.email.trim().toLowerCase();
     if (mode !== "reset" && !email) { setError("Please enter your email address."); return; }
     if (mode === "register") {
@@ -142,48 +121,35 @@ export default function AccountDialog({ open, initialMode, initialError = "", on
     setBusy(true);
     try {
       if (mode === "login") {
-        const result = await supabase.auth.signInWithPassword({ email, password: form.password });
-        if (result.error) throw result.error;
-        const profile = accountProfileFromUser(result.data.user);
-        if (profile) onAuthenticated(profile);
+        const result = await signIn(email, form.password);
+        onAuthenticated(result.user);
+        dispatchAuthChanged();
         onClose();
         return;
       }
 
       if (mode === "forgot") {
-        const result = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/?auth=reset` });
-        if (result.error) throw result.error;
-        setSuccess("If this email is registered, a password reset link has been sent.");
+        const result = await requestPasswordReset(email);
+        setSuccess(result.message);
         setBusy(false);
         return;
       }
 
       if (mode === "reset") {
-        const result = await supabase.auth.updateUser({ password: form.password });
-        if (result.error) throw result.error;
-        const profile = accountProfileFromUser(result.data.user);
-        if (profile) onAuthenticated(profile);
+        const token = new URLSearchParams(window.location.search).get("token") || "";
+        const result = await updatePassword(token, form.password);
+        onAuthenticated(result.user);
+        dispatchAuthChanged();
         setSuccess("Your password has been updated. Welcome back.");
         window.history.replaceState({}, document.title, window.location.pathname);
         window.setTimeout(onClose, 600);
         return;
       }
 
-      const result = await supabase.auth.signUp({
-        email,
-        password: form.password,
-        options: { emailRedirectTo: window.location.origin, data: { full_name: form.name.trim(), phone: form.phone.trim(), gender: form.gender, avatar_url: avatarPreview, device_type: detectDeviceType() } },
-      });
-      if (result.error) throw result.error;
-      const profile = accountProfileFromUser(result.data.user);
-      if (result.data.session && profile) {
-        onAuthenticated(profile);
-        onClose();
-      } else {
-        setSuccess("Your account was created, but this Supabase project still requires email confirmation. Disable Confirm email in Supabase Auth settings to allow immediate login.");
-        setMode("login");
-        setForm((current) => ({ ...emptyForm, email: current.email }));
-      }
+      const result = await signUp({ name: form.name, email, phone: form.phone, gender: form.gender, avatarUrl: avatarPreview, password: form.password, deviceType: detectDeviceType() });
+      onAuthenticated(result.user);
+      dispatchAuthChanged();
+      onClose();
     } catch (caught) {
       const message = getSubmissionErrorMessage(
         caught,
@@ -192,9 +158,7 @@ export default function AccountDialog({ open, initialMode, initialError = "", on
           ? "We couldn’t reach the account service. Your account was not created. Check your connection and try again."
           : "We couldn’t reach the account service. Nothing was changed. Check your connection and try again.",
       );
-      setError(message
-        .replace("Invalid login credentials", "The email or password is not correct.")
-        .replace("Email not confirmed", "Email confirmation is enabled in Supabase. Disable Confirm email in Auth settings, then try again."));
+      setError(message.replace("Invalid login credentials", "The email or password is not correct."));
     } finally {
       setBusy(false);
     }
@@ -238,7 +202,7 @@ export default function AccountDialog({ open, initialMode, initialError = "", on
             {success && <p className="account-dialog-success" role="status">{success}</p>}
             <button type="submit" className="account-dialog-submit" disabled={busy}>{busy ? "One moment..." : mode === "login" ? "Enter my account" : mode === "register" ? "Create my account" : mode === "forgot" ? "Send reset link" : "Update password"}<span aria-hidden="true">↗</span></button>
           </form>
-          <p className="account-dialog-footnote">Account sessions are handled by Supabase Auth. Your password is never stored in this website.</p>
+          <p className="account-dialog-footnote">Account sessions are handled securely by the AlpNile MySQL service. Your password is stored as a one-way hash.</p>
         </div>
       </section>
     </div>

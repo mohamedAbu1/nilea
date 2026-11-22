@@ -1,19 +1,21 @@
-import { supabase } from "./supabase";
+import { getAuthSession } from "./auth-client";
 
 export function isNetworkError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? "");
-  return /failed to fetch|fetch failed|networkerror|network request failed|enotfound|no such host|dns/i.test(message);
+  return /failed to fetch|fetch failed|networkerror|network request failed|enotfound|no such host|dns|unavailable/i.test(message);
 }
 
 export function getSubmissionErrorMessage(error: unknown, fallback: string, networkFallback?: string) {
+  if (isNetworkError(error)) return networkFallback ?? "We couldn’t reach the AlpNile service. Nothing was submitted. Check your connection and try again.";
   const message = error instanceof Error ? error.message : String(error ?? "");
-  if (/supabase is not configured/i.test(message)) {
-    return "The booking service is not configured yet. Nothing was submitted. Please try again later.";
-  }
-  if (isNetworkError(error)) {
-    return networkFallback ?? "We couldn’t reach the AlpNile booking service. Nothing was submitted. Check your connection and try again.";
-  }
-  return fallback;
+  return message || fallback;
+}
+
+async function request<T>(action: string, payload: Record<string, unknown> = {}) {
+  const response = await fetch("/api/submissions", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "same-origin", body: JSON.stringify({ action, ...payload }) });
+  const body = await response.json().catch(() => ({})) as { data?: T; error?: string };
+  if (!response.ok) throw new Error(body.error || "The request could not be saved.");
+  return body.data as T;
 }
 
 export type InquiryPayload = {
@@ -27,25 +29,13 @@ export type InquiryPayload = {
 };
 
 export async function currentUserId() {
-  if (!supabase) return null;
-  try {
-    const { data } = await supabase.auth.getUser();
-    return data.user?.id ?? null;
-  } catch {
-    return null;
-  }
+  const session = await getAuthSession();
+  return session?.user.id ?? null;
 }
 
 export async function insertInquiry(payload: InquiryPayload) {
-  if (!supabase) return { error: new Error("Supabase is not configured") };
-  const userId = await currentUserId();
-  const { error } = await supabase.from("inquiries").insert({
-    ...payload,
-    user_id: userId,
-    details: payload.details ?? {},
-    source: payload.source ?? "website",
-  });
-  return { error };
+  try { await request("inquiry", payload as unknown as Record<string, unknown>); return { error: null }; }
+  catch (error) { return { error: error instanceof Error ? error : new Error("The inquiry could not be saved.") }; }
 }
 
 export type TripBookingPayload = {
@@ -60,18 +50,12 @@ export type TripBookingPayload = {
 };
 
 export async function insertTripBooking(payload: TripBookingPayload) {
-  if (!supabase) return { error: new Error("Supabase is not configured") };
-  const userId = await currentUserId();
-  const { error } = await supabase.from("trip_bookings").insert({
-    ...payload,
-    user_id: userId,
-    trip_id: payload.trip_id ?? null,
-    end_date: payload.end_date || null,
-  });
-  return { error };
+  try { await request("trip-booking", payload as unknown as Record<string, unknown>); return { error: null }; }
+  catch (error) { return { error: error instanceof Error ? error : new Error("The booking could not be saved.") }; }
 }
 
 export type CarBookingPayload = {
+  vehicle_id?: string;
   full_name: string;
   phone: string;
   email?: string;
@@ -90,10 +74,8 @@ export type CarBookingPayload = {
 };
 
 export async function insertCarBooking(payload: CarBookingPayload) {
-  if (!supabase) return { error: new Error("Supabase is not configured") };
-  const userId = await currentUserId();
-  const { error } = await supabase.from("car_bookings").insert({ ...payload, user_id: userId });
-  return { error };
+  try { await request("car-booking", payload as unknown as Record<string, unknown>); return { error: null }; }
+  catch (error) { return { error: error instanceof Error ? error : new Error("The car booking could not be saved.") }; }
 }
 
 export type ReviewPayload = {
@@ -106,46 +88,35 @@ export type ReviewPayload = {
 };
 
 export async function listPublishedReviews() {
-  if (!supabase) return { data: [], error: new Error("Supabase is not configured") };
-  const result = await supabase
-    .from("reviews")
-    .select("id, full_name, city_country, rating, journey, body, avatar_url, like_count")
-    .eq("status", "published")
-    .order("created_at", { ascending: false })
-    .limit(3);
-  return { data: result.data ?? [], error: result.error };
+  try {
+    const response = await fetch("/api/submissions?type=reviews", { credentials: "same-origin" });
+    const body = await response.json().catch(() => ({})) as { data?: unknown[]; error?: string };
+    if (!response.ok) throw new Error(body.error || "Reviews could not be loaded.");
+    return { data: (body.data ?? []) as Array<{ id: string; full_name: string; city_country: string; rating: number; journey: string; body: string; avatar_url: string | null; like_count: number }>, error: null };
+  } catch (error) { return { data: [], error: error instanceof Error ? error : new Error("Reviews could not be loaded.") }; }
 }
 
 export async function insertReview(payload: ReviewPayload) {
-  if (!supabase) return { data: null, error: new Error("Supabase is not configured") };
-  const userId = await currentUserId();
-  const result = await supabase.from("reviews").insert({ ...payload, user_id: userId, status: "pending" }).select("id").single();
-  return { data: result.data, error: result.error };
+  try { return { data: await request<{ id: string }>("review", payload as unknown as Record<string, unknown>), error: null }; }
+  catch (error) { return { data: null, error: error instanceof Error ? error : new Error("The review could not be saved.") }; }
 }
 
 function getVisitorKey() {
-  if (typeof window === "undefined") return "server";
+  if (typeof window === "undefined") return "server-visitor-key";
   const storageKey = "alpnile-review-visitor";
   const existing = window.localStorage.getItem(storageKey);
   if (existing) return existing;
-  const generated = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-    ? crypto.randomUUID()
-    : `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const generated = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   window.localStorage.setItem(storageKey, generated);
   return generated;
 }
 
 export async function toggleReviewLike(reviewId: string) {
-  if (!supabase) return { liked: false, count: 0, error: new Error("Supabase is not configured") };
-  const visitorKey = getVisitorKey();
-  const result = await supabase.rpc("toggle_review_like", { p_review_id: reviewId, p_visitor_key: visitorKey }).single();
-  if (result.error || !result.data) return { liked: false, count: 0, error: result.error ?? new Error("Unable to update review like") };
-  const likeState = result.data as { liked?: boolean; like_count?: number };
-  return { liked: Boolean(likeState.liked), count: Number(likeState.like_count ?? 0), error: null };
+  try { return { ...(await request<{ liked: boolean; count: number }>("like", { reviewId, visitorKey: getVisitorKey() })), error: null }; }
+  catch (error) { return { liked: false, count: 0, error: error instanceof Error ? error : new Error("Unable to update review like") }; }
 }
 
 export async function subscribeToNewsletter(email: string) {
-  if (!supabase) return { error: new Error("Supabase is not configured") };
-  const { error } = await supabase.rpc("subscribe_to_newsletter", { p_email: email.toLowerCase() });
-  return { error };
+  try { await request("newsletter", { email: email.toLowerCase() }); return { error: null }; }
+  catch (error) { return { error: error instanceof Error ? error : new Error("The newsletter subscription could not be saved.") }; }
 }

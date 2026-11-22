@@ -14,7 +14,8 @@ import {
   type ChatMessage,
   type ChatStatus,
 } from "../lib/chat";
-import { supabase } from "../lib/supabase";
+import { getAdminCatalog, getAdminProfiles, getAdminRates, getAdminRequests, getAdminSession, getAdminStats, saveAdminCatalog, saveAdminRates, updateAdminStatus } from "../lib/admin-client";
+import { getAuthSession, signOut } from "../lib/auth-client";
 import { currencyOptions, type CurrencyCode, type ExchangeRate } from "../components/currency";
 
 type AccessRole = "traveler" | "support" | "editor" | "admin";
@@ -151,31 +152,13 @@ export default function AdminPage() {
   const visibleNavItems = useMemo(() => role === "support" ? navItems.filter((item) => ["overview", "inbox", "requests"].includes(item.id)) : role === "editor" ? navItems.filter((item) => item.id !== "currency") : navItems, [role]);
 
   const loadRequests = async () => {
-    if (!supabase) return;
-    const [inquiries, cars, trips, stays] = await Promise.all([
-      supabase.from("inquiries").select("id, full_name, email, phone, message, request_type, status, created_at").order("created_at", { ascending: false }).limit(80),
-      supabase.from("car_bookings").select("id, full_name, email, phone, pickup_label, dropoff_label, status, created_at").order("created_at", { ascending: false }).limit(80),
-      supabase.from("trip_bookings").select("id, full_name, email, phone, start_date, guests, status, created_at").order("created_at", { ascending: false }).limit(80),
-      supabase.from("stay_bookings").select("id, full_name, email, phone, check_in, check_out, guests, status, created_at").order("created_at", { ascending: false }).limit(80),
-    ]);
-    const rows: RequestRow[] = [
-      ...(inquiries.data ?? []).map((row) => ({ id: row.id, source: "inquiry" as const, name: row.full_name, contact: row.email || row.phone || "No contact", summary: row.message || row.request_type, status: row.status, created_at: row.created_at, table: "inquiries" })),
-      ...(cars.data ?? []).map((row) => ({ id: row.id, source: "car" as const, name: row.full_name, contact: row.phone || row.email || "No contact", summary: row.pickup_label + " → " + row.dropoff_label, status: row.status, created_at: row.created_at, table: "car_bookings" })),
-      ...(trips.data ?? []).map((row) => ({ id: row.id, source: "trip" as const, name: row.full_name, contact: row.phone || row.email || "No contact", summary: "Trip date " + (row.start_date || "open") + " · " + row.guests + " guests", status: row.status, created_at: row.created_at, table: "trip_bookings" })),
-      ...(stays.data ?? []).map((row) => ({ id: row.id, source: "stay" as const, name: row.full_name, contact: row.phone || row.email || "No contact", summary: "Stay " + row.check_in + " → " + row.check_out + " · " + row.guests + " guests", status: row.status, created_at: row.created_at, table: "stay_bookings" })),
-    ];
+    const rows = await getAdminRequests();
     setRequests(rows.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)));
     setStats((current) => ({ ...current, requests: rows.filter((row) => ["new", "in_progress", "contacted"].includes(row.status)).length }));
   };
 
   const loadStats = async () => {
-    if (!supabase) return;
-    const tables = ["inquiries", "car_bookings", "trip_bookings", "stay_bookings", "chat_conversations", "stays", "trips", "products", "vehicles"];
-    const counts = await Promise.all(tables.map(async (table) => {
-      const result = await supabase!.from(table).select("id", { count: "exact", head: true });
-      return [table, result.count ?? 0] as const;
-    }));
-    setStats(Object.fromEntries(counts));
+    setStats(await getAdminStats());
   };
 
   const loadConversations = async () => {
@@ -189,28 +172,21 @@ export default function AdminPage() {
     if (!selectedConversationId && items[0]) setSelectedConversationId(items[0].id);
     if (items.length) {
       const ids = Array.from(new Set(items.map((item) => item.user_id)));
-      const profiles = await supabase?.from("profiles").select("id, full_name").in("id", ids);
-      setChatUserNames(Object.fromEntries((profiles?.data ?? []).map((profile) => [profile.id, profile.full_name])));
+      setChatUserNames(await getAdminProfiles(ids));
     }
   };
 
   const loadCatalog = async (collection: CatalogCollection) => {
-    if (!supabase) return;
     setCatalogLoading(true);
-    const result = await supabase.from(collection).select("*").order("updated_at", { ascending: false }).limit(100);
-    if (result.error) setError(getSubmissionErrorMessage(result.error, "This catalog could not be loaded."));
-    setCatalog((result.data ?? []) as Row[]);
+    try { setCatalog(await getAdminCatalog(collection) as Row[]); }
+    catch (error) { setError(getSubmissionErrorMessage(error, "This catalog could not be loaded.")); }
     setCatalogLoading(false);
   };
 
   const loadCurrencyRates = async () => {
-    if (!supabase) return;
-    const result = await supabase.from("exchange_rates").select("currency_code, currency_name, symbol, rate_to_usd, decimal_digits, is_active, updated_at").order("currency_code");
-    if (result.error) {
-      setError(getSubmissionErrorMessage(result.error, "Exchange rates could not be loaded."));
-      return;
-    }
-    const rows = result.data as ExchangeRate[];
+    let rows: ExchangeRate[];
+    try { rows = await getAdminRates(); }
+    catch (error) { setError(getSubmissionErrorMessage(error, "Exchange rates could not be loaded.")); return; }
     const normalized = currencyOptions.map((fallback) => rows.find((row) => row.currency_code === fallback.currency_code) ?? fallback);
     setCurrencyRows(normalized);
     setCurrencyDrafts(Object.fromEntries(normalized.map((row) => [row.currency_code, String(row.rate_to_usd)])) as Record<CurrencyCode, string>);
@@ -219,29 +195,18 @@ export default function AdminPage() {
   useEffect(() => {
     let active = true;
     void (async () => {
-      if (!supabase) {
-        setAccessError("Supabase is not configured. Add the public URL and anon key before using the control room.");
+      try {
+        const identity = await getAdminSession();
+        if (!active) return;
+        setProfileName(identity.user.name || identity.user.email || "AlpNile team");
+        setRole(identity.user.accessRole as AccessRole);
         setCheckingAccess(false);
-        return;
-      }
-      const identity = await supabase.auth.getUser();
-      if (!active) return;
-      if (identity.error || !identity.data.user) {
-        setAccessError("Sign in with a staff account to enter the control room.");
+        await Promise.all([loadStats(), loadRequests(), loadConversations(), loadCurrencyRates()]);
+      } catch (error) {
+        if (!active) return;
+        setAccessError(getSubmissionErrorMessage(error, "Sign in with a staff account to enter the control room."));
         setCheckingAccess(false);
-        return;
       }
-      const profile = await supabase.from("profiles").select("full_name, access_role").eq("id", identity.data.user.id).single();
-      if (!active) return;
-      if (profile.error || !profile.data || !["support", "editor", "admin"].includes(profile.data.access_role)) {
-        setAccessError("This account does not have staff access. Ask an administrator to grant a role.");
-        setCheckingAccess(false);
-        return;
-      }
-      setProfileName(profile.data.full_name || identity.data.user.email || "AlpNile team");
-      setRole(profile.data.access_role as AccessRole);
-      setCheckingAccess(false);
-      await Promise.all([loadStats(), loadRequests(), loadConversations(), loadCurrencyRates()]);
     })();
     return () => { active = false; };
   }, []);
@@ -272,20 +237,16 @@ export default function AdminPage() {
   }, [selectedConversationId]);
 
   const updateRequestStatus = async (row: RequestRow, status: string) => {
-    if (!supabase) return;
     setError("");
-    const result = await supabase.from(row.table).update({ status }).eq("id", row.id);
-    if (result.error) {
-      setError(getSubmissionErrorMessage(result.error, "The status could not be updated."));
-      return;
-    }
+    try { await updateAdminStatus(row.table, row.id, status); }
+    catch (error) { setError(getSubmissionErrorMessage(error, "The status could not be updated.")); return; }
     setRequests((current) => current.map((item) => item.id === row.id && item.table === row.table ? { ...item, status } : item));
     setNotice("Request status updated.");
   };
 
   const saveCatalog = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!supabase || !editor || !canEditCatalog) return;
+    if (!editor || !canEditCatalog) return;
     setError("");
     const base: Row = {
       slug: editor.slug.trim(),
@@ -298,13 +259,8 @@ export default function AdminPage() {
     if (catalogCollection === "stays") Object.assign(base, { name: editor.name.trim(), location_label: editor.location_label.trim() || "Egypt", stay_type: editor.stay_type, max_guests: Number(editor.max_guests) || null });
     if (catalogCollection === "products") Object.assign(base, { name: editor.name.trim(), price: Number(editor.price) || 0, stock_quantity: Number(editor.stock_quantity) || 0, currency: "USD" });
     if (catalogCollection === "vehicles") Object.assign(base, { name: editor.name.trim(), vehicle_type: editor.vehicle_type, passenger_capacity: Number(editor.passenger_capacity) || 1, price_from: Number(editor.price) || 0, currency: "USD", with_driver: true });
-    const result = editor.id
-      ? await supabase.from(catalogCollection).update(base).eq("id", editor.id)
-      : await supabase.from(catalogCollection).insert(base);
-    if (result.error) {
-      setError(getSubmissionErrorMessage(result.error, "The catalog record could not be saved."));
-      return;
-    }
+    try { await saveAdminCatalog(catalogCollection, editor.id, base); }
+    catch (error) { setError(getSubmissionErrorMessage(error, "The catalog record could not be saved.")); return; }
     setNotice("Catalog changes saved.");
     setEditor(null);
     await loadCatalog(catalogCollection);
@@ -312,9 +268,9 @@ export default function AdminPage() {
 
   const sendReply = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!supabase || !selectedConversation || !chatDraft.trim() && !chatFile) return;
-    const identity = await supabase.auth.getUser();
-    if (!identity.data.user) return;
+    if (!selectedConversation || !chatDraft.trim() && !chatFile) return;
+    const identity = await getAuthSession();
+    if (!identity?.user) return;
     setChatSending(true);
     setError("");
     let attachmentPath = "";
@@ -329,7 +285,7 @@ export default function AdminPage() {
     }
     const result = await sendChatMessage({
       conversationId: selectedConversation.id,
-      senderId: identity.data.user.id,
+      senderId: identity.user.id,
       senderRole: "staff",
       body: chatDraft.trim(),
       messageType: chatFile ? (chatFile.type.startsWith("image/") ? "image" : "file") : "text",
@@ -362,7 +318,7 @@ export default function AdminPage() {
   };
 
   const saveCurrencyRates = async () => {
-    if (!supabase || !canManageRates) return;
+    if (!canManageRates) return;
     setError("");
     const updates = currencyRows.map((row) => ({
       currency_code: row.currency_code,
@@ -376,11 +332,8 @@ export default function AdminPage() {
       setError("Every exchange rate must be a number greater than zero.");
       return;
     }
-    const result = await supabase.from("exchange_rates").upsert(updates, { onConflict: "currency_code" });
-    if (result.error) {
-      setError(getSubmissionErrorMessage(result.error, "Exchange rates could not be saved."));
-      return;
-    }
+    try { await saveAdminRates(updates); }
+    catch (error) { setError(getSubmissionErrorMessage(error, "Exchange rates could not be saved.")); return; }
     setNotice("Exchange rates updated for the whole site.");
     await loadCurrencyRates();
   };
@@ -395,7 +348,7 @@ export default function AdminPage() {
           <Link href="/" className="admin-brand"><span>✦</span><strong>AlpNile</strong><small>Control room</small></Link>
           <div className="admin-sidebar-user"><span className="admin-avatar">{profileName.slice(0, 1).toUpperCase()}</span><div><strong>{profileName}</strong><small>{role}</small></div></div>
           <nav className="admin-nav" aria-label="Admin navigation">{visibleNavItems.map((item) => <button key={item.id} type="button" className={section === item.id ? "active" : ""} onClick={() => { setSection(item.id); setNotice(""); setError(""); }}><span>{item.icon}</span><strong>{item.label}</strong><small>{item.caption}</small>{item.id === "inbox" && stats.chat_conversations ? <b>{stats.chat_conversations}</b> : null}</button>)}</nav>
-          <div className="admin-sidebar-footer"><Link href="/">View live site ↗</Link><button type="button" onClick={() => void supabase?.auth.signOut()}>Sign out</button></div>
+          <div className="admin-sidebar-footer"><Link href="/">View live site ↗</Link><button type="button" onClick={() => void signOut()}>Sign out</button></div>
         </aside>
         <section className="admin-content">
           <header className="admin-topbar"><div><p className="admin-eyebrow">ALPNILE / OPERATIONS</p><h1>{navItems.find((item) => item.id === section)?.label}</h1></div><div className="admin-topbar-actions"><span className="admin-live-dot" /> Live workspace <Link href="/travel-transport">Open customer view ↗</Link></div></header>

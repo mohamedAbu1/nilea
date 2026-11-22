@@ -6,7 +6,7 @@ import { StyledSelect } from "./components/styled-select";
 import { HomeHero, Icon, bookingLocations, type IconName } from "./components/home-hero";
 import { legacyCatalog } from "./lib/legacy-catalog";
 import { getSubmissionErrorMessage, insertCarBooking, insertInquiry, insertReview, listPublishedReviews, toggleReviewLike } from "./lib/submissions";
-import { supabase } from "./lib/supabase";
+import { getAuthSession } from "./lib/auth-client";
 
 type Category = {
   title: string;
@@ -175,20 +175,11 @@ export default function Home() {
   const [authGateMessage, setAuthGateMessage] = useState("");
 
   useEffect(() => {
-    if (!supabase) {
-      setIsAuthenticated(false);
-      return;
-    }
     let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted) setIsAuthenticated(Boolean(data.session));
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return;
-      setIsAuthenticated(Boolean(session));
-      if (session) setAuthGateMessage("");
-    });
-    return () => { mounted = false; listener.subscription.unsubscribe(); };
+    const refresh = () => { void getAuthSession().then((session) => { if (mounted) { setIsAuthenticated(Boolean(session)); if (session) setAuthGateMessage(""); } }); };
+    refresh();
+    window.addEventListener("alpnile:auth-changed", refresh);
+    return () => { mounted = false; window.removeEventListener("alpnile:auth-changed", refresh); };
   }, []);
 
   useEffect(() => {

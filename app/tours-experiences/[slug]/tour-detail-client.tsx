@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { getSubmissionErrorMessage, insertTripBooking } from "../../lib/submissions";
 import { getSimilarTours, getTourGallery, type TourDetail } from "../../lib/tour-details";
 import { useCurrency, type CurrencyCode } from "../../components/currency";
+import { trackCatalogEvent } from "../../lib/intelligence-client";
 
 type BookingStep = "details" | "payment" | "success";
 
@@ -72,6 +73,10 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
   useEffect(() => {
     setActiveImage(0);
   }, [tour.slug]);
+
+  useEffect(() => {
+    trackCatalogEvent({ eventType: "view", entityType: "trip", entityId: tour.id, entitySlug: tour.slug, metadata: { name: tour.name, city: tour.city, source: tour.source } });
+  }, [tour.city, tour.id, tour.name, tour.slug, tour.source]);
 
   useEffect(() => {
     if (galleryPaused || gallery.length < 2) return;
@@ -152,6 +157,7 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
     }
     setSubmitting(false);
     setStep("success");
+    trackCatalogEvent({ eventType: "booking", entityType: "trip", entityId: tour.id, entitySlug: tour.slug, metadata: { guests, startDate, endDate, paymentMethod } });
     const message = `Hello AlpNile, I would like to book ${tour.name}.\nName: ${form.name}\nDate: ${formatDate(startDate)}${endDate ? ` to ${formatDate(endDate)}` : ""}\nGuests: ${guests}\nPayment: ${paymentLabel}\nEstimated total: ${formatMoney(totalAmount, tour.currency)}\nPhone: ${form.phone}`;
     window.open(`https://wa.me/${whatsAppNumber}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
   };
