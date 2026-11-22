@@ -196,6 +196,7 @@ export default function Home() {
   const [accountRole, setAccountRole] = useState<AccountProfile["accessRole"]>("traveler");
   const [storyAudioOpen, setStoryAudioOpen] = useState(false);
   const [authGateMessage, setAuthGateMessage] = useState("");
+  const [reviewSlide, setReviewSlide] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -206,6 +207,19 @@ export default function Home() {
   }, []);
 
   const isAdmin = accountRole === "admin";
+  const reviewPageCount = Math.max(1, Math.ceil(reviews.length / 3));
+  const reviewStart = reviewSlide * 3;
+  const visibleReviews = reviews.slice(reviewStart, reviewStart + 3);
+
+  useEffect(() => {
+    setReviewSlide((current) => Math.min(current, reviewPageCount - 1));
+  }, [reviewPageCount]);
+
+  useEffect(() => {
+    if (reviewPageCount <= 1) return;
+    const timer = window.setInterval(() => setReviewSlide((current) => (current + 1) % reviewPageCount), 7000);
+    return () => window.clearInterval(timer);
+  }, [reviewPageCount]);
 
   useEffect(() => {
     let active = true;
@@ -221,6 +235,7 @@ export default function Home() {
         trip: review.journey,
         likes: review.like_count ?? 0,
       })));
+      setReviewSlide(0);
     });
     return () => { active = false; };
   }, []);
@@ -569,14 +584,24 @@ export default function Home() {
             <span className="home-reviews-rating"><strong>4.9</strong><span>★★★★★<small>Trusted by curious travellers</small></span></span>
           </div>
           <div className={`home-reviews-layout ${isAdmin ? "home-reviews-layout-admin" : ""}`}>
-            <div className="home-review-grid">
-              {reviews.slice(0, 3).map((review, index) => (
+            <div className="home-review-carousel" role="region" aria-roledescription="carousel" aria-label="Guest reviews">
+              <div className="home-review-grid" key={reviewSlide} aria-live="polite">
+              {visibleReviews.map((review, index) => (
                 <article className={`home-review-card home-review-card-${index + 1}`} key={`${review.name}-${index}`}>
-                  <div className="home-review-card-top"><span className="home-review-stars" aria-label={`${review.rating} out of 5 stars`}>{"★".repeat(review.rating)}</span><button type="button" className={`home-review-like ${review.liked ? "liked" : ""}`} onClick={() => void likeReview(review, index)} disabled={Boolean(review.id && likingReviewIds.includes(review.id))} aria-label={`${review.liked ? "Unlike" : "Like"} ${review.name}'s review`} aria-pressed={review.liked}><span aria-hidden="true">♥</span> {review.likes}</button></div>
+                  <div className="home-review-card-top"><span className="home-review-stars" aria-label={`${review.rating} out of 5 stars`}>{"★".repeat(review.rating)}</span><button type="button" className={`home-review-like ${review.liked ? "liked" : ""}`} onClick={() => void likeReview(review, reviewStart + index)} disabled={Boolean(review.id && likingReviewIds.includes(review.id))} aria-label={`${review.liked ? "Unlike" : "Like"} ${review.name}'s review`} aria-pressed={review.liked}><span aria-hidden="true">♥</span> {review.likes}</button></div>
                   <blockquote>“{review.quote}”</blockquote>
                   <div className="home-review-author"><img src={review.avatar} alt={`${review.name} avatar`} loading="lazy" /><span><strong>{review.name}</strong><small>{review.city} · {review.trip}</small></span></div>
                 </article>
               ))}
+              </div>
+              {reviewPageCount > 1 && <div className="home-review-carousel-controls">
+                <div className="home-review-carousel-count"><strong>{String(reviewSlide + 1).padStart(2, "0")}</strong><span>/ {String(reviewPageCount).padStart(2, "0")}</span><small>Guest notes</small></div>
+                <div className="home-review-carousel-actions">
+                  <button type="button" className="home-review-carousel-button previous" onClick={() => setReviewSlide((current) => (current - 1 + reviewPageCount) % reviewPageCount)} aria-label="Previous review page"><Icon name="arrow" size={16} /></button>
+                  <div className="home-review-carousel-dots" role="tablist" aria-label="Review pages">{Array.from({ length: reviewPageCount }, (_, page) => <button type="button" key={page} role="tab" className={page === reviewSlide ? "active" : ""} aria-selected={page === reviewSlide} aria-label={`Show review page ${page + 1}`} onClick={() => setReviewSlide(page)} />)}</div>
+                  <button type="button" className="home-review-carousel-button" onClick={() => setReviewSlide((current) => (current + 1) % reviewPageCount)} aria-label="Next review page"><Icon name="arrow" size={16} /></button>
+                </div>
+              </div>}
             </div>
             {!isAdmin && (isAuthenticated ? <form className="home-review-form" onSubmit={submitReview}>
               <input name="website" className="form-honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" />
