@@ -92,7 +92,7 @@ export async function listPublishedReviews() {
     const response = await fetch("/api/submissions?type=reviews", { credentials: "same-origin" });
     const body = await response.json().catch(() => ({})) as { data?: unknown[]; error?: string };
     if (!response.ok) throw new Error(body.error || "Reviews could not be loaded.");
-    return { data: (body.data ?? []) as Array<{ id: string; full_name: string; city_country: string; rating: number; journey: string; body: string; avatar_url: string | null; like_count: number }>, error: null };
+    return { data: (body.data ?? []) as Array<{ id: string; full_name: string; city_country: string; rating: number; journey: string; body: string; avatar_url: string | null; like_count: number; status?: "published" | "pending" }>, error: null };
   } catch (error) { return { data: [], error: error instanceof Error ? error : new Error("Reviews could not be loaded.") }; }
 }
 

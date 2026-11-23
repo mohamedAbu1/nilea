@@ -38,6 +38,7 @@ type Review = {
   trip: string;
   likes: number;
   liked?: boolean;
+  status?: "published" | "pending";
 };
 
 type InquiryMode = "trip" | "stay" | "car" | "market" | "contact";
@@ -127,7 +128,7 @@ const products = [
   { name: "Pharaonic Keepsake", detail: "Made to carry the story home", image: "/alpnile-bazaar-keepsake.webp", href: "/market?product=alabaster-bastet" },
 ];
 
-const marketSongEmbedUrl = "https://www.youtube-nocookie.com/embed/qvqa7J9iHsU?autoplay=1&controls=1&playsinline=1&rel=0&modestbranding=1";
+const marketSongEmbedUrl = "https://www.youtube-nocookie.com/embed/qvqa7J9iHsU?autoplay=1&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3";
 
 const starterReviews: Review[] = [
   { name: "Maya Richardson", city: "London", rating: 5, quote: "AlpNile made Egypt feel beautifully human. Every transfer, table and quiet moment had been considered.", avatar: "/alpnile-avatar-woman-explorer-v1.webp", trip: "Cairo · Luxor · Aswan", likes: 18 },
@@ -225,7 +226,7 @@ export default function Home() {
     let active = true;
     void listPublishedReviews().then(({ data }) => {
       if (!active || !data.length) return;
-      setReviews(data.map((review) => ({
+      const loadedReviews = data.map((review) => ({
         id: review.id,
         name: review.full_name,
         city: review.city_country,
@@ -234,7 +235,13 @@ export default function Home() {
         avatar: review.avatar_url || "/alpnile-profile-avatar.webp",
         trip: review.journey,
         likes: review.like_count ?? 0,
-      })));
+        status: review.status,
+      }));
+      setReviews((current) => {
+        const loadedIds = new Set(loadedReviews.map((review) => review.id).filter((id): id is string => Boolean(id)));
+        const localPending = current.filter((review) => review.status === "pending" && (!review.id || !loadedIds.has(review.id)));
+        return [...localPending, ...loadedReviews];
+      });
       setReviewSlide(0);
     });
     return () => { active = false; };
@@ -408,12 +415,15 @@ export default function Home() {
       setReviewSubmitting(false);
       return;
     }
+    setReviews((current) => [{ ...review, id: result.data?.id, status: "pending" }, ...current]);
+    setReviewSlide(0);
     formElement.reset();
     setReviewSent(true);
     setReviewSubmitting(false);
   };
 
   const likeReview = async (review: Review, index: number) => {
+    if (review.status === "pending") return;
     if (!review.id) {
       setReviews((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, likes: item.likes + (item.liked ? -1 : 1), liked: !item.liked } : item));
       return;
@@ -587,8 +597,8 @@ export default function Home() {
             <div className="home-review-carousel" role="region" aria-roledescription="carousel" aria-label="Guest reviews">
               <div className="home-review-grid" key={reviewSlide} aria-live="polite">
               {visibleReviews.map((review, index) => (
-                <article className={`home-review-card home-review-card-${index + 1}`} key={`${review.name}-${index}`}>
-                  <div className="home-review-card-top"><span className="home-review-stars" aria-label={`${review.rating} out of 5 stars`}>{"★".repeat(review.rating)}</span><button type="button" className={`home-review-like ${review.liked ? "liked" : ""}`} onClick={() => void likeReview(review, reviewStart + index)} disabled={Boolean(review.id && likingReviewIds.includes(review.id))} aria-label={`${review.liked ? "Unlike" : "Like"} ${review.name}'s review`} aria-pressed={review.liked}><span aria-hidden="true">♥</span> {review.likes}</button></div>
+                <article className={`home-review-card home-review-card-${index + 1}`} key={review.id ?? `${review.name}-${reviewStart + index}`}>
+                  <div className="home-review-card-top"><span className="home-review-stars" aria-label={`${review.rating} out of 5 stars`}>{"★".repeat(review.rating)}</span><span className="home-review-card-actions">{review.status === "pending" && <span className="home-review-pending">Pending review</span>}<button type="button" className={`home-review-like ${review.liked ? "liked" : ""}`} onClick={() => void likeReview(review, reviewStart + index)} disabled={review.status === "pending" || Boolean(review.id && likingReviewIds.includes(review.id))} aria-label={review.status === "pending" ? "Review is awaiting moderation" : `${review.liked ? "Unlike" : "Like"} ${review.name}'s review`} aria-pressed={review.liked}><span aria-hidden="true">♥</span> {review.likes}</button></span></div>
                   <blockquote>“{review.quote}”</blockquote>
                   <div className="home-review-author"><img src={review.avatar} alt={`${review.name} avatar`} loading="lazy" /><span><strong>{review.name}</strong><small>{review.city} · {review.trip}</small></span></div>
                 </article>
@@ -611,7 +621,7 @@ export default function Home() {
               <label>Your journey<StyledSelect name="trip" defaultValue="Heritage & Nile escape" ariaLabel="Your journey"><option>Heritage &amp; Nile escape</option><option>Slow luxury in Upper Egypt</option><option>Red Sea days</option><option>Private villa stay</option></StyledSelect></label>
               <label>Your note<textarea name="review" required rows={4} placeholder="What made the journey memorable?" /></label>
               <button className="home-review-submit" type="submit" disabled={reviewSubmitting}>{reviewSubmitting ? "Saving note…" : "Submit for review"} <Icon name="arrow" size={15} /></button>
-              {reviewSent && <p className="home-review-success" role="status">Thank you. Your field note was submitted for review.</p>}
+              {reviewSent && <p className="home-review-success" role="status">Thank you. Your field note is visible to you now and is waiting for AlpNile moderation.</p>}
               {reviewError && <p className="home-form-error" role="alert">{reviewError}</p>}
             </form> : <AuthGate title="Your story belongs to your account." description="Log in to publish a field note and keep your travel memories connected to your AlpNile profile." onLogin={() => requestLogin("share a field note")} />)}
           </div>

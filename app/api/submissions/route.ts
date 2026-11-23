@@ -19,7 +19,10 @@ export async function GET(request: Request) {
   try {
     const type = new URL(request.url).searchParams.get("type");
     if (type !== "reviews") return jsonError(new Error("Unknown submission query."));
-    const rows = await query("SELECT id, full_name, city_country, rating, journey, body, avatar_url, like_count FROM reviews WHERE status = 'published' ORDER BY created_at DESC LIMIT 1000");
+    const user = await getCurrentUser();
+    const rows = user
+      ? await query("SELECT id, full_name, city_country, rating, journey, body, avatar_url, like_count, status FROM reviews WHERE status = 'published' OR (status = 'pending' AND user_id = ?) ORDER BY created_at DESC LIMIT 1000", [user.id])
+      : await query("SELECT id, full_name, city_country, rating, journey, body, avatar_url, like_count, status FROM reviews WHERE status = 'published' ORDER BY created_at DESC LIMIT 1000");
     return Response.json({ data: rows });
   } catch (error) {
     return jsonError(error, 503);
