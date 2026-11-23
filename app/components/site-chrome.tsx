@@ -85,6 +85,7 @@ export function SiteHeader() {
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const isAdmin = account?.accessRole === "admin";
   const isProvider = account?.accessRole === "driver" || account?.accessRole === "property_owner";
+  const isTraveler = !isAdmin && !isProvider;
 
   useEffect(() => {
     setMenuOpen(false);
@@ -184,7 +185,7 @@ export function SiteHeader() {
   };
 
   return (
-    <header className={`site-header ${staysChrome ? "site-stays-chrome" : ""} ${marketChrome ? "site-market-chrome" : ""}`.trim()}>
+    <header className={`site-header ${isAdmin ? "site-header-admin" : isProvider ? "site-header-provider" : "site-header-public"} ${staysChrome ? "site-stays-chrome" : ""} ${marketChrome ? "site-market-chrome" : ""}`.trim()}>
       <div className="site-header-inner">
         <BrandLogo href="/" />
         {showPrimaryNavigation && (
@@ -247,6 +248,26 @@ export function SiteHeader() {
                 {t(item.label)}
               </Link>
             ))}
+            {isTraveler && <>
+              <button type="button" className="site-mobile-menu-search" onClick={() => { setMenuOpen(false); setSearchOpen(true); }}>
+                <span className="site-action-icon pharaonic-ui-icon pharaonic-ui-search" aria-hidden="true" />
+                {t("Search AlpNile")}
+              </button>
+              <div className="site-mobile-menu-preferences">
+                <span className="site-mobile-menu-preferences-label">{t("Preferences")}</span>
+                <div className="site-mobile-menu-preference-controls">
+                  <div className="site-language-picker" data-no-translate>
+                    <span className="site-language-globe" aria-hidden="true">◎</span>
+                    <button type="button" className="site-language-trigger" aria-label={t("Language")} aria-haspopup="listbox" aria-expanded={languageOpen} onClick={() => setLanguageOpen((open) => !open)}>{localeOptions.find((option) => option.code === locale)?.native ?? "English"}</button>
+                    <span className="site-language-chevron" aria-hidden="true">⌄</span>
+                    {languageOpen && <div className="site-language-menu" role="listbox" aria-label={t("Language")}>
+                      {localeOptions.map((option) => <button key={option.code} type="button" role="option" aria-selected={locale === option.code} className={locale === option.code ? "active" : ""} onClick={() => { setLocale(option.code); setLanguageOpen(false); }}>{option.native}<span aria-hidden="true">{locale === option.code ? "✓" : ""}</span></button>)}
+                    </div>}
+                  </div>
+                  <CurrencySwitcher />
+                </div>
+              </div>
+            </>}
           </nav>
         )}
       </div>

@@ -4433,6 +4433,79 @@ body::-webkit-scrollbar-thumb:hover {
   background: rgba(244, 197, 117, .08);
 }
 
+.site-mobile-menu-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(117, 212, 201, .2);
+  border-radius: 12px;
+  color: #a7e7d8;
+  background: rgba(117, 212, 201, .06);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.site-mobile-menu-search:hover,
+.site-mobile-menu-search:focus-visible {
+  border-color: rgba(117, 212, 201, .62);
+  background: rgba(117, 212, 201, .12);
+  outline: none;
+}
+
+.site-mobile-menu-preferences {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 12px 4px 2px;
+  border-top: 1px solid rgba(255, 255, 255, .1);
+}
+
+.site-mobile-menu-preferences-label {
+  color: rgba(246, 239, 223, .44);
+  font-size: 8px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.site-mobile-menu-preference-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.site-mobile-menu-preference-controls .site-language-picker,
+.site-mobile-menu-preference-controls .site-currency-picker {
+  min-width: 0;
+  width: 100%;
+}
+
+.site-mobile-menu-preference-controls .site-language-picker {
+  height: 38px;
+}
+
+.site-mobile-menu-preference-controls .site-language-trigger {
+  width: 100%;
+  min-width: 0;
+}
+
+.site-mobile-menu-preference-controls .site-currency-trigger {
+  width: 100%;
+  justify-content: space-between;
+  min-height: 38px;
+}
+
+.site-mobile-menu-preference-controls .site-language-menu,
+.site-mobile-menu-preference-controls .site-currency-menu {
+  right: 0;
+  left: 0;
+  width: auto;
+}
+
 .site-search-panel {
   position: absolute;
   top: calc(100% + 10px);
@@ -4964,6 +5037,90 @@ body::-webkit-scrollbar-thumb:hover {
   .account-dialog-visual { display: none; }
   .account-dialog-panel { padding: 32px 22px 24px; }
   .account-dialog-close { top: 13px; right: 13px; }
+}
+
+@media (max-width: 720px) {
+  .site-header-public .site-header-inner {
+    min-height: 66px;
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .site-header-public .brand-logo {
+    width: clamp(116px, 35vw, 138px);
+  }
+
+  .site-header-public .site-header-actions {
+    gap: 6px;
+  }
+
+  .site-header-public .site-language-picker,
+  .site-header-public .site-currency-picker,
+  .site-header-public .site-header-search {
+    display: none;
+  }
+
+  .site-header-public .site-mobile-menu-preference-controls .site-language-picker,
+  .site-header-public .site-mobile-menu-preference-controls .site-currency-picker {
+    display: inline-flex;
+  }
+
+  .site-header-public .site-header-menu {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(244, 197, 119, .28);
+    border-radius: 12px;
+    color: #f4cf8d;
+    background: rgba(244, 197, 119, .07);
+  }
+
+  .site-header-public .site-user-area {
+    gap: 6px;
+  }
+
+  .site-header-public .site-user-profile {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    padding: 3px;
+  }
+
+  .site-header-public .site-user-profile img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .site-header-public .site-user-profile span {
+    display: none;
+  }
+
+  .site-header-public .site-header-login {
+    min-height: 34px;
+    padding-inline: 10px;
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
+  .site-header-public .site-header-login .site-plan-icon {
+    display: none;
+  }
+
+  .site-header-public .site-account-popover {
+    right: -4px;
+    width: min(286px, calc(100vw - 24px));
+  }
+
+  .site-header-public .site-mobile-menu {
+    top: calc(100% + 8px);
+    right: 12px;
+    left: 12px;
+    max-height: min(78dvh, 560px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 8px;
+  }
 }
 
 /* Premium typography and the AlpNile pharaonic 3D icon language. */
