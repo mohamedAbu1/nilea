@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { deleteAdminNotifications, getAdminNotifications, markAdminNotificationsRead, type AdminNotification } from "../lib/admin-client";
-import { listChatConversations, type ChatConversation } from "../lib/chat";
+import { listChatConversations, updateConversationStatus, type ChatConversation } from "../lib/chat";
 
 type Panel = "notifications" | "messages" | null;
 
@@ -91,6 +91,11 @@ export default function AdminHeaderTools() {
     }
   };
 
+  const dismissConversationNotification = async (id: string) => {
+    await updateConversationStatus(id, "closed");
+    setConversations((current) => current.map((conversation) => conversation.id === id ? { ...conversation, status: "closed" } : conversation));
+  };
+
   return <>
     <div className="site-admin-header-tools" aria-label="Admin updates">
       <button type="button" className={`site-admin-header-tool ${panel === "notifications" ? "active" : ""}`} onClick={() => togglePanel("notifications")} aria-label={`Open notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ""}`} aria-expanded={panel === "notifications"}>
@@ -115,9 +120,9 @@ export default function AdminHeaderTools() {
           {panel === "notifications" ? notifications.map((item) => <div className={`site-admin-update-row ${item.is_read ? "" : "unread"}`} key={item.id}>
             <Link href={notificationHref(item)} onClick={() => void openNotification(item)}><span className="site-admin-update-icon"><NotificationIcon /></span><span><strong>{item.title}</strong><small>{item.body}</small><time>{formatDate(item.created_at)}</time></span></Link>
             <button type="button" onClick={() => void deleteNotification(item.id)} aria-label={`Delete ${item.title}`}>×</button>
-          </div>) : conversations.map((conversation) => <Link key={conversation.id} href={`/admin?section=inbox&conversation=${encodeURIComponent(conversation.id)}`} onClick={() => setPanel(null)} className="site-admin-message-row"><span className="site-admin-update-icon"><MessageIcon /></span><span><strong>{conversation.user_name || "Guest traveler"}</strong><small>{conversation.subject}</small><time>{conversation.status} · {formatDate(conversation.last_message_at)}</time></span></Link>)}
+          </div>) : openConversations.map((conversation) => <div key={conversation.id} className="site-admin-message-row-wrap"><Link href={`/admin?section=inbox&conversation=${encodeURIComponent(conversation.id)}`} onClick={() => setPanel(null)} className="site-admin-message-row"><span className="site-admin-update-icon"><MessageIcon /></span><span><strong>{conversation.user_name || "Guest traveler"}</strong><small>{conversation.subject}</small><time>{conversation.status} · {formatDate(conversation.last_message_at)}</time></span></Link><button type="button" onClick={() => void dismissConversationNotification(conversation.id)} aria-label={`Dismiss ${conversation.user_name || "support message"}`}>×</button></div>)}
           {panel === "notifications" && !notifications.length && <div className="site-admin-tools-empty">You are all caught up.</div>}
-          {panel === "messages" && !conversations.length && <div className="site-admin-tools-empty">No support conversations yet.</div>}
+          {panel === "messages" && !openConversations.length && <div className="site-admin-tools-empty">No support conversations yet.</div>}
         </div>
       </aside>
     </>}

@@ -4286,6 +4286,10 @@ body::-webkit-scrollbar-thumb:hover {
 .site-admin-update-row.unread { background: rgba(121,217,203,.06); }
 .site-admin-update-row > a, .site-admin-message-row { display: grid; grid-template-columns: 32px minmax(0,1fr); align-items: start; gap: 10px; padding: 13px 6px; color: inherit; text-decoration: none; }
 .site-admin-message-row { border-bottom: 1px solid rgba(121,217,203,.1); }
+.site-admin-message-row-wrap { display: grid; grid-template-columns: minmax(0,1fr) 28px; align-items: stretch; border-bottom: 1px solid rgba(121,217,203,.1); }
+.site-admin-message-row-wrap .site-admin-message-row { border-bottom: 0; }
+.site-admin-message-row-wrap > button { align-self: center; width: 27px; height: 27px; margin-right: 6px; border: 1px solid rgba(255,126,126,.28); border-radius: 9px; color: #ffb2a8; background: rgba(255,126,126,.06); cursor: pointer; }
+.site-admin-message-row-wrap > button:hover { border-color: #ffb2a8; background: rgba(255,126,126,.16); }
 .site-admin-update-row > a:hover, .site-admin-message-row:hover { background: rgba(121,217,203,.08); }
 .site-admin-update-icon { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid rgba(244,197,119,.32); border-radius: 10px; color: #f4c577; background: rgba(244,197,119,.1); }
 .site-admin-update-row > a > span:last-child, .site-admin-message-row > span:last-child { display: grid; min-width: 0; gap: 4px; }
@@ -6016,11 +6020,11 @@ h4,
   background-position: center 55%;
   background-size: cover;
   filter: saturate(.88) contrast(1.08);
-  transform: scale(1.035);
+  transform: none;
   animation: home-hero-reveal 900ms ease both;
 }
 
-@keyframes home-hero-reveal { from { opacity: .35; transform: scale(1.07); } to { opacity: 1; transform: scale(1.035); } }
+@keyframes home-hero-reveal { from { opacity: .35; } to { opacity: 1; } }
 
 .home-redesign-hero-shade {
   background:
