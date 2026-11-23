@@ -211,6 +211,22 @@ export function getSimilarTours(tour: TourDetail, limit = 4) {
     .map(({ candidate }) => candidate);
 }
 
+export function getOptionalExcursions(tour: TourDetail, limit = 6) {
+  const targetCities = new Set(splitTourCities(tour.city));
+  return getTourSlugs()
+    .map((slug) => getTourDetail(slug))
+    .filter((candidate): candidate is TourDetail => candidate !== null && candidate.slug !== tour.slug && candidate.durationDays <= 2)
+    .map((candidate) => {
+      const cityMatches = splitTourCities(candidate.city).filter((city) => targetCities.has(city)).length;
+      const shortRouteBonus = candidate.durationDays === 1 ? 2 : 0;
+      return { candidate, score: cityMatches * 10 + shortRouteBonus };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score || a.candidate.name.localeCompare(b.candidate.name))
+    .slice(0, limit)
+    .map(({ candidate }) => candidate);
+}
+
 export function getTourGallery(tour: TourDetail): TourGalleryImage[] {
   const sources = tour.source === "catalog"
     ? galleryLabels.map((_, index) => `/trips/galleries/${tour.slug}/${String(index + 1).padStart(2, "0")}.webp`)

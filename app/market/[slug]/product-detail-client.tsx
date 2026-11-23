@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import type { BazaarProduct, CartLine } from "../catalog";
 import { LocalizedPrice } from "../../components/currency";
 import { catalogGalleryLabel, readCatalogGalleryState } from "../../lib/catalog-gallery";
+import { getAuthSession } from "../../lib/auth-client";
+import { getCatalogFavorites, toggleCatalogFavorite } from "../../lib/intelligence-client";
 
 type Props = {
   product: BazaarProduct;
@@ -21,6 +23,23 @@ export default function ProductDetailClient({ product, gallery }: Props) {
   const [cartReady, setCartReady] = useState(false);
   const [added, setAdded] = useState(false);
   const [databaseGallery, setDatabaseGallery] = useState<{ configured: boolean; images: string[] } | null>(null);
+  const [accountRole, setAccountRole] = useState<string | null>(null);
+  const [accountLoaded, setAccountLoaded] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const isAdmin = accountRole === "admin";
+  const canUseTravelerTools = accountLoaded && !isAdmin && accountRole !== "driver" && accountRole !== "property_owner";
+
+  useEffect(() => {
+    void getAuthSession().then((session) => { setAccountRole(session?.user.accessRole ?? null); setAccountLoaded(true); });
+  }, []);
+
+  useEffect(() => {
+    if (accountRole !== "traveler") {
+      setSaved(false);
+      return;
+    }
+    void getCatalogFavorites("product").then((result) => setSaved(result.data.some((favorite) => favorite.entity_slug === product.slug)));
+  }, [accountRole, product.slug]);
 
   useEffect(() => {
     let active = true;
@@ -57,6 +76,7 @@ export default function ProductDetailClient({ product, gallery }: Props) {
   const activeGallery = databaseGallery?.configured ? (databaseGallery.images.length ? databaseGallery.images : gallery.slice(0, 1)) : gallery;
 
   const addToBag = () => {
+    if (isAdmin) return;
     setCartLines((lines) => {
       const existing = lines.find((line) => line.slug === product.slug);
       if (existing) return lines.map((line) => line.slug === product.slug ? { ...line, quantity: line.quantity + 1 } : line);
@@ -65,10 +85,22 @@ export default function ProductDetailClient({ product, gallery }: Props) {
     setAdded(true);
   };
 
+  const toggleSaved = async () => {
+    if (!canUseTravelerTools) return;
+    if (accountRole !== "traveler") {
+      window.dispatchEvent(new CustomEvent("alpnile:open-account", { detail: { mode: "login" } }));
+      return;
+    }
+    const nextSaved = !saved;
+    setSaved(nextSaved);
+    const result = await toggleCatalogFavorite({ entityType: "product", entitySlug: product.slug, saved: nextSaved });
+    if (result.error) setSaved(!nextSaved);
+  };
+
   return (
     <main className="bazaar-page bazaar-product-page">
       <div className="bazaar-wrap bazaar-product-detail-shell">
-        <div className="bazaar-product-detail-topbar"><Link href="/market#bazaar-catalog">← Back to the bazaar</Link><Link href="/market#bazaar-catalog" className="bazaar-detail-bag">Shopping bag <strong>{cartCount}</strong></Link></div>
+        <div className="bazaar-product-detail-topbar"><Link href="/market#bazaar-catalog">← Back to the bazaar</Link>{!isAdmin && <Link href="/market#bazaar-catalog" className="bazaar-detail-bag">Shopping bag <strong>{cartCount}</strong></Link>}</div>
         <div className="bazaar-product-detail-layout">
           <section className="bazaar-detail-gallery" aria-label={`${product.name} product gallery`}>
             <div className="bazaar-detail-main-image"><img src={activeGallery[activeView] ?? activeGallery[0]} alt={`${product.name}, ${catalogGalleryLabel(activeView, "Product image")}`} /><span>{String(activeView + 1).padStart(2, "0")} / {String(activeGallery.length).padStart(2, "0")}</span></div>
@@ -81,7 +113,7 @@ export default function ProductDetailClient({ product, gallery }: Props) {
             <p className="bazaar-detail-description">{product.description}</p>
             <div className="bazaar-detail-price"><span>Starting price</span><strong><LocalizedPrice amount={product.price} /></strong></div>
             <dl className="bazaar-detail-specs"><div><dt>Made in</dt><dd>{product.origin}</dd></div><div><dt>Material</dt><dd>{product.material}</dd></div><div><dt>Collection</dt><dd>AlpNile Bazaar</dd></div></dl>
-            <div className="bazaar-detail-actions"><button type="button" className="bazaar-primary-button" onClick={addToBag}>{added ? "Added to bag ✓" : "Add to bag"} <Arrow /></button><a className="bazaar-secondary-link" href={`mailto:hello@alpnile.com?subject=${encodeURIComponent(`Bazaar request: ${product.name}`)}`}>Ask about this piece <Arrow /></a></div>
+            <div className="bazaar-detail-actions">{canUseTravelerTools && <button type="button" className="bazaar-favorite-button modal-favorite" onClick={() => void toggleSaved()}><span aria-hidden="true">{saved ? "♥" : "♡"}</span> {saved ? "Saved" : "Save"}</button>}{!isAdmin && <button type="button" className="bazaar-primary-button" onClick={addToBag}>{added ? "Added to bag ✓" : "Add to bag"} <Arrow /></button>}<a className="bazaar-secondary-link" href={`mailto:hello@alpnile.com?subject=${encodeURIComponent(`Bazaar request: ${product.name}`)}`}>Ask about this piece <Arrow /></a></div>
             <p className="bazaar-detail-support"><span aria-hidden="true">✦</span> Handmade in Egypt · availability and shipping confirmed personally by AlpNile.</p>
           </section>
         </div>

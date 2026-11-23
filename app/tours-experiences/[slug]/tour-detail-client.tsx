@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { getSubmissionErrorMessage, insertTripBooking } from "../../lib/submissions";
 import { getAuthSession } from "../../lib/auth-client";
-import { getSimilarTours, getTourGallery, type TourDetail } from "../../lib/tour-details";
+import { getOptionalExcursions, getSimilarTours, getTourGallery, type TourDetail } from "../../lib/tour-details";
 import { catalogGalleryLabel, readCatalogGalleryState } from "../../lib/catalog-gallery";
 import { useCurrency, type CurrencyCode } from "../../components/currency";
 import { trackCatalogEvent } from "../../lib/intelligence-client";
@@ -63,6 +63,7 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
     return sources.map((src, index) => ({ src, label: catalogGalleryLabel(index, "Tour image") }));
   }, [databaseGallery, tour]);
   const similarTours = useMemo(() => getSimilarTours(tour), [tour]);
+  const optionalExcursions = useMemo(() => getOptionalExcursions(tour), [tour]);
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -264,6 +265,7 @@ export default function TourDetailClient({ tour }: { tour: TourDetail }) {
         </div>
 
         {similarTours.length > 0 && <section className="tour-similar-section"><div className="tour-similar-heading"><div><p className="tour-detail-eyebrow">Same city &amp; category</p><h2>More routes that fit your journey</h2></div><span>{similarTours.length} related experiences</span></div><div className="tour-similar-grid">{similarTours.map((relatedTour) => <Link href={`/tours-experiences/${relatedTour.slug}`} className="tour-similar-card" key={relatedTour.slug}><div className="tour-similar-card-media"><img src={relatedTour.image} alt={relatedTour.name} /><span>{relatedTour.categories.find((category) => tour.categories.includes(category)) ?? relatedTour.category}</span></div><div className="tour-similar-card-copy"><strong>{relatedTour.name}</strong><span>{relatedTour.city}</span><div><small>★ {relatedTour.rating === "New" ? "New" : `${relatedTour.rating} (${relatedTour.reviews})`}</small><b>From {formatMoney(relatedTour.priceFrom, relatedTour.currency)}</b></div></div></Link>)}</div></section>}
+        {optionalExcursions.length > 0 && <section className="tour-excursions-section"><div className="tour-similar-heading"><div><p className="tour-detail-eyebrow">Optional excursions · {tour.city.split(" · ")[0]}</p><h2>Build the days around your main route.</h2><p className="tour-excursions-intro">Short local experiences are grouped by the governorate or city in your main journey. Every option keeps the same six-photo gallery structure, so the detail page is ready for real images and real itinerary information.</p></div><span>{optionalExcursions.length} side trips</span></div><div className="tour-excursions-grid">{optionalExcursions.map((excursion) => { const excursionGallery = getTourGallery(excursion); return <Link href={`/tours-experiences/${excursion.slug}`} className="tour-excursion-card" key={excursion.slug}><div className="tour-excursion-media">{excursionGallery.slice(0, 3).map((image, index) => <img key={`${image.src}-${index}`} src={image.src} alt="" />)}<span>{excursionGallery.length} photos</span></div><div className="tour-excursion-copy"><span>{excursion.city} · {excursion.duration}</span><strong>{excursion.name}</strong><p>{excursion.description}</p><b>View excursion <span aria-hidden="true">↗</span></b></div></Link>; })}</div></section>}
       </div>
     </main>
   );

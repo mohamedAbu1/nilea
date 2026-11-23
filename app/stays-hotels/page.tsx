@@ -7,6 +7,7 @@ import { getAuthSession } from "../lib/auth-client";
 import { getDestinationLabel, normalizeDestinationId } from "../lib/travel-availability";
 import { LocalizedPrice, useCurrency } from "../components/currency";
 import { catalogGalleryLabel, readCatalogGalleryState } from "../lib/catalog-gallery";
+import { getCatalogFavorites, toggleCatalogFavorite } from "../lib/intelligence-client";
 
 type IconName = "arrow" | "balloon" | "bath" | "bed" | "boat" | "calendar" | "check" | "close" | "heart" | "horse" | "kitchen" | "lock" | "map" | "pin" | "pool" | "search" | "share" | "star" | "sun" | "users" | "wifi";
 
@@ -465,7 +466,7 @@ function VillaDetailPage({ slug }: { slug: string }) {
   const [activeImage, setActiveImage] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [savedLoaded, setSavedLoaded] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState<1 | 2>(1);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [bookingReference, setBookingReference] = useState("");
@@ -473,12 +474,15 @@ function VillaDetailPage({ slug }: { slug: string }) {
   const [bookingSavedLocally, setBookingSavedLocally] = useState(false);
   const [bookingError, setBookingError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [accountRole, setAccountRole] = useState<string | null>(null);
+  const [accountLoaded, setAccountLoaded] = useState(false);
+  const isAdmin = accountRole === "admin";
+  const canUseTravelerTools = accountLoaded && (accountRole === null || accountRole === "traveler");
   const bookingExtras = [...extras, ...activeStay.activities.map((activity) => ({ id: activity.id, label: activity.title, detail: `${activity.duration} · ${activity.detail}`, price: activity.price }))];
   const externalListings = externalListingLinks(activeStay);
 
   useEffect(() => {
-    void getAuthSession().then((session) => setIsAdmin(session?.user.accessRole === "admin"));
+    void getAuthSession().then((session) => { setAccountRole(session?.user.accessRole ?? null); setAccountLoaded(true); });
   }, []);
 
   useEffect(() => {
@@ -500,14 +504,20 @@ function VillaDetailPage({ slug }: { slug: string }) {
     setCheckIn(nextRange.checkIn);
     setCheckOut(nextRange.checkOut);
     setCalendarMonth(monthStart(nextRange.checkIn));
-    setSaved(window.localStorage.getItem(`alpnile-stay-saved-${activeStay.slug}`) === "true");
-    setSavedLoaded(true);
+    setShareOpen(false);
   }, [activeStay.slug]);
 
   useEffect(() => {
-    if (!savedLoaded) return;
-    window.localStorage.setItem(`alpnile-stay-saved-${activeStay.slug}`, String(saved));
-  }, [activeStay.slug, saved, savedLoaded]);
+    if (accountRole !== "traveler") {
+      setSaved(false);
+      return;
+    }
+    let active = true;
+    void getCatalogFavorites("stay").then((result) => {
+      if (active) setSaved(result.data.some((favorite) => favorite.entity_slug === activeStay.slug));
+    });
+    return () => { active = false; };
+  }, [accountRole, activeStay.slug]);
 
   useEffect(() => {
     if (!galleryOpen) return;
@@ -531,6 +541,24 @@ function VillaDetailPage({ slug }: { slug: string }) {
   const visibleGallery = stayGallery.slice(0, 5);
   const todayKey = dateInput(0);
   const cells = calendarCells(calendarMonth);
+
+  const toggleSaved = async () => {
+    if (accountRole !== "traveler") {
+      if (canUseTravelerTools) window.dispatchEvent(new CustomEvent("alpnile:open-account", { detail: { mode: "login" } }));
+      return;
+    }
+    const nextSaved = !saved;
+    setSaved(nextSaved);
+    const result = await toggleCatalogFavorite({ entityType: "stay", entitySlug: activeStay.slug, saved: nextSaved });
+    if (result.error) setSaved(!nextSaved);
+  };
+
+  const shareUrl = typeof window === "undefined" ? "" : window.location.href;
+  const shareText = `${activeStay.title} · AlpNile`;
+  const copyShareLink = async () => {
+    await navigator.clipboard?.writeText(shareUrl);
+    setShareOpen(false);
+  };
 
   const selectCalendarDate = (value: string) => {
     if (value < todayKey || blockedDates.includes(value)) return;
@@ -607,7 +635,7 @@ function VillaDetailPage({ slug }: { slug: string }) {
       <div className="villa-booking-topline"><div className="villa-booking-wrap villa-booking-topline-inner"><span><span className="villa-status-dot" /> {activeStay.title} · {activeStay.available ? "Live availability" : "Preview listing"}</span><span className="villa-topline-note"><Icon name="lock" size={12} /> Secure request · No payment required</span></div></div>
       <div className="villa-booking-wrap villa-booking-main">
         <nav className="villa-breadcrumbs" aria-label="Breadcrumb"><Link href="/">Home</Link><span>/</span><Link href="/stays-hotels">Stays</Link><span>/</span><strong>{activeStay.title}</strong></nav>
-        <section className="villa-heading-row"><div><p className="villa-eyebrow">{activeStay.kind} · {activeStay.location}</p><h1>{activeStay.title}</h1><div className="villa-heading-meta"><span className="villa-rating"><Icon name="star" size={14} /> {activeStay.rating}</span><span>Exceptional · {activeStay.reviews} reviews</span><span>·</span><span><Icon name="pin" size={14} /> {activeStay.location}</span></div></div><div className="villa-heading-actions"><button type="button" onClick={() => setSaved((value) => !value)} className={saved ? "is-saved" : ""}><Icon name="heart" size={17} /> {saved ? "Saved" : "Save"}</button><button type="button" onClick={() => navigator.clipboard?.writeText(window.location.href)}><Icon name="share" size={17} /> Share</button></div></section>
+        <section className="villa-heading-row"><div><p className="villa-eyebrow">{activeStay.kind} · {activeStay.location}</p><h1>{activeStay.title}</h1><div className="villa-heading-meta"><span className="villa-rating"><Icon name="star" size={14} /> {activeStay.rating}</span><span>Exceptional · {activeStay.reviews} reviews</span><span>·</span><span><Icon name="pin" size={14} /> {activeStay.location}</span></div></div><div className="villa-heading-actions">{canUseTravelerTools && <button type="button" onClick={() => void toggleSaved()} className={saved ? "is-saved" : ""}><Icon name="heart" size={17} /> {saved ? "Saved" : "Save"}</button>}<div className="villa-share-wrap"><button type="button" onClick={() => setShareOpen((open) => !open)} aria-expanded={shareOpen}><Icon name="share" size={17} /> Share</button>{shareOpen && <div className="villa-share-menu" role="menu"><a href={`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareUrl}`)}`} target="_blank" rel="noreferrer" role="menuitem">WhatsApp <span>↗</span></a><a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noreferrer" role="menuitem">Facebook <span>↗</span></a><a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noreferrer" role="menuitem">X / Twitter <span>↗</span></a><button type="button" onClick={() => void copyShareLink()} role="menuitem">Copy link <span>⧉</span></button></div>}</div></div></section>
         <section className="villa-gallery" aria-label={`${activeStay.title} photos`}><button type="button" className="villa-gallery-lead" onClick={() => { setActiveImage(0); setGalleryOpen(true); }} aria-label="Open photo gallery"><ResponsiveImage image={stayGallery[0]} priority /><span className="villa-gallery-label">{stayGallery[0].label}</span></button><div className="villa-gallery-grid">{visibleGallery.slice(1, 5).map((image) => <button type="button" key={image.index} onClick={() => { setActiveImage(stayGallery.findIndex((item) => item.index === image.index)); setGalleryOpen(true); }} aria-label={`Open ${image.label} photo`}><ResponsiveImage image={image} /><span>{image.label}</span></button>)}<button type="button" className="villa-gallery-all" onClick={() => { setActiveImage(0); setGalleryOpen(true); }}><ResponsiveImage image={visibleGallery[visibleGallery.length > 5 ? 5 : visibleGallery.length - 1]} /><span><Icon name="search" size={16} /> View all {stayGallery.length} photos</span></button></div></section>
         <div className="villa-content-grid"><div className="villa-detail-column">
           <section className="villa-intro-card"><div><p className="villa-eyebrow">{activeStay.kind} · Hosted by AlpNile</p><h2>{activeStay.description}</h2><p>See the space, choose your dates and send a direct request. The AlpNile team will confirm the home, the final total and the arrival details with you.</p><div className="villa-external-listings"><span className="villa-external-label">Find this stay on</span><div>{externalListings.map((listing) => <a key={listing.platform} href={listing.href} target="_blank" rel="noreferrer" aria-label={`Search ${activeStay.title} on ${listing.platform}`}><ListingMark platform={listing.platform} /><span>{listing.platform}</span><b aria-hidden="true">↗</b></a>)}</div><small>Search links open the matching property or area on the platform.</small></div></div><div className="villa-intro-facts"><div><strong>{activeStay.guests}</strong><span>guests</span></div><div><strong>{activeStay.bedrooms}</strong><span>bedrooms</span></div><div><strong>{activeStay.baths}</strong><span>baths</span></div></div></section>

@@ -117,9 +117,9 @@ const cities: City[] = [
 ];
 
 const homes = [
-  { name: "Winter Palace Riverside", place: "Luxor", image: "/alpnile-hotel-winter-palace.webp", href: "/stays-hotels?stay=winter-palace" },
-  { name: "Nile Palace Residence", place: "Aswan", image: "/alpnile-hotel-nile-palace.webp", href: "/stays-hotels?stay=nile-palace" },
-  { name: "Al Moudira", place: "West Luxor", image: "/alpnile-hotel-al-moudira.webp", href: "/stays-hotels?stay=al-moudira" },
+  { name: "Habu Sunset Villa", place: "Habu · Luxor", image: "/images/habu-sunset-villa/responsive/villa-04-desktop.webp", href: "/stays-hotels?stay=habu-sunset-villa" },
+  { name: "Riverside Residence Suite", place: "Luxor", image: "/alpnile-hotel-luxor-riverside.webp", href: "/stays-hotels?stay=riverside-suite" },
+  { name: "Red Sea Garden Villa", place: "Hurghada", image: "/alpnile-stays-hotels-hero.webp", href: "/stays-hotels?stay=red-sea-garden-villa" },
 ];
 
 const products = [

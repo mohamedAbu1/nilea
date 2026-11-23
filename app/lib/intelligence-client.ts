@@ -3,6 +3,13 @@
 type EntityType = "trip" | "stay" | "product" | "city" | "vehicle" | "site";
 type EventType = "view" | "search" | "open_details" | "save" | "unsave" | "inquiry" | "booking" | "planner_complete" | "recommendation_click";
 
+export type CatalogFavorite = {
+  entity_type: EntityType;
+  entity_slug: string;
+  entity_id?: string | null;
+  saved_at?: string;
+};
+
 type EventInput = {
   eventType: EventType;
   entityType: EntityType;
@@ -44,4 +51,44 @@ export function saveUserPreferences(preferences: Record<string, unknown>) {
     credentials: "same-origin",
     body: JSON.stringify(preferences),
   }).catch(() => undefined);
+}
+
+export async function toggleCatalogFavorite(input: {
+  entityType: EntityType;
+  entitySlug: string;
+  entityId?: string;
+  saved: boolean;
+}) {
+  try {
+    const response = await fetch("/api/intelligence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        action: "favorite",
+        eventType: input.saved ? "save" : "unsave",
+        entityType: input.entityType,
+        entitySlug: input.entitySlug,
+        entityId: input.entityId,
+      }),
+    });
+    const body = await response.json() as { data?: { saved?: boolean }; error?: string };
+    if (!response.ok) throw new Error(body.error || "Your favorites could not be updated.");
+    return { data: { saved: Boolean(body.data?.saved) }, error: null };
+  } catch (error) {
+    return { data: null, error: error instanceof Error ? error : new Error("Your favorites could not be updated.") };
+  }
+}
+
+export async function getCatalogFavorites(entityType?: EntityType) {
+  try {
+    const params = new URLSearchParams({ favorites: "1" });
+    if (entityType) params.set("entity_type", entityType);
+    const response = await fetch(`/api/intelligence?${params.toString()}`, { credentials: "same-origin", cache: "no-store" });
+    const body = await response.json() as { data?: CatalogFavorite[]; error?: string };
+    if (!response.ok) throw new Error(body.error || "Favorites could not be loaded.");
+    return { data: Array.isArray(body.data) ? body.data : [], error: null };
+  } catch (error) {
+    return { data: [], error: error instanceof Error ? error : new Error("Favorites could not be loaded.") };
+  }
 }

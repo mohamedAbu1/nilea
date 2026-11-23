@@ -41,6 +41,21 @@ export async function POST(request: Request) {
     const action = String(input.action ?? "event");
     const user = await getCurrentUser();
 
+    if (action === "favorite") {
+      if (!user) return errorResponse(new Error("Sign in to manage your favorites."), 401);
+      const eventType = String(input.eventType ?? "");
+      const entityType = String(input.entityType ?? "");
+      if (!eventTypes.has(eventType) || !["save", "unsave"].includes(eventType) || !entityTypes.has(entityType)) throw new Error("Invalid favorite request.");
+      const entityId = String(input.entityId ?? "").trim() || null;
+      const entitySlug = String(input.entitySlug ?? "").trim().slice(0, 200) || null;
+      if (!entitySlug) throw new Error("A favorite needs an item slug.");
+      await query(
+        "INSERT INTO catalog_events (id, user_id, anonymous_key, event_type, entity_type, entity_id, entity_slug, search_query, metadata) VALUES (?, ?, NULL, ?, ?, ?, ?, NULL, ?)",
+        [randomUUID(), user.id, eventType, entityType, entityId, entitySlug, safeJson({}, {})],
+      );
+      return Response.json({ data: { saved: eventType === "save" } });
+    }
+
     if (action !== "event") return errorResponse(new Error("Unknown intelligence action."));
     const eventType = String(input.eventType ?? "");
     const entityType = String(input.entityType ?? "site");
@@ -105,6 +120,28 @@ export async function GET(request: Request) {
   try {
     const user = await getCurrentUser();
     const params = new URL(request.url).searchParams;
+    if (params.get("favorites") === "1") {
+      if (!user) return errorResponse(new Error("Sign in to view your favorites."), 401);
+      const entityType = params.get("entity_type");
+      if (entityType && !entityTypes.has(entityType)) return errorResponse(new Error("Invalid favorite category."));
+      const values: unknown[] = [user.id];
+      const typeFilter = entityType ? " AND entity_type = ?" : "";
+      if (entityType) values.push(entityType);
+      const rows = await query<Record<string, unknown>[]>(
+        `SELECT entity_type, entity_slug, entity_id, event_type, occurred_at
+           FROM catalog_events
+          WHERE user_id = ? AND event_type IN ('save', 'unsave') AND entity_slug IS NOT NULL${typeFilter}
+          ORDER BY occurred_at DESC
+          LIMIT 1000`,
+        values,
+      );
+      const latest = new Map<string, Record<string, unknown>>();
+      for (const row of rows) {
+        const key = `${String(row.entity_type)}:${String(row.entity_slug)}`;
+        if (!latest.has(key)) latest.set(key, row);
+      }
+      return Response.json({ data: [...latest.values()].filter((row) => row.event_type === "save").map((row) => ({ entity_type: row.entity_type, entity_slug: row.entity_slug, entity_id: row.entity_id, saved_at: row.occurred_at })) });
+    }
     const tripId = params.get("trip_id");
     const limit = boundedLimit(params.get("limit"));
 
