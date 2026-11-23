@@ -8770,7 +8770,7 @@ form .site-select:focus,
 .provider-admin-assignment-row > div { display: grid; gap: 4px; }
 .provider-admin-assignment-row strong { color: #f6efdf; font-size: 12px; }
 .provider-admin-assignment-row small, .provider-admin-assignment-row time { color: rgba(246,239,223,.45); font-size: 10px; }
-.provider-status-text { display: none; }
+.provider-status-text { color: rgba(246,239,223,.68); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
 
 @media (max-width: 760px) {
   .provider-page, .provider-admin-page { padding: 32px 14px 72px; }
