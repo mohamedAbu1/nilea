@@ -26,7 +26,7 @@ export default function ChatAttachment({ message, imageClassName, fileClassName 
 
   if (isImageAttachment(message)) {
     if (imageFailed) {
-      return <div className={`${imageClassName} chat-image-unavailable`} role="img" aria-label={`${fileLabel} could not be loaded`}><span>Image unavailable</span><small>{fileLabel}</small></div>;
+      return <div className={`${imageClassName} chat-image-unavailable`} role="img" aria-label="Image unavailable"><span>Image unavailable</span></div>;
     }
     return <a className="chat-attachment-image-link" href={message.attachment_url} target="_blank" rel="noreferrer">
       <img className={imageClassName} src={message.attachment_url} alt={fileLabel} loading="lazy" decoding="async" onError={() => setImageFailed(true)} />
