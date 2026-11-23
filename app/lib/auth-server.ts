@@ -10,7 +10,7 @@ const scrypt = promisify(nodeScrypt);
 const SESSION_COOKIE = "alpnile_session";
 const SESSION_DAYS = 30;
 
-export type AccessRole = "traveler" | "support" | "editor" | "admin";
+export type AccessRole = "traveler" | "driver" | "property_owner" | "support" | "editor" | "admin";
 
 export type AuthProfile = {
   id: string;

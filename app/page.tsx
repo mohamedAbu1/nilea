@@ -127,7 +127,7 @@ const products = [
   { name: "Pharaonic Keepsake", detail: "Made to carry the story home", image: "/alpnile-bazaar-keepsake.webp", href: "/market?product=alabaster-bastet" },
 ];
 
-const marketSongEmbedUrl = "https://www.youtube.com/embed/qvqa7J9iHsU?autoplay=1&controls=0&disablekb=1&playsinline=1&rel=0&modestbranding=1";
+const marketSongEmbedUrl = "https://www.youtube-nocookie.com/embed/qvqa7J9iHsU?autoplay=1&controls=1&playsinline=1&rel=0&modestbranding=1";
 
 const starterReviews: Review[] = [
   { name: "Maya Richardson", city: "London", rating: 5, quote: "AlpNile made Egypt feel beautifully human. Every transfer, table and quiet moment had been considered.", avatar: "/alpnile-avatar-woman-explorer-v1.webp", trip: "Cairo · Luxor · Aswan", likes: 18 },

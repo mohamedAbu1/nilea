@@ -84,6 +84,7 @@ export function SiteHeader() {
   const searchPanelRef = useRef<HTMLDivElement>(null);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const isAdmin = account?.accessRole === "admin";
+  const isProvider = account?.accessRole === "driver" || account?.accessRole === "property_owner";
 
   useEffect(() => {
     setMenuOpen(false);
@@ -218,8 +219,8 @@ export function SiteHeader() {
           )}
           <div className="site-user-area">
              <button type="button" className="site-user-profile" aria-label={account ? `Open traveler profile for ${account.name}` : "Open account access"} aria-expanded={accountMenuOpen} onClick={() => account ? setAccountMenuOpen((open) => !open) : openAccount("login")}><img src={account?.avatar ?? "/alpnile-profile-avatar.webp"} alt={account ? `${account.name} profile` : "Traveler avatar"} /><span><small>{account ? "Signed in" : "Traveler access"}</small><strong>{account?.name ?? "Traveler"}</strong></span></button>
-            {account ? (isAdmin ? <Link href="/admin" className="site-header-login site-admin-dashboard-button" aria-label="Open admin dashboard"><AdminDashboardIcon size={19} /><span>Dashboard</span></Link> : <button type="button" className="site-header-login" onClick={signOut}>Log out <span aria-hidden="true">↗</span></button>) : <button type="button" className="site-header-login" onClick={() => openAccount("login")}>Log in <span className="site-plan-icon pharaonic-ui-icon pharaonic-ui-arrow" aria-hidden="true" /></button>}
-            {account && accountMenuOpen && <div className="site-account-popover" role="dialog" aria-label="Traveler profile"><div className="site-account-popover-head"><img src={account.avatar} alt="" /><span><small>{isAdmin ? "Admin control" : "Traveler account"}</small><strong>{account.name}</strong></span></div><p>{account.email}</p><button type="button" onClick={signOut}>Log out <span aria-hidden="true">↗</span></button></div>}
+          {account ? (isAdmin ? <Link href="/admin" className="site-header-login site-admin-dashboard-button" aria-label="Open admin dashboard"><AdminDashboardIcon size={19} /><span>Dashboard</span></Link> : isProvider ? <Link href="/provider" className="site-header-login site-admin-dashboard-button" aria-label="Open provider portal"><AdminDashboardIcon size={19} /><span>Partner portal</span></Link> : <button type="button" className="site-header-login" onClick={signOut}>Log out <span aria-hidden="true">↗</span></button>) : <button type="button" className="site-header-login" onClick={() => openAccount("login")}>Log in <span className="site-plan-icon pharaonic-ui-icon pharaonic-ui-arrow" aria-hidden="true" /></button>}
+            {account && accountMenuOpen && <div className="site-account-popover" role="dialog" aria-label="Traveler profile"><div className="site-account-popover-head"><img src={account.avatar} alt="" /><span><small>{isAdmin ? "Admin control" : isProvider ? "AlpNile partner" : "Traveler account"}</small><strong>{account.name}</strong></span></div><p>{account.email}</p><button type="button" onClick={signOut}>Log out <span aria-hidden="true">↗</span></button></div>}
           </div>
         </div>
         {searchOpen && (

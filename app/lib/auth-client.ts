@@ -7,7 +7,7 @@ export type AccountProfile = {
   phone: string;
   avatar: string;
   gender: "male" | "female" | "";
-  accessRole: "traveler" | "support" | "editor" | "admin";
+  accessRole: "traveler" | "driver" | "property_owner" | "support" | "editor" | "admin";
 };
 
 export type DeviceType = "phone" | "computer";

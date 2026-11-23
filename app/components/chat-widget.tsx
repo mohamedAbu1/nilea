@@ -86,6 +86,12 @@ export default function ChatWidget() {
     };
   }, [open, pathname, staffViewer]);
 
+  useEffect(() => {
+    const openFromWorkspace = () => setOpen(true);
+    window.addEventListener("alpnile:open-support-chat", openFromWorkspace);
+    return () => window.removeEventListener("alpnile:open-support-chat", openFromWorkspace);
+  }, []);
+
   if (pathname.startsWith("/admin") || staffViewer) return null;
 
   const askUserToSignIn = () => {
