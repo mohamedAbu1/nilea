@@ -5,6 +5,7 @@ import { getCurrentUser } from "../../../lib/auth-server";
 import { query } from "../../../lib/mysql";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
@@ -35,6 +36,6 @@ export async function POST(request: Request) {
     }
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, Buffer.from(await file.arrayBuffer()));
-    return Response.json({ data: { path: relative } });
+    return Response.json({ data: { path: relative, url: `/api/chat/file?path=${encodeURIComponent(relative)}` } });
   } catch (error) { return Response.json({ error: error instanceof Error ? error.message : "The file could not be uploaded." }, { status: 500 }); }
 }

@@ -3,6 +3,10 @@ import { getAuthSession } from "./auth-client";
 export const OFFICIAL_ADMIN_AVATAR = "/chat/alpnile-admin-official.png";
 export const DEFAULT_CHAT_AVATAR = "/alpnile-profile-avatar.webp";
 
+function attachmentUrl(path: string) {
+  return `/api/chat/file?path=${encodeURIComponent(path)}`;
+}
+
 export type ChatStatus = "open" | "pending" | "resolved" | "closed";
 export type ChatMessageType = "text" | "emoji" | "image" | "file";
 
@@ -59,7 +63,7 @@ export async function getChatUserId() {
 }
 
 export async function getChatAttachmentUrl(path: string) {
-  return { data: path, error: null };
+  return { data: attachmentUrl(path), error: null };
 }
 
 export async function getOrCreateConversation(userId: string) {
@@ -75,7 +79,7 @@ export async function listChatConversations() {
 export async function listChatMessages(conversationId: string) {
   try {
     const messages = await get<ChatMessage[]>(`/api/chat?action=messages&conversationId=${encodeURIComponent(conversationId)}`);
-    return { data: messages.map((message) => message.attachment_path ? { ...message, attachment_url: message.attachment_path } : message), error: null };
+    return { data: messages.map((message) => message.attachment_path ? { ...message, attachment_url: attachmentUrl(message.attachment_path) } : message), error: null };
   } catch (error) { return { data: [], error: error instanceof Error ? error : new Error("Could not load messages.") }; }
 }
 
@@ -105,16 +109,26 @@ export async function updateConversationStatus(conversationId: string, status: C
 
 export function subscribeToChatConversation(conversationId: string, onMessage: (message: ChatMessage) => void | Promise<void>) {
   let stopped = false;
+  let fetching = false;
+  let timer: number | undefined;
   const seenMessageIds = new Set<string>();
   const poll = async () => {
-    if (stopped) return;
-    const result = await listChatMessages(conversationId);
-    const next = result.data ?? [];
-    const fresh = next.filter((message) => !seenMessageIds.has(message.id));
-    next.forEach((message) => seenMessageIds.add(message.id));
-    for (const message of fresh) await onMessage(message);
-    if (!stopped) window.setTimeout(() => void poll(), 1500);
+    if (stopped || fetching) return;
+    fetching = true;
+    try {
+      const result = await listChatMessages(conversationId);
+      const next = result.data ?? [];
+      const fresh = next.filter((message) => !seenMessageIds.has(message.id));
+      next.forEach((message) => seenMessageIds.add(message.id));
+      for (const message of fresh) await onMessage(message);
+    } finally {
+      fetching = false;
+      if (!stopped) timer = window.setTimeout(() => void poll(), 750);
+    }
   };
   void poll();
-  return () => { stopped = true; };
+  return () => {
+    stopped = true;
+    if (timer) window.clearTimeout(timer);
+  };
 }

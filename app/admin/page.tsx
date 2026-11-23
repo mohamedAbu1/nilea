@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { getSubmissionErrorMessage } from "../lib/submissions";
 import {
+  getChatAttachmentUrl,
   listChatConversations,
   listChatMessages,
   sendChatMessage,
@@ -323,6 +324,16 @@ export default function AdminPage() {
     };
   }, [selectedConversationId]);
 
+  useEffect(() => {
+    if (section !== "inbox" || !["support", "editor", "admin"].includes(role)) return;
+    const timer = window.setInterval(() => {
+      void listChatConversations().then((result) => {
+        if (result.data) setConversations(result.data);
+      });
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [role, section]);
+
   const updateRequestStatus = async (row: RequestRow, status: string) => {
     setError("");
     try { await updateAdminStatus(row.table, row.id, status); }
@@ -397,7 +408,10 @@ export default function AdminPage() {
       setChatSending(false);
       return;
     }
-    setChatMessages((current) => current.some((item) => item.id === result.data!.id) ? current : [...current, result.data!]);
+    const sentMessage = result.data.attachment_path
+      ? { ...result.data, attachment_url: (await getChatAttachmentUrl(result.data.attachment_path)).data ?? undefined }
+      : result.data;
+    setChatMessages((current) => current.some((item) => item.id === sentMessage.id) ? current : [...current, sentMessage]);
     setChatDraft("");
     setChatFile(null);
     setChatSending(false);

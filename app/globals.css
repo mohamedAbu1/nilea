@@ -10653,7 +10653,11 @@ footer.site-market-chrome .site-footer-newsletter-success { color: #abd9b2; }
 .alpnile-chat-message.mine time { color: rgba(36, 24, 11, .58); }
 .alpnile-chat-message img { display: block; max-width: 220px; max-height: 180px; margin-top: 6px; border-radius: 10px; object-fit: cover; }
 .alpnile-chat-message img.alpnile-chat-avatar { margin-top: 0; }
-.alpnile-chat-attachment-image { width: 220px; height: auto; border: 1px solid rgba(255, 255, 255, .16); }
+.chat-attachment-image-link { display: block; width: fit-content; max-width: 100%; margin-top: 6px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 12px; overflow: hidden; background: rgba(4, 15, 24, .4); }
+.alpnile-chat-attachment-image { width: min(280px, 100%); max-height: 260px; margin-top: 0; border: 0; object-fit: contain; }
+.chat-image-unavailable { display: grid; justify-items: start; gap: 3px; width: min(280px, 100%); min-height: 70px; box-sizing: border-box; margin-top: 6px; border: 1px dashed rgba(244, 197, 119, .38); border-radius: 12px; padding: 14px; color: rgba(244, 238, 225, .62); background: rgba(4, 15, 24, .32); }
+.chat-image-unavailable span { color: #f4c577; font-size: 11px; font-weight: 700; }
+.chat-image-unavailable small { max-width: 100%; overflow: hidden; color: rgba(244, 238, 225, .42); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .alpnile-chat-file { display: flex; align-items: center; gap: 8px; margin-top: 3px; color: inherit; text-decoration: none; }
 .alpnile-chat-file > span:first-child { font-size: 19px; }
 .alpnile-chat-file > span:last-child { display: grid; gap: 3px; }
@@ -10782,7 +10786,10 @@ footer.site-market-chrome .site-footer-newsletter-success { color: #abd9b2; }
 .admin-chat-message.staff > div { color: #24180b; background: #f4c577; }
 .admin-chat-message p { margin: 0; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
 .admin-chat-message-author { margin-top: 0 !important; color: rgba(244, 238, 225, .58) !important; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.admin-chat-attachment-image { display: block; width: min(260px, 100%); max-height: 220px; margin-top: 8px; border: 1px solid rgba(121, 217, 203, .28); border-radius: 10px; object-fit: cover; }
+.admin-chat-attachment-image { display: block; width: min(320px, 100%); max-height: 280px; margin-top: 0; border: 0; border-radius: 10px; object-fit: contain; }
+.admin-chat-message .chat-attachment-image-link { margin-top: 8px; border-color: rgba(121, 217, 203, .28); }
+.admin-chat-message.staff .chat-attachment-image-link { border-color: rgba(36, 24, 11, .22); background: rgba(36, 24, 11, .12); }
+.admin-chat-message .chat-image-unavailable { margin-top: 8px; }
 .admin-chat-file { display: block; margin-top: 8px; color: #79d9cb; font-size: 11px; overflow-wrap: anywhere; }
 .admin-chat-message small, .admin-chat-message time { display: block; margin-top: 5px; color: rgba(244, 238, 225, .47); font-size: 9px; }
 .admin-chat-message.staff time { color: rgba(36, 24, 11, .52); }

@@ -9,6 +9,12 @@ function formatSize(value: number | null) {
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function isImageAttachment(message: ChatMessage) {
+  const mime = message.attachment_mime?.toLowerCase() ?? "";
+  const path = message.attachment_path?.toLowerCase() ?? "";
+  return message.message_type === "image" || mime.startsWith("image/") || /\.(avif|gif|heic|heif|jpe?g|png|webp)(?:$|[?#])/.test(path);
+}
+
 export default function ChatAttachment({ message, imageClassName, fileClassName }: {
   message: ChatMessage;
   imageClassName: string;
@@ -18,9 +24,12 @@ export default function ChatAttachment({ message, imageClassName, fileClassName 
   if (!message.attachment_url) return null;
   const fileLabel = message.attachment_name || "Shared file";
 
-  if (message.message_type === "image" && !imageFailed) {
-    return <a href={message.attachment_url} target="_blank" rel="noreferrer">
-      <img className={imageClassName} src={message.attachment_url} alt={fileLabel} onError={() => setImageFailed(true)} />
+  if (isImageAttachment(message)) {
+    if (imageFailed) {
+      return <div className={`${imageClassName} chat-image-unavailable`} role="img" aria-label={`${fileLabel} could not be loaded`}><span>Image unavailable</span><small>{fileLabel}</small></div>;
+    }
+    return <a className="chat-attachment-image-link" href={message.attachment_url} target="_blank" rel="noreferrer">
+      <img className={imageClassName} src={message.attachment_url} alt={fileLabel} loading="lazy" decoding="async" onError={() => setImageFailed(true)} />
     </a>;
   }
 
