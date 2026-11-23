@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { getCurrentUser, type AccessRole } from "../../lib/auth-server";
+import { getCurrentUser, isSuperAdmin, type AccessRole } from "../../lib/auth-server";
 import { query } from "../../lib/mysql";
 
 export const runtime = "nodejs";
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const user = await staff();
     const params = new URL(request.url).searchParams;
     const action = params.get("action");
-    if (action === "session") return Response.json({ data: { user } });
+    if (action === "session") return Response.json({ data: { user, is_super_admin: isSuperAdmin(user) } });
     if (action === "requests") {
       const [inquiries, cars, trips, stays] = await Promise.all([
         query("SELECT id, full_name, email, phone, message, request_type, status, created_at FROM inquiries ORDER BY created_at DESC LIMIT 80"),
@@ -89,6 +89,30 @@ export async function GET(request: Request) {
          LIMIT 200`);
       return Response.json({ data: rows });
     }
+    if (action === "managed-users") {
+      if (!isSuperAdmin(user)) throw new Error("Only the primary administrator can manage user roles.");
+      const rows = await query(`
+        SELECT u.id, u.email, u.full_name, u.phone, u.avatar_url, u.created_at, u.last_login_at,
+               COALESCE(p.access_role, 'traveler') AS access_role,
+               COALESCE(p.account_type, 'user') AS account_type, p.last_seen_at,
+               pp.provider_role, pp.approval_status
+          FROM users u
+          LEFT JOIN profiles p ON p.id = u.id
+          LEFT JOIN provider_profiles pp ON pp.user_id = u.id
+         ORDER BY u.created_at DESC
+         LIMIT 500`);
+      return Response.json({ data: rows });
+    }
+    if (action === "custom-journeys") {
+      const rows = await query(`
+        SELECT ce.id, ce.user_id, u.full_name, u.email, ce.metadata, ce.occurred_at
+          FROM catalog_events ce
+          JOIN users u ON u.id = ce.user_id
+         WHERE ce.event_type = 'planner_complete'
+         ORDER BY ce.occurred_at DESC
+         LIMIT 200`);
+      return Response.json({ data: rows });
+    }
     if (action === "user-profile") {
       const userId = params.get("id") || "";
       if (!/^[a-f0-9-]{36}$/i.test(userId)) throw new Error("Invalid user id.");
@@ -143,7 +167,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await staff();
-    const input = await request.json() as { action?: string; table?: string; id?: string; status?: string; collection?: string; values?: Record<string, unknown>; rates?: Array<Record<string, unknown>>; notificationIds?: string[]; markAll?: boolean };
+    const input = await request.json() as { action?: string; table?: string; id?: string; status?: string; collection?: string; values?: Record<string, unknown>; rates?: Array<Record<string, unknown>>; notificationIds?: string[]; markAll?: boolean; deleteAll?: boolean; accessRole?: string };
     if (input.action === "update-status") {
       if (!requestTables.includes(input.table as typeof requestTables[number])) throw new Error("Invalid request table.");
       await query(`UPDATE \`${input.table}\` SET status = ? WHERE id = ?`, [input.status, input.id]);
@@ -188,6 +212,30 @@ export async function POST(request: Request) {
       else if (input.notificationIds?.length) {
         const ids = input.notificationIds.filter((id) => /^[a-f0-9-]{36}$/i.test(id));
         if (ids.length) await query(`UPDATE admin_notifications SET is_read = 1 WHERE id IN (${ids.map(() => "?").join(",")})`, ids);
+      }
+      return Response.json({ data: { updated: true } });
+    }
+    if (input.action === "delete-notifications") {
+      if (input.deleteAll) await query("DELETE FROM admin_notifications");
+      else if (input.notificationIds?.length) {
+        const ids = input.notificationIds.filter((id) => /^[a-f0-9-]{36}$/i.test(id));
+        if (ids.length) await query(`DELETE FROM admin_notifications WHERE id IN (${ids.map(() => "?").join(",")})`, ids);
+      }
+      return Response.json({ data: { deleted: true } });
+    }
+    if (input.action === "update-user-role") {
+      if (!isSuperAdmin(user)) throw new Error("Only the primary administrator can change user roles.");
+      const accessRole = input.accessRole as AccessRole;
+      if (!input.id || !["traveler", "driver", "property_owner", "support", "editor", "admin"].includes(accessRole)) throw new Error("Invalid user role.");
+      const targetRows = await query<{ email: string }[]>("SELECT email FROM users WHERE id = ? LIMIT 1", [input.id]);
+      if (!targetRows[0]) throw new Error("User not found.");
+      if (isSuperAdmin(targetRows[0])) throw new Error("The primary administrator role is protected.");
+      const accountType = ["driver", "property_owner"].includes(accessRole) ? "provider" : accessRole === "traveler" ? "user" : "staff";
+      await query("INSERT INTO profiles (id, access_role, account_type) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE access_role = VALUES(access_role), account_type = VALUES(account_type), updated_at = UTC_TIMESTAMP(6)", [input.id, accessRole, accountType]);
+      if (["driver", "property_owner"].includes(accessRole)) {
+        await query("INSERT INTO provider_profiles (user_id, provider_role, approval_status, approved_at, approved_by) VALUES (?, ?, 'approved', UTC_TIMESTAMP(6), ?) ON DUPLICATE KEY UPDATE provider_role = VALUES(provider_role), approval_status = 'approved', approved_at = UTC_TIMESTAMP(6), approved_by = VALUES(approved_by), updated_at = UTC_TIMESTAMP(6)", [input.id, accessRole, user.id]);
+      } else {
+        await query("UPDATE provider_profiles SET approval_status = 'suspended', updated_at = UTC_TIMESTAMP(6) WHERE user_id = ?", [input.id]);
       }
       return Response.json({ data: { updated: true } });
     }

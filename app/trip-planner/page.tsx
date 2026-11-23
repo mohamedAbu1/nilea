@@ -325,7 +325,7 @@ export default function TripPlannerPage() {
 
   const buildJourney = () => {
     saveItinerary();
-    trackCatalogEvent({ eventType: "planner_complete", entityType: "site", metadata: { duration, selectedStyle, budget, travelers, food, accessibilityNeeds, pets, destinations: plannedDays.map((plan) => plan.destinationId) } });
+    trackCatalogEvent({ eventType: "planner_complete", entityType: "site", metadata: { duration, startDate, selectedStyle, budget, travelers, food, accessibilityNeeds, pets, destinations: plannedDays.map((plan) => plan.destinationId), dayPlans: plannedDays } });
     setJourneyBuilt(true);
     flashNotice("Your personalized journey is ready.");
   };

@@ -12,6 +12,12 @@ const SESSION_DAYS = 30;
 
 export type AccessRole = "traveler" | "driver" | "property_owner" | "support" | "editor" | "admin";
 
+export const SUPER_ADMIN_EMAIL = "mohamedahmed33m11@gmail.com";
+
+export function isSuperAdmin(user: { email?: string } | null | undefined) {
+  return user?.email?.trim().toLowerCase() === SUPER_ADMIN_EMAIL;
+}
+
 export type AuthProfile = {
   id: string;
   email: string;

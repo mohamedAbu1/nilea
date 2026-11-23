@@ -17,7 +17,7 @@ import {
   type ChatMessage,
   type ChatStatus,
 } from "../lib/chat";
-import { deleteAdminCatalog, getAdminCatalog, getAdminNotifications, getAdminProfiles, getAdminRates, getAdminRequests, getAdminSession, getAdminStats, getAdminUserFile, getAdminUsers, markAdminNotificationsRead, saveAdminCatalog, saveAdminRates, updateAdminStatus, type AdminNotification, type AdminUserFile, type AdminUserSummary } from "../lib/admin-client";
+import { deleteAdminCatalog, deleteAdminNotifications, getAdminCatalog, getAdminCustomJourneys, getAdminManagedUsers, getAdminNotifications, getAdminProfiles, getAdminRates, getAdminRequests, getAdminSession, getAdminStats, getAdminUserFile, getAdminUsers, markAdminNotificationsRead, saveAdminCatalog, saveAdminRates, updateAdminStatus, updateAdminUserRole, type AdminCustomJourney, type AdminManagedUser, type AdminNotification, type AdminUserFile, type AdminUserSummary } from "../lib/admin-client";
 import { getAuthSession, signOut } from "../lib/auth-client";
 import { currencyOptions, type CurrencyCode, type ExchangeRate } from "../components/currency";
 import { CurrencyCoin } from "../components/currency-coin";
@@ -27,8 +27,8 @@ import { getProductGallery } from "../market/catalog";
 import { getVehicle } from "../travel-transport/vehicle-data";
 import ChatAttachment from "../components/chat-attachment";
 
-type AccessRole = "traveler" | "support" | "editor" | "admin";
-type DashboardSection = "overview" | "inbox" | "requests" | "users" | "stays" | "trips" | "market" | "vehicles" | "currency";
+type AccessRole = "traveler" | "driver" | "property_owner" | "support" | "editor" | "admin";
+type DashboardSection = "overview" | "inbox" | "requests" | "users" | "people" | "journeys" | "stays" | "trips" | "market" | "vehicles" | "currency";
 type CatalogCollection = "stays" | "trips" | "products" | "vehicles";
 type Row = Record<string, unknown>;
 
@@ -69,6 +69,8 @@ const navItems: { id: DashboardSection; label: string; caption: string; icon: st
   { id: "inbox", label: "Live inbox", caption: "Chat with guests", icon: "◌" },
   { id: "requests", label: "Requests", caption: "Bookings & leads", icon: "▣" },
   { id: "users", label: "User files", caption: "Insights & activity", icon: "◎" },
+  { id: "people", label: "Users & roles", caption: "Access control", icon: "♙" },
+  { id: "journeys", label: "Custom journeys", caption: "Trip builder requests", icon: "⌁" },
   { id: "stays", label: "Stays & homes", caption: "Properties", icon: "⌂" },
   { id: "trips", label: "Trips", caption: "Experiences", icon: "✦" },
   { id: "market", label: "Bazaar", caption: "Products", icon: "◇" },
@@ -157,9 +159,21 @@ function chatPreview(messages: ChatMessage[]) {
   return last?.body || last?.attachment_name || "No messages yet";
 }
 
+function objectValue(value: unknown): Record<string, unknown> {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+    } catch { return {}; }
+  }
+  return {};
+}
+
 export default function AdminPage() {
   const [section, setSection] = useState<DashboardSection>("overview");
   const [role, setRole] = useState<AccessRole | "">("");
+  const [isSuperAdminUser, setIsSuperAdminUser] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [accessError, setAccessError] = useState("");
@@ -190,6 +204,10 @@ export default function AdminPage() {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [userFile, setUserFile] = useState<AdminUserFile | null>(null);
   const [userFileLoading, setUserFileLoading] = useState(false);
+  const [managedUsers, setManagedUsers] = useState<AdminManagedUser[]>([]);
+  const [customJourneys, setCustomJourneys] = useState<AdminCustomJourney[]>([]);
+  const [managedUserSearch, setManagedUserSearch] = useState("");
+  const [roleSavingId, setRoleSavingId] = useState("");
 
   const selectedConversation = conversations.find((item) => item.id === selectedConversationId) ?? null;
   const canEditCatalog = role === "admin" || role === "editor";
@@ -201,7 +219,7 @@ export default function AdminPage() {
     if (!needle) return users;
     return users.filter((user) => `${user.full_name} ${user.email} ${user.phone ?? ""}`.toLowerCase().includes(needle));
   }, [users, userSearch]);
-  const visibleNavItems = useMemo(() => role === "support" ? navItems.filter((item) => ["overview", "inbox", "requests"].includes(item.id)) : role === "editor" ? navItems.filter((item) => item.id !== "currency" && item.id !== "users") : role === "admin" ? navItems : navItems.filter((item) => item.id !== "users"), [role]);
+  const visibleNavItems = useMemo(() => role === "support" ? navItems.filter((item) => ["overview", "inbox", "requests"].includes(item.id)) : role === "editor" ? navItems.filter((item) => !["currency", "users", "people", "journeys"].includes(item.id)) : role === "admin" ? navItems.filter((item) => isSuperAdminUser || !["people", "journeys"].includes(item.id)) : navItems.filter((item) => !["users", "people", "journeys"].includes(item.id)), [isSuperAdminUser, role]);
 
   const loadNotifications = async () => {
     try {
@@ -213,10 +231,21 @@ export default function AdminPage() {
     }
   };
 
-  const loadUsers = async () => {
-    if (role !== "admin") return;
+  const loadUsers = async (force = false) => {
+    if (!force && role !== "admin") return;
     try { setUsers(await getAdminUsers()); }
     catch (error) { setError(getSubmissionErrorMessage(error, "User files could not be loaded.")); }
+  };
+
+  const loadManagedUsers = async (allowed = isSuperAdminUser) => {
+    if (!allowed) return;
+    try { setManagedUsers(await getAdminManagedUsers()); }
+    catch (error) { setError(getSubmissionErrorMessage(error, "User roles could not be loaded.")); }
+  };
+
+  const loadCustomJourneys = async () => {
+    try { setCustomJourneys(await getAdminCustomJourneys()); }
+    catch (error) { setError(getSubmissionErrorMessage(error, "Custom journeys could not be loaded.")); }
   };
 
   const loadUserFile = async (id: string) => {
@@ -242,7 +271,7 @@ export default function AdminPage() {
     setStats(await getAdminStats());
   };
 
-  const loadConversations = async () => {
+  const loadConversations = async (preferredId?: string) => {
     const result = await listChatConversations();
     if (result.error) {
       setError(getSubmissionErrorMessage(result.error, "The inbox could not be loaded."));
@@ -250,7 +279,7 @@ export default function AdminPage() {
     }
     const items = result.data ?? [];
     setConversations(items);
-    setSelectedConversationId((current) => items.some((item) => item.id === current) ? current : items[0]?.id ?? "");
+    setSelectedConversationId((current) => preferredId && items.some((item) => item.id === preferredId) ? preferredId : items.some((item) => item.id === current) ? current : items[0]?.id ?? "");
     if (items.length) {
       const ids = Array.from(new Set(items.map((item) => item.user_id)));
       const names = await getAdminProfiles(ids);
@@ -284,8 +313,9 @@ export default function AdminPage() {
         if (!active) return;
         setProfileName(identity.user.name || identity.user.email || "AlpNile team");
         setRole(identity.user.accessRole as AccessRole);
+        setIsSuperAdminUser(identity.is_super_admin);
         setCheckingAccess(false);
-        await Promise.all([loadStats(), loadRequests(), loadConversations(), loadCurrencyRates(), loadNotifications(), loadUsers()]);
+        await Promise.all([loadStats(), loadRequests(), loadConversations(), loadCurrencyRates(), loadNotifications(), loadUsers(true), loadManagedUsers(identity.is_super_admin), loadCustomJourneys()]);
       } catch (error) {
         if (!active) return;
         setAccessError(getSubmissionErrorMessage(error, "Sign in with a staff account to enter the control room."));
@@ -429,6 +459,86 @@ export default function AdminPage() {
     setNotice("Conversation status updated.");
   };
 
+  const openActivity = (event: Row) => {
+    const eventType = textValue(event, "event_type");
+    const entityType = textValue(event, "entity_type");
+    const slug = textValue(event, "entity_slug");
+    if (eventType === "planner_complete") {
+      setSection("journeys");
+      void loadCustomJourneys();
+      return;
+    }
+    if (entityType === "conversation" || eventType.includes("message")) {
+      setSection("inbox");
+      void loadConversations(textValue(event, "entity_id"));
+      return;
+    }
+    if (["inquiry", "trip_booking", "stay_booking", "car_booking", "review"].includes(entityType) || ["inquiry", "booking", "review"].includes(eventType)) {
+      setSection("requests");
+      void loadRequests();
+      return;
+    }
+    const route = entityType === "trip" ? `/tours-experiences/${encodeURIComponent(slug)}` : entityType === "product" ? `/market/${encodeURIComponent(slug)}` : entityType === "vehicle" ? `/travel-transport/${encodeURIComponent(slug)}` : entityType === "stay" ? `/stays-hotels?stay=${encodeURIComponent(slug)}` : "";
+    if (route) window.open(route, "_blank", "noopener,noreferrer");
+  };
+
+  const openNotification = async (item: AdminNotification) => {
+    if (!item.is_read) {
+      await markAdminNotificationsRead({ ids: [item.id] });
+      setNotifications((current) => current.map((notification) => notification.id === item.id ? { ...notification, is_read: 1 } : notification));
+      setUnreadNotifications((current) => Math.max(0, current - 1));
+    }
+    if (item.entity_type === "user" && item.user_id) {
+      setSection("users");
+      await loadUsers(true);
+      await loadUserFile(item.user_id);
+    } else if (item.entity_type === "conversation") {
+      setSection("inbox");
+      await loadConversations(item.entity_id ?? undefined);
+    } else if (["review", "inquiry", "trip_booking", "stay_booking", "car_booking"].includes(item.entity_type ?? "")) {
+      setSection("requests");
+      await loadRequests();
+    } else if (item.event_type === "planner_complete") {
+      setSection("journeys");
+      await loadCustomJourneys();
+    }
+    setNotificationOpen(false);
+  };
+
+  const deleteNotification = async (id: string) => {
+    try {
+      await deleteAdminNotifications({ ids: [id] });
+      setNotifications((current) => current.filter((item) => item.id !== id));
+      setUnreadNotifications((current) => Math.max(0, current - (notifications.find((item) => item.id === id)?.is_read ? 0 : 1)));
+    } catch (error) { setError(getSubmissionErrorMessage(error, "The notification could not be deleted.")); }
+  };
+
+  const deleteAllNotifications = async () => {
+    if (!window.confirm("Delete all notifications from the operations panel?")) return;
+    try {
+      await deleteAdminNotifications({ all: true });
+      setNotifications([]);
+      setUnreadNotifications(0);
+    } catch (error) { setError(getSubmissionErrorMessage(error, "Notifications could not be deleted.")); }
+  };
+
+  const saveUserRole = async (user: AdminManagedUser, accessRole: string) => {
+    if (!isSuperAdminUser || user.email.toLowerCase() === "mohamedahmed33m11@gmail.com") return;
+    setRoleSavingId(user.id);
+    try {
+      await updateAdminUserRole(user.id, accessRole);
+      setManagedUsers((current) => current.map((item) => item.id === user.id ? { ...item, access_role: accessRole, account_type: ["driver", "property_owner"].includes(accessRole) ? "provider" : ["support", "editor", "admin"].includes(accessRole) ? "staff" : "user", provider_role: ["driver", "property_owner"].includes(accessRole) ? accessRole : null, approval_status: ["driver", "property_owner"].includes(accessRole) ? "approved" : item.approval_status } : item));
+      setNotice(`${user.full_name || user.email} role updated.`);
+    } catch (error) { setError(getSubmissionErrorMessage(error, "The user role could not be updated.")); }
+    setRoleSavingId("");
+  };
+
+  const filteredManagedUsers = useMemo(() => {
+    const needle = managedUserSearch.trim().toLowerCase();
+    if (!needle) return managedUsers;
+    return managedUsers.filter((user) => `${user.full_name} ${user.email} ${user.access_role} ${user.provider_role ?? ""}`.toLowerCase().includes(needle));
+  }, [managedUserSearch, managedUsers]);
+
   const saveCurrencyRates = async () => {
     if (!canManageRates) return;
     setError("");
@@ -463,7 +573,7 @@ export default function AdminPage() {
           <div className="admin-sidebar-footer"><Link href="/admin/providers">Provider operations ↗</Link><Link href="/">View live site ↗</Link><button type="button" onClick={() => void signOut()}>Sign out</button></div>
         </aside>
         <section className="admin-content">
-          <header className="admin-topbar"><div><p className="admin-eyebrow">ALPNILE / OPERATIONS</p><h1>{navItems.find((item) => item.id === section)?.label}</h1></div><div className="admin-topbar-actions"><span className="admin-live-dot" /> Live workspace <button type="button" className={"admin-notification-trigger " + (notificationOpen ? "active" : "")} onClick={() => setNotificationOpen((current) => !current)} aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ""}`}><span className="admin-notification-icon">♢</span>{unreadNotifications > 0 && <b>{unreadNotifications > 9 ? "9+" : unreadNotifications}</b>}</button><Link href="/travel-transport">Open customer view ↗</Link>{notificationOpen && <div className="admin-notification-popover"><div className="admin-panel-head"><div><p className="admin-eyebrow">Operations pulse</p><h3>Notifications</h3></div><button type="button" onClick={() => void markAllNotificationsRead()}>Mark all read</button></div>{notifications.length ? notifications.slice(0, 8).map((item) => <button type="button" className={"admin-notification-row " + (!item.is_read ? "unread" : "")} key={item.id} onClick={() => { if (item.user_id) { setSection("users"); void loadUserFile(item.user_id); } setNotificationOpen(false); }}><span className="admin-notification-row-icon">✦</span><span><strong>{item.title}</strong><small>{item.body}</small><time>{formatDate(item.created_at)}</time></span></button>) : <div className="admin-empty">You are all caught up.</div>}</div>}</div></header>
+          <header className="admin-topbar"><div><p className="admin-eyebrow">ALPNILE / OPERATIONS</p><h1>{navItems.find((item) => item.id === section)?.label}</h1></div><div className="admin-topbar-actions"><span className="admin-live-dot" /> Live workspace <button type="button" className={"admin-notification-trigger " + (notificationOpen ? "active" : "")} onClick={() => setNotificationOpen((current) => !current)} aria-label={`Notifications${unreadNotifications ? `, ${unreadNotifications} unread` : ""}`}><span className="admin-notification-icon">♢</span>{unreadNotifications > 0 && <b>{unreadNotifications > 9 ? "9+" : unreadNotifications}</b>}</button><Link href="/travel-transport">Open customer view ↗</Link></div>{notificationOpen && <><button type="button" className="admin-notification-backdrop" aria-label="Close notifications" onClick={() => setNotificationOpen(false)} /><aside className="admin-notification-drawer" aria-label="Operations notifications"><div className="admin-panel-head"><div><p className="admin-eyebrow">Operations pulse</p><h3>Notifications</h3><small>{unreadNotifications ? `${unreadNotifications} unread` : "All caught up"}</small></div><div className="admin-notification-drawer-actions"><button type="button" onClick={() => void markAllNotificationsRead()}>Mark all read</button><button type="button" className="admin-danger-button" onClick={() => void deleteAllNotifications()}>Delete all</button><button type="button" aria-label="Close notifications" onClick={() => setNotificationOpen(false)}>×</button></div></div>{notifications.length ? notifications.map((item) => <div className={"admin-notification-row " + (!item.is_read ? "unread" : "")} key={item.id}><button type="button" className="admin-notification-row-main" onClick={() => void openNotification(item)}><span className="admin-notification-row-icon">✦</span><span><strong>{item.title}</strong><small>{item.body}</small><time>{formatDate(item.created_at)}</time></span></button><button type="button" className="admin-notification-delete" onClick={() => void deleteNotification(item.id)} aria-label={`Delete ${item.title}`}>×</button></div>) : <div className="admin-empty">You are all caught up.</div>}</aside></>}</header>
           {(notice || error) && <div className={error ? "admin-flash error" : "admin-flash"} role={error ? "alert" : "status"}>{error || notice}<button type="button" onClick={() => { setError(""); setNotice(""); }}>×</button></div>}
 
           {section === "overview" && <section className="admin-overview">
@@ -474,9 +584,13 @@ export default function AdminPage() {
 
           {section === "requests" && <section className="admin-panel admin-full-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Guest operations</p><h2>Every request, one clear next step.</h2></div><button type="button" onClick={() => { void loadRequests(); void loadStats(); }}>Refresh ↻</button></div><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Guest</th><th>Route / request</th><th>Contact</th><th>Type</th><th>Status</th><th>Received</th></tr></thead><tbody>{requests.map((row) => <tr key={row.table + row.id}><td><strong>{row.name}</strong></td><td>{row.summary}</td><td>{row.contact}</td><td><span className={"admin-request-type " + row.source}>{row.source}</span></td><td><select value={row.status} onChange={(event) => void updateRequestStatus(row, event.target.value)} aria-label={"Update status for " + row.name}>{statusOptions.map((status) => <option key={status}>{status}</option>)}</select></td><td>{formatDate(row.created_at)}</td></tr>)}</tbody></table></div>{!requests.length && <div className="admin-empty">No requests found.</div>}</section>}
 
-          {section === "inbox" && <section className="admin-inbox"><div className="admin-inbox-list admin-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Live support</p><h2>Guest inbox</h2></div><button type="button" onClick={() => void loadConversations()}>Refresh ↻</button></div>{conversations.map((conversation) => <button type="button" key={conversation.id} className={"admin-conversation-row " + (selectedConversationId === conversation.id ? "active" : "")} onClick={() => setSelectedConversationId(conversation.id)}><img className="admin-avatar-image" src={conversation.user_avatar || chatUserAvatars[conversation.user_id] || DEFAULT_CHAT_AVATAR} alt="" /><span><strong>{chatUserNames[conversation.user_id] || conversation.user_name || "Guest traveler"}</strong><small>{conversation.subject}</small><em>{conversation.status}</em></span><time>{formatDate(conversation.last_message_at)}</time></button>)}{!conversations.length && <div className="admin-empty">No chat channels yet. New conversations will appear here.</div>}</div><div className="admin-chat-panel admin-panel">{selectedConversation ? <><div className="admin-panel-head"><div><p className="admin-eyebrow">Conversation</p><h2>{chatUserNames[selectedConversation.user_id] || selectedConversation.user_name || "Guest traveler"}</h2><small>Official AlpNile support · {selectedConversation.id}</small></div><select value={selectedConversation.status} onChange={(event) => void changeChatStatus(event.target.value as ChatStatus)} aria-label="Conversation status">{(["open", "pending", "resolved", "closed"] as ChatStatus[]).map((status) => <option key={status}>{status}</option>)}</select></div><div className="admin-chat-messages">{chatMessages.map((message) => { const isStaff = message.sender_role === "staff"; const avatar = isStaff ? OFFICIAL_ADMIN_AVATAR : message.sender_avatar || chatUserAvatars[selectedConversation.user_id] || DEFAULT_CHAT_AVATAR; return <article key={message.id} className={"admin-chat-message " + (isStaff ? "staff" : "guest")}><img className="admin-chat-avatar" src={avatar} alt="" /><div><small className="admin-chat-message-author">{isStaff ? "AlpNile support" : message.sender_name || chatUserNames[selectedConversation.user_id] || "Guest traveler"}</small>{message.body && <p>{message.body}</p>}<ChatAttachment message={message} imageClassName="admin-chat-attachment-image" fileClassName="admin-chat-file" /><time>{formatDate(message.created_at)}</time></div></article>; })}</div><form className="admin-chat-composer" onSubmit={sendReply}><textarea rows={2} value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} placeholder="Reply with care…" aria-label="Reply message" /><div><label className="admin-attach-button">Attach file<input type="file" accept="image/*,.pdf,.txt,.doc,.docx" hidden onChange={(event) => setChatFile(event.target.files?.[0] ?? null)} /></label><span>{chatFile?.name || "Images and files up to 10 MB"}</span><button type="submit" className="admin-button" disabled={chatSending}>{chatSending ? "Sending…" : "Send reply ↗"}</button></div></form></> : <div className="admin-empty">Select a conversation to reply.</div>}</div></section>}
+          {section === "inbox" && <section className="admin-inbox"><div className="admin-inbox-list admin-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Live support</p><h2>Guest inbox</h2></div><button type="button" onClick={() => void loadConversations()}>Refresh ↻</button></div>{conversations.map((conversation) => <button type="button" key={conversation.id} className={"admin-conversation-row " + (selectedConversationId === conversation.id ? "active" : "")} onClick={() => setSelectedConversationId(conversation.id)}><img className="admin-avatar-image" src={conversation.user_avatar || chatUserAvatars[conversation.user_id] || DEFAULT_CHAT_AVATAR} alt="" /><span><strong>{chatUserNames[conversation.user_id] || conversation.user_name || "Guest traveler"}</strong><small>{conversation.subject}</small><em>{conversation.status}</em></span><time>{formatDate(conversation.last_message_at)}</time></button>)}{!conversations.length && <div className="admin-empty">No chat channels yet. New conversations will appear here.</div>}</div><div className="admin-chat-panel admin-panel">{selectedConversation ? <><div className="admin-panel-head"><div><p className="admin-eyebrow">Conversation</p><h2>{chatUserNames[selectedConversation.user_id] || selectedConversation.user_name || "Guest traveler"}</h2><small>Official AlpNile support · {selectedConversation.id}</small></div><select value={selectedConversation.status} onChange={(event) => void changeChatStatus(event.target.value as ChatStatus)} aria-label="Conversation status">{(["open", "pending", "resolved", "closed"] as ChatStatus[]).map((status) => <option key={status}>{status}</option>)}</select></div><div className="admin-chat-messages">{chatMessages.map((message) => { const isStaff = message.sender_role === "staff"; const avatar = isStaff ? OFFICIAL_ADMIN_AVATAR : message.sender_avatar || chatUserAvatars[selectedConversation.user_id] || DEFAULT_CHAT_AVATAR; return <article key={message.id} className={"admin-chat-message " + (isStaff ? "staff" : "guest")}><img className="admin-chat-avatar" src={avatar} alt="" /><div><small className="admin-chat-message-author" dir="auto">{isStaff ? "AlpNile support" : message.sender_name || chatUserNames[selectedConversation.user_id] || "Guest traveler"}</small>{message.body && <p dir="auto">{message.body}</p>}<ChatAttachment message={message} imageClassName="admin-chat-attachment-image" fileClassName="admin-chat-file" /><time>{formatDate(message.created_at)}</time></div></article>; })}</div><form className="admin-chat-composer" onSubmit={sendReply}><textarea rows={2} value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} placeholder="Reply with care…" aria-label="Reply message" /><div><label className="admin-attach-button">Attach file<input type="file" accept="image/*,.pdf,.txt,.doc,.docx" hidden onChange={(event) => setChatFile(event.target.files?.[0] ?? null)} /></label><span>{chatFile?.name || "Images and files up to 10 MB"}</span><button type="submit" className="admin-button" disabled={chatSending}>{chatSending ? "Sending…" : "Send reply ↗"}</button></div></form></> : <div className="admin-empty">Select a conversation to reply.</div>}</div></section>}
 
-          {section === "users" && role === "admin" && <section className="admin-user-files"><div className="admin-user-list admin-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Customer intelligence</p><h2>User files</h2><p>Meaningful activity only: searches, views, saves, bookings, purchases, reviews and support conversations.</p></div><button type="button" onClick={() => void loadUsers()}>Refresh ↻</button></div><label className="admin-user-search"><span>⌕</span><input value={userSearch} onChange={(event) => setUserSearch(event.target.value)} placeholder="Search by name, email or phone" /></label><div className="admin-user-list-rows">{filteredUsers.map((user) => <button type="button" key={user.id} className={"admin-user-row " + (selectedUserId === user.id ? "active" : "")} onClick={() => void loadUserFile(user.id)}><span className="admin-avatar">{(user.full_name || "T").slice(0, 1).toUpperCase()}</span><span><strong>{user.full_name}</strong><small>{user.email}</small><em>{user.last_activity_at ? `Active ${formatDate(user.last_activity_at)}` : `Joined ${formatDate(user.created_at)}`}</em></span><b>{user.event_count}<small>events</small></b></button>)}{!filteredUsers.length && <div className="admin-empty">No traveler files match this search.</div>}</div></div><div className="admin-user-detail admin-panel">{userFileLoading ? <div className="admin-empty">Opening the customer file…</div> : userFile ? <><div className="admin-panel-head"><div><p className="admin-eyebrow">Private customer file</p><h2>{String(userFile.user.full_name ?? "Traveler")}</h2><p>{String(userFile.user.email ?? "")} · {String(userFile.user.phone ?? "No phone")}</p></div><span className="admin-user-role">Traveler</span></div><div className="admin-user-metrics"><article><strong>{userFile.events.length}</strong><small>Tracked events</small></article><article><strong>{userFile.bookings.length}</strong><small>Bookings</small></article><article><strong>{userFile.orders.length}</strong><small>Purchases</small></article><article><strong>{userFile.conversations.length}</strong><small>Chats</small></article></div><div className="admin-user-section"><p className="admin-eyebrow">Interests detected</p><div className="admin-interest-tags">{userFile.interests.map((interest) => <span key={`${String(interest.entity_type)}-${String(interest.entity_slug)}`}>{String(interest.entity_slug)} · {String(interest.count)}</span>)}{!userFile.interests.length && <span>No repeated interest yet</span>}</div><p className="admin-user-preferences">Budget: {String(userFile.preferences?.budget_level ?? "not set")} · Cities: {String(userFile.preferences?.preferred_cities ?? "not set")} · Styles: {String(userFile.preferences?.trip_styles ?? "not set")}</p></div><div className="admin-user-section"><p className="admin-eyebrow">Recent activity</p><div className="admin-activity-list">{userFile.events.slice(0, 12).map((event) => <div key={String(event.id)}><span className="admin-activity-dot" /><span><strong>{String(event.event_type)}</strong><small>{String(event.entity_slug || event.search_query || event.entity_type || "site")}</small></span><time>{formatDate(String(event.occurred_at))}</time></div>)}{!userFile.events.length && <div className="admin-empty">Activity will appear as the traveler uses the site.</div>}</div></div><div className="admin-user-section"><p className="admin-eyebrow">Journey history</p><div className="admin-activity-list">{userFile.bookings.slice(0, 6).map((booking) => <div key={String(booking.id)}><span className="admin-activity-dot gold" /><span><strong>{String(booking.source)} · {String(booking.label)}</strong><small>{String(booking.status)} · {String(booking.guests)} guests</small></span><time>{formatDate(String(booking.created_at))}</time></div>)}{userFile.orders.slice(0, 4).map((order) => <div key={String(order.id)}><span className="admin-activity-dot teal" /><span><strong>Purchase · {String(order.delivery_country)}</strong><small>{String(order.status)}</small></span><time>{formatDate(String(order.created_at))}</time></div>)}{!userFile.bookings.length && !userFile.orders.length && <div className="admin-empty">No bookings or purchases yet.</div>}</div></div></> : <div className="admin-empty">Select a traveler to open the full customer file.</div>}</div></section>}
+          {section === "users" && role === "admin" && <section className="admin-user-files"><div className="admin-user-list admin-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Customer intelligence</p><h2>User files</h2><p>Meaningful activity only: searches, views, saves, bookings, purchases, reviews and support conversations.</p></div><button type="button" onClick={() => void loadUsers(true)}>Refresh ↻</button></div><label className="admin-user-search"><span>⌕</span><input value={userSearch} onChange={(event) => setUserSearch(event.target.value)} placeholder="Search by name, email or phone" /></label><div className="admin-user-list-rows">{filteredUsers.map((user) => <button type="button" key={user.id} className={"admin-user-row " + (selectedUserId === user.id ? "active" : "")} onClick={() => void loadUserFile(user.id)}><span className="admin-avatar">{(user.full_name || "T").slice(0, 1).toUpperCase()}</span><span><strong>{user.full_name}</strong><small>{user.email}</small><em>{user.last_activity_at ? `Active ${formatDate(user.last_activity_at)}` : `Joined ${formatDate(user.created_at)}`}</em></span><b>{user.event_count}<small>events</small></b></button>)}{!filteredUsers.length && <div className="admin-empty">No traveler files match this search.</div>}</div></div><div className="admin-user-detail admin-panel">{userFileLoading ? <div className="admin-empty">Opening the customer file…</div> : userFile ? <><div className="admin-panel-head"><div><p className="admin-eyebrow">Private customer file</p><h2>{String(userFile.user.full_name ?? "Traveler")}</h2><p>{String(userFile.user.email ?? "")} · {String(userFile.user.phone ?? "No phone")}</p></div><span className="admin-user-role">Traveler</span></div><div className="admin-user-metrics"><article><strong>{userFile.events.length}</strong><small>Tracked events</small></article><article><strong>{userFile.bookings.length}</strong><small>Bookings</small></article><article><strong>{userFile.orders.length}</strong><small>Purchases</small></article><article><strong>{userFile.conversations.length}</strong><small>Chats</small></article></div><div className="admin-user-section"><p className="admin-eyebrow">Interests detected</p><div className="admin-interest-tags">{userFile.interests.map((interest) => <span key={`${String(interest.entity_type)}-${String(interest.entity_slug)}`}>{String(interest.entity_slug)} · {String(interest.count)}</span>)}{!userFile.interests.length && <span>No repeated interest yet</span>}</div><p className="admin-user-preferences">Budget: {String(userFile.preferences?.budget_level ?? "not set")} · Cities: {String(userFile.preferences?.preferred_cities ?? "not set")} · Styles: {String(userFile.preferences?.trip_styles ?? "not set")}</p></div><div className="admin-user-section"><p className="admin-eyebrow">Recent activity</p><div className="admin-activity-list">{userFile.events.slice(0, 12).map((event) => <button type="button" className="admin-activity-row" key={String(event.id)} onClick={() => openActivity(event)}><span className="admin-activity-dot" /><span><strong>{String(event.event_type)}</strong><small>{String(event.entity_slug || event.search_query || event.entity_type || "site")}</small></span><time>{formatDate(String(event.occurred_at))}</time></button>)}{!userFile.events.length && <div className="admin-empty">Activity will appear as the traveler uses the site.</div>}</div></div><div className="admin-user-section"><p className="admin-eyebrow">Journey history</p><div className="admin-activity-list">{userFile.bookings.slice(0, 6).map((booking) => <div key={String(booking.id)}><span className="admin-activity-dot gold" /><span><strong>{String(booking.source)} · {String(booking.label)}</strong><small>{String(booking.status)} · {String(booking.guests)} guests</small></span><time>{formatDate(String(booking.created_at))}</time></div>)}{userFile.orders.slice(0, 4).map((order) => <div key={String(order.id)}><span className="admin-activity-dot teal" /><span><strong>Purchase · {String(order.delivery_country)}</strong><small>{String(order.status)}</small></span><time>{formatDate(String(order.created_at))}</time></div>)}{!userFile.bookings.length && !userFile.orders.length && <div className="admin-empty">No bookings or purchases yet.</div>}</div></div></> : <div className="admin-empty">Select a traveler to open the full customer file.</div>}</div></section>}
+
+          {section === "people" && isSuperAdminUser && <section className="admin-panel admin-full-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Primary administrator</p><h2>Users & roles</h2><p>Assign controlled access for travelers, drivers, property owners and staff. The primary administrator account is protected.</p></div><button type="button" onClick={() => void loadManagedUsers(true)}>Refresh ↻</button></div><label className="admin-user-search"><span>⌕</span><input value={managedUserSearch} onChange={(event) => setManagedUserSearch(event.target.value)} placeholder="Search users by name, email or role" /></label><div className="admin-managed-users"><table className="admin-table"><thead><tr><th>User</th><th>Current role</th><th>Provider status</th><th>Last seen</th><th>Change access</th></tr></thead><tbody>{filteredManagedUsers.map((managedUser) => { const protectedUser = managedUser.email.toLowerCase() === "mohamedahmed33@gmail.com"; return <tr key={managedUser.id}><td><strong>{managedUser.full_name || "Unnamed user"}</strong><small>{managedUser.email}</small></td><td><span className="admin-role-pill">{managedUser.access_role}</span></td><td>{managedUser.provider_role ? `${managedUser.provider_role} · ${managedUser.approval_status || "pending"}` : managedUser.account_type}</td><td>{managedUser.last_seen_at ? formatDate(managedUser.last_seen_at) : "—"}</td><td>{protectedUser ? <span className="admin-protected-role">Primary admin</span> : <select className="admin-role-select" value={managedUser.access_role} disabled={roleSavingId === managedUser.id} onChange={(event) => void saveUserRole(managedUser, event.target.value)} aria-label={`Change role for ${managedUser.email}`}><option value="traveler">Traveler</option><option value="driver">Driver</option><option value="property_owner">Property owner</option><option value="support">Support admin</option><option value="editor">Content editor</option><option value="admin">Administrator</option></select>}</td></tr>; })}</tbody></table>{!filteredManagedUsers.length && <div className="admin-empty">No users match this search.</div>}</div></section>}
+
+          {section === "journeys" && <section className="admin-panel admin-full-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Trip builder intelligence</p><h2>Custom journeys</h2><p>Review every personalized route with the traveler’s dates, preferences, destinations and selected transport details.</p></div><button type="button" onClick={() => void loadCustomJourneys()}>Refresh ↻</button></div><div className="admin-journey-grid">{customJourneys.map((journey) => { const metadata = objectValue(journey.metadata); const dayPlans = Array.isArray(metadata.dayPlans) ? metadata.dayPlans as Array<Record<string, unknown>> : []; const destinations = Array.isArray(metadata.destinations) ? metadata.destinations.map(String).join(" · ") : "No destinations selected"; return <article className="admin-journey-card" key={journey.id}><div className="admin-journey-card-head"><div><p className="admin-eyebrow">{journey.full_name}</p><h3>{journey.email}</h3></div><time>{formatDate(journey.occurred_at)}</time></div><div className="admin-journey-summary"><span><strong>{String(metadata.duration ?? (dayPlans.length || "—"))}</strong>days</span><span><strong>{String(metadata.travelers ?? "—")}</strong>travelers</span><span><strong>{String(metadata.selectedStyle ?? "—")}</strong>style</span><span><strong>{String(metadata.startDate ?? "—")}</strong>start</span></div><p className="admin-journey-destinations">{destinations}</p><div className="admin-journey-days">{dayPlans.slice(0, 6).map((day, index) => <div key={`${journey.id}-${index}`}><span>Day {index + 1}</span><strong>{String(day.destinationId ?? "Destination")}</strong><small>Vehicle: {String(day.vehicleId ?? "not selected")} · Guide: {String(day.guideId ?? "not selected")}</small><small>Landmarks: {Array.isArray(day.landmarkIds) ? day.landmarkIds.length : 0} · Experiences: {Array.isArray(day.experienceIds) ? day.experienceIds.length : 0}</small></div>)}</div></article>; })}{!customJourneys.length && <div className="admin-empty">No custom journeys have been built yet.</div>}</div></section>}
 
           {section === "currency" && <section className="admin-panel admin-full-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Pricing intelligence</p><h2>Exchange rate studio</h2><p>Set one controlled rate and every displayed catalog price updates without changing your base prices.</p></div><div className="admin-panel-head-actions"><button type="button" onClick={() => void loadCurrencyRates()}>Refresh ↻</button>{canManageRates && <button type="button" className="admin-button" onClick={() => void saveCurrencyRates()}>Save rates</button>}</div></div><div className="admin-rate-layout"><div className="admin-rate-table">{currencyRows.map((row) => <label className="admin-rate-row" key={row.currency_code}><CurrencyCoin code={row.currency_code} /><span className="admin-rate-code">{row.currency_code}</span><span className="admin-rate-name"><strong>{row.currency_name}</strong><small>1 USD equals</small></span><input type="number" min="0.000001" step="0.000001" value={currencyDrafts[row.currency_code] ?? row.rate_to_usd} disabled={!canManageRates} onChange={(event) => setCurrencyDrafts((current) => ({ ...current, [row.currency_code]: event.target.value }))} aria-label={`${row.currency_code} rate per US dollar`} /><span className="admin-rate-symbol">{row.symbol}</span></label>)}</div><aside className="admin-panel admin-rate-note"><p className="admin-eyebrow">How it works</p><h3>One source of truth.</h3><p>Catalog prices stay stored in their source currency. The public site converts them using these values and the visitor’s selected currency.</p><ul><li>USD, EUR, GBP, EGP and CHF are ready.</li><li>Visitors can choose currency independently from language.</li><li>Rates are protected by admin-only write policies.</li></ul></aside></div>{!canManageRates && <p className="admin-empty">Only an administrator can edit exchange rates.</p>}</section>}
 
