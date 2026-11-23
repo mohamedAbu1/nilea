@@ -11,6 +11,7 @@ import { getAuthSession, signOut as signOutFromApi, syncProfileDeviceType, type 
 import { subscribeToNewsletter } from "../lib/submissions";
 import { CurrencySwitcher } from "./currency";
 import { AdminDashboardIcon } from "./admin-dashboard-icon";
+import AdminHeaderTools from "./admin-header-tools";
 
 type NavKey = "home" | "about" | "contact" | "trips";
 
@@ -84,6 +85,7 @@ export function SiteHeader() {
   const searchPanelRef = useRef<HTMLDivElement>(null);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const isAdmin = account?.accessRole === "admin";
+  const isStaff = ["support", "editor", "admin"].includes(account?.accessRole ?? "");
   const isProvider = account?.accessRole === "driver" || account?.accessRole === "property_owner";
   const isTraveler = !isAdmin && !isProvider;
 
@@ -213,6 +215,7 @@ export function SiteHeader() {
               <span className="site-action-icon pharaonic-ui-icon pharaonic-ui-search" aria-hidden="true" />
             </button>
           </>}
+          {isStaff && <AdminHeaderTools />}
           {showPrimaryNavigation && (
             <button className="site-header-menu" type="button" onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? t("Close menu") : t("Open menu")} aria-expanded={menuOpen}>
               <span className={`site-action-icon pharaonic-ui-icon ${menuOpen ? "pharaonic-ui-close" : "pharaonic-ui-menu"}`} aria-hidden="true" />

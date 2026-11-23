@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { StyledSelect } from "./components/styled-select";
 import { HomeHero, Icon, bookingLocations, type IconName } from "./components/home-hero";
@@ -128,7 +128,7 @@ const products = [
   { name: "Pharaonic Keepsake", detail: "Made to carry the story home", image: "/alpnile-bazaar-keepsake.webp", href: "/market?product=alabaster-bastet" },
 ];
 
-const marketSongEmbedUrl = "https://www.youtube-nocookie.com/embed/qvqa7J9iHsU?autoplay=1&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3";
+const marketSongEmbedUrl = "https://www.youtube-nocookie.com/embed/qvqa7J9iHsU?autoplay=0&controls=1&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3";
 
 const starterReviews: Review[] = [
   { name: "Maya Richardson", city: "London", rating: 5, quote: "AlpNile made Egypt feel beautifully human. Every transfer, table and quiet moment had been considered.", avatar: "/alpnile-avatar-woman-explorer-v1.webp", trip: "Cairo · Luxor · Aswan", likes: 18 },
@@ -196,6 +196,7 @@ export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [accountRole, setAccountRole] = useState<AccountProfile["accessRole"]>("traveler");
   const [storyAudioOpen, setStoryAudioOpen] = useState(false);
+  const storyAudioFrameRef = useRef<HTMLIFrameElement>(null);
   const [authGateMessage, setAuthGateMessage] = useState("");
   const [reviewSlide, setReviewSlide] = useState(0);
 
@@ -211,6 +212,17 @@ export default function Home() {
   const reviewPageCount = Math.max(1, Math.ceil(reviews.length / 3));
   const reviewStart = reviewSlide * 3;
   const visibleReviews = reviews.slice(reviewStart, reviewStart + 3);
+
+  const sendStoryAudioCommand = (command: "playVideo" | "pauseVideo") => {
+    storyAudioFrameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: "command", func: command, args: [] }), "*");
+  };
+
+  const toggleStoryAudio = () => {
+    const nextOpen = !storyAudioOpen;
+    setStoryAudioOpen(nextOpen);
+    const command = nextOpen ? "playVideo" : "pauseVideo";
+    [0, 180, 600].forEach((delay) => window.setTimeout(() => sendStoryAudioCommand(command), delay));
+  };
 
   useEffect(() => {
     setReviewSlide((current) => Math.min(current, reviewPageCount - 1));
@@ -565,12 +577,14 @@ export default function Home() {
                 <p className="home-market-archive-lede">A civilization of visionaries, builders and believers who transformed the Nile into a legacy for eternity.</p>
                 <p className="home-market-key-label">Key dates</p>
                 <strong className="home-market-key-date">c. 3100 — 332 BC</strong>
-                <button type="button" className="home-market-audio-control" onClick={() => setStoryAudioOpen((open) => !open)} aria-expanded={storyAudioOpen} aria-controls="alpnile-story-audio" aria-label="Play the AlpNile story inside the site">
+                <button type="button" className="home-market-audio-control" onClick={toggleStoryAudio} aria-expanded={storyAudioOpen} aria-controls="alpnile-story-audio" aria-label="Play the AlpNile story inside the site">
                   <span className="home-market-audio-icon">{storyAudioOpen ? "Ⅱ" : "▶"}</span>
                   <span><small>{storyAudioOpen ? "Now playing in AlpNile" : "Listen to the story"}</small><strong>Ancient Egypt · soundtrack</strong></span>
                   <Icon name="arrow" size={15} />
                 </button>
-                {storyAudioOpen && <iframe id="alpnile-story-audio" className="home-market-audio-frame" title="Ancient Egypt soundtrack" src={marketSongEmbedUrl} allow="autoplay; encrypted-media; picture-in-picture" />}
+                <div className={`home-market-audio-player ${storyAudioOpen ? "is-open" : ""}`} aria-hidden={!storyAudioOpen}>
+                  <iframe ref={storyAudioFrameRef} id="alpnile-story-audio" className="home-market-audio-frame" title="Ancient Egypt soundtrack" src={marketSongEmbedUrl} allow="autoplay; encrypted-media; picture-in-picture" onLoad={() => { if (storyAudioOpen) sendStoryAudioCommand("playVideo"); }} />
+                </div>
                 <Link className="home-redesign-primary-button home-market-archive-cta" href="/market">Explore the market <Icon name="arrow" size={15} /></Link>
               </div>
               <div className="home-market-archive-explore">

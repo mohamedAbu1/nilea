@@ -326,6 +326,17 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
+    if (checkingAccess) return;
+    const params = new URLSearchParams(window.location.search);
+    const requestedSection = params.get("section") as DashboardSection | null;
+    if (requestedSection && navItems.some((item) => item.id === requestedSection)) setSection(requestedSection);
+    const conversationId = params.get("conversation");
+    if (conversationId) void loadConversations(conversationId);
+    const userId = params.get("user");
+    if (userId) void loadUserFile(userId);
+  }, [checkingAccess]);
+
+  useEffect(() => {
     if (!role || !["stays", "trips", "market", "vehicles"].includes(section)) return;
     const collection = section === "market" ? "products" : section;
     setCatalogCollection(collection as CatalogCollection);
