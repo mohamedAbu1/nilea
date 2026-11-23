@@ -9294,9 +9294,14 @@ form .site-select:focus,
 .tour-booking-summary small { color: rgba(246, 239, 223, .45); font-size: 9px; }
 .tour-booking-summary strong { color: #f5cf87; font-family: Georgia, serif; font-size: 16px; font-weight: 400; white-space: nowrap; }
 .tour-payment-heading { margin: 10px 0 0; color: rgba(246, 239, 223, .64); font-size: 10px; }
-.tour-payment-option { display: grid; grid-template-columns: 18px minmax(0, 1fr) 20px; align-items: start; gap: 9px; padding: 13px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 13px; color: rgba(246, 239, 223, .68); cursor: pointer; transition: border-color 180ms ease, background 180ms ease; }
+.tour-payment-options { display: grid; gap: 9px; }
+.tour-payment-option { display: grid; grid-template-columns: 28px minmax(0, 1fr) 20px; align-items: start; width: 100%; gap: 9px; padding: 13px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 13px; color: rgba(246, 239, 223, .68); background: rgba(255, 255, 255, .018); font: inherit; text-align: left; cursor: pointer; transition: border-color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease; }
+.tour-payment-option:hover { border-color: rgba(121, 217, 203, .6); background: rgba(121, 217, 203, .06); transform: translateY(-1px); }
 .tour-payment-option.selected { border-color: rgba(244, 197, 119, .68); background: rgba(244, 197, 119, .08); }
-.tour-payment-option input { margin: 2px 0 0; accent-color: #f4c577; }
+.tour-payment-option.selected:hover { border-color: rgba(244, 197, 119, .85); background: rgba(244, 197, 119, .12); }
+.tour-payment-option:focus-visible { outline: 2px solid #79d9cb; outline-offset: 3px; }
+.tour-payment-option-icon { display: grid; width: 27px; height: 27px; place-items: center; border: 1px solid rgba(244, 197, 119, .48); border-radius: 9px 5px 10px 6px; color: #f5cf87; background: rgba(244, 197, 119, .08); font-size: 13px; font-weight: 700; }
+.tour-payment-option-icon-paypal { color: #79d9cb; border-color: rgba(121, 217, 203, .48); background: rgba(121, 217, 203, .08); font-family: Georgia, serif; }
 .tour-payment-option span { display: grid; gap: 5px; }
 .tour-payment-option strong { color: #f4cf8d; font-size: 11px; font-weight: 600; }
 .tour-payment-option small { color: rgba(246, 239, 223, .45); font-size: 9px; line-height: 1.45; }
