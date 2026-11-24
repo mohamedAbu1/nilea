@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { PolicyPage } from "../components/policy-page";
 
 export const metadata: Metadata = {
-  title: "AlpNile — Financial Policy",
+  title: "AlpNile financial policy",
   description: "Pricing, payment, cancellation and refund information for AlpNile journeys.",
+  alternates: { canonical: "/financial-policy" },
 };
 
 export default function FinancialPolicyPage() {

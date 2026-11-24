@@ -10,10 +10,12 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const vehicle = getVehicle(id);
-  if (!vehicle) return { title: "Vehicle not found — AlpNile" };
+  if (!vehicle) return { title: "Vehicle not found" };
   return {
-    title: `${vehicle.name} — AlpNile Fleet`,
+    title: vehicle.name,
     description: `${vehicle.description} Request this vehicle for your Egypt route with AlpNile.`,
+    alternates: { canonical: `/travel-transport/${encodeURIComponent(id)}` },
+    openGraph: { type: "website", title: vehicle.name, description: `${vehicle.description} Request this vehicle for your Egypt route with AlpNile.`, url: `/travel-transport/${encodeURIComponent(id)}`, images: vehicle.images[0] ? [{ url: vehicle.images[0].src, alt: vehicle.name }] : undefined },
   };
 }
 

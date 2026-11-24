@@ -11,8 +11,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const product = getBazaarProduct(slug);
   return {
-    title: product ? `${product.name} — AlpNile Bazaar` : "Product details — AlpNile Bazaar",
+    title: product?.name ?? "Product details",
     description: product?.description ?? "Explore a handmade object from the AlpNile bazaar.",
+    alternates: { canonical: `/market/${encodeURIComponent(slug)}` },
+    openGraph: product ? { type: "website", title: product.name, description: product.description, url: `/market/${encodeURIComponent(slug)}`, images: [{ url: product.image, alt: product.name }] } : undefined,
   };
 }
 

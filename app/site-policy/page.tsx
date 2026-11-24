@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { PolicyPage } from "../components/policy-page";
 
 export const metadata: Metadata = {
-  title: "AlpNile — Site Policy",
+  title: "AlpNile site policy",
   description: "The terms and standards that guide the AlpNile experience.",
+  alternates: { canonical: "/site-policy" },
 };
 
 export default function SitePolicyPage() {
