@@ -5361,7 +5361,7 @@ h4,
 .inline-ui-icon {
   display: inline-block;
   flex: 0 0 auto;
-  background-image: url('./assets/alpnile-pharaonic-ui-icons-optimized.webp');
+  background-image: var(--pharaonic-atlas);
   background-repeat: no-repeat;
   background-size: 400% 400%;
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .34));
@@ -6691,7 +6691,7 @@ h4,
   height: 23px;
   border: 0;
   border-radius: 0;
-  background-image: url('./assets/alpnile-pharaonic-ui-icons-optimized.webp');
+  background-image: var(--pharaonic-atlas);
   background-repeat: no-repeat;
   background-size: 400% 400%;
   background-position: 0 66.666%;
@@ -6892,7 +6892,7 @@ h4,
   border: 1px solid color-mix(in srgb, var(--portal-accent) 70%, transparent);
   border-radius: 14px;
   background-color: rgba(3, 11, 18, .58);
-  background-image: url('./assets/alpnile-pharaonic-ui-icons-optimized.webp');
+  background-image: var(--pharaonic-atlas);
   background-repeat: no-repeat;
   background-size: 400% 400%;
   box-shadow: inset 0 1px rgba(255, 255, 255, .22), 7px 10px 19px rgba(0, 0, 0, .3), 0 0 20px color-mix(in srgb, var(--portal-accent) 19%, transparent);

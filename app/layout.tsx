@@ -1,6 +1,8 @@
+import type { CSSProperties } from "react";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import pharaonicAtlas from "./assets/alpnile-pharaonic-ui-icons-optimized.webp";
 import { LanguageProvider } from "./components/language";
 import { CurrencyProvider } from "./components/currency";
 import { HomeWelcomeGate } from "./components/home-welcome-gate";
@@ -116,7 +118,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
   return (
     <html lang="en" className={`${manrope.variable} ${cormorantGaramond.variable}`}>
-      <body>
+      <body style={{ "--pharaonic-atlas": `url(${pharaonicAtlas.src})` } as CSSProperties}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
         <LanguageProvider>
           <CurrencyProvider>
