@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { StyledSelect } from "./components/styled-select";
 import { HomeHero, Icon, bookingLocations, type IconName } from "./components/home-hero";
 import { legacyCatalog } from "./lib/legacy-catalog";
@@ -479,7 +480,7 @@ export default function Home() {
           <div className="home-category-grid">
             {categories.map((category) => (
               <Link key={category.title} href={category.href} className={"home-category-card home-tone-" + category.tone}>
-                <div className="home-category-image" style={{ backgroundImage: "url('" + category.image + "')" }} />
+                <Image className="home-category-image" src={category.image} alt="" fill sizes="(max-width: 760px) 100vw, 50vw" />
                 <div className="home-category-overlay" />
                 <span className="home-category-icon"><Icon name={category.icon} size={19} /></span>
                 <div className="home-category-content"><p>{category.label}</p><h3>{category.title}</h3><span>{category.description}</span></div>
@@ -490,7 +491,8 @@ export default function Home() {
         </section>
 
         {isAdmin ? <AdminWorkspaceSection /> : <section className="home-concierge-section" id="concierge">
-          <div className="home-concierge-visual" style={{ backgroundImage: "url('" + (inquiryMode === "contact" ? "/alpnile-contact-studio-v2.webp" : "/alpnile-concierge-v2.webp") + "')" }}>
+          <div className="home-concierge-visual">
+            <Image className="home-concierge-image" src={inquiryMode === "contact" ? "/alpnile-contact-studio-v2.webp" : "/alpnile-concierge-v2.webp"} alt="" fill sizes="(max-width: 980px) 100vw, 50vw" />
             <div className="home-concierge-visual-overlay" />
             <div className="home-concierge-visual-caption"><span>ALPNILE CONCIERGE</span><strong>One thoughtful<br />conversation.</strong></div>
           </div>
@@ -535,7 +537,7 @@ export default function Home() {
           <div className="home-city-grid">
             {cities.map((city, index) => (
               <Link key={city.name} href={city.href} className={"home-city-card home-city-card-" + (index + 1)}>
-                <div className="home-city-image" style={{ backgroundImage: "url('" + city.image + "')" }} />
+                <Image className="home-city-image" src={city.image} alt="" fill sizes="(max-width: 760px) 100vw, 50vw" />
                 <div className="home-city-overlay" />
                 <div className="home-city-content"><p>{city.region}</p><h3>{city.name}</h3><span>{city.description}</span><b>Discover city <Icon name="arrow" size={14} /></b></div>
                 <span className="home-city-index">0{index + 1}</span>
@@ -547,8 +549,8 @@ export default function Home() {
         <section className="home-redesign-section home-trips-section" id="trips">
           <SectionHeading eyebrow="The days you will remember" title="Signature trips, thoughtfully made." description="Not a checklist. A point of view — built around atmosphere, timing and the people who make a place feel real." action={{ label: "See every experience", href: "/tours-experiences" }} />
           <div className="home-trip-category-grid" aria-label="Egypt trip categories">
-            {tripCategories.map((category, index) => <Link key={category.key} href={category.href} aria-label={`Browse ${category.label}`} className={`home-trip-category-card home-tone-${category.tone}`}>
-              <span className="home-trip-category-card-image" style={{ backgroundImage: "url('" + category.image + "')" }} />
+            {tripCategories.map((category, index) => <Link key={category.key} href={category.href} className={`home-trip-category-card home-tone-${category.tone}`}>
+              <span className="home-trip-category-card-image"><Image src={category.image} alt="" fill sizes="(max-width: 760px) 50vw, 25vw" /></span>
               <span className="home-trip-category-card-overlay" />
               <span className="home-trip-category-card-top"><span className="home-trip-category-number">{String(index + 1).padStart(2, "0")}</span><span className="home-trip-category-icon"><Icon name={category.icon} size={17} /></span></span>
               <span className="home-trip-category-card-copy"><strong>{category.label}</strong><small>{category.detail}</small></span>
@@ -557,19 +559,19 @@ export default function Home() {
         </section>
 
         <section className="home-stay-feature" id="stays">
-          <div className="home-stay-feature-media" style={{ backgroundImage: "url('/alpnile-stays-hotels-v2.webp')" }} />
+          <div className="home-stay-feature-media"><Image className="home-stay-feature-image" src="/alpnile-stays-hotels-v2.webp" alt="" fill sizes="(max-width: 980px) 100vw, 50vw" /></div>
           <div className="home-stay-feature-copy">
             <p className="home-redesign-eyebrow">Sleep somewhere with a story</p>
             <h2>Stay close<br /><em>to the feeling.</em></h2>
             <p>From heritage residences beside the Nile to private homes made for slow mornings, choose a place that becomes part of the journey.</p>
             <Link className="home-redesign-primary-button" href="/stays-hotels">Find your stay <Icon name="arrow" size={16} /></Link>
-            <div className="home-stay-mini-list">{homes.map((home) => <Link key={home.name} href={home.href}><span className="home-stay-mini-image" style={{ backgroundImage: "url('" + home.image + "')" }} /><span><strong>{home.name}</strong><small>{home.place}</small></span><Icon name="arrow" size={13} /></Link>)}</div>
+            <div className="home-stay-mini-list">{homes.map((home) => <Link key={home.name} href={home.href}><span className="home-stay-mini-image"><Image src={home.image} alt="" fill sizes="41px" /></span><span><strong>{home.name}</strong><small>{home.place}</small></span><Icon name="arrow" size={13} /></Link>)}</div>
           </div>
         </section>
 
         <section className="home-redesign-section home-market-section" id="market">
           <div className="home-market-archive">
-            <div className="home-market-archive-bg" aria-hidden="true" />
+            <div className="home-market-archive-bg" aria-hidden="true"><Image className="home-market-archive-bg-image" src="/alpnile-artifacts-3d.webp" alt="" fill sizes="100vw" /></div>
             <div className="home-market-archive-panel">
               <div className="home-market-archive-copy">
                 <p className="home-market-chapter">01 <i /> 06 CHAPTERS</p>
@@ -578,20 +580,20 @@ export default function Home() {
                 <p className="home-market-archive-lede">A civilization of visionaries, builders and believers who transformed the Nile into a legacy for eternity.</p>
                 <p className="home-market-key-label">Key dates</p>
                 <strong className="home-market-key-date">c. 3100 — 332 BC</strong>
-                <button type="button" className="home-market-audio-control" onClick={toggleStoryAudio} aria-expanded={storyAudioOpen} aria-controls="alpnile-story-audio" aria-label="Play the AlpNile story inside the site">
+                <button type="button" className="home-market-audio-control" onClick={toggleStoryAudio} aria-expanded={storyAudioOpen} aria-controls="alpnile-story-audio">
                   <span className="home-market-audio-icon">{storyAudioOpen ? "Ⅱ" : "▶"}</span>
                   <span><small>{storyAudioOpen ? "Now playing in AlpNile" : "Listen to the story"}</small><strong>Ancient Egypt · soundtrack</strong></span>
                   <Icon name="arrow" size={15} />
                 </button>
                 <div className={`home-market-audio-player ${storyAudioOpen ? "is-open" : ""}`} aria-hidden={!storyAudioOpen}>
-                  <iframe ref={storyAudioFrameRef} id="alpnile-story-audio" className="home-market-audio-frame" title="Ancient Egypt soundtrack" src={marketSongEmbedUrl} allow="autoplay; encrypted-media; picture-in-picture" onLoad={() => { if (storyAudioOpen) sendStoryAudioCommand("playVideo"); }} />
+                  {storyAudioOpen && <iframe ref={storyAudioFrameRef} id="alpnile-story-audio" className="home-market-audio-frame" title="Ancient Egypt soundtrack" src={marketSongEmbedUrl} allow="autoplay; encrypted-media; picture-in-picture" onLoad={() => sendStoryAudioCommand("playVideo")} />}
                 </div>
                 <Link className="home-redesign-primary-button home-market-archive-cta" href="/market">Explore the market <Icon name="arrow" size={15} /></Link>
               </div>
               <div className="home-market-archive-explore">
                 <div className="home-market-explore-head"><div><p className="home-redesign-eyebrow">Objects with a sense of place</p><h3>Explore artifacts</h3></div><Link href="/market">View all <Icon name="arrow" size={13} /></Link></div>
                 <div className="home-market-artifact-grid">
-                  {products.map((product, index) => <Link key={product.name} href={product.href} className="home-market-artifact-card"><span className="home-market-artifact-number">0{index + 1}</span><div className="home-market-artifact-image" style={{ backgroundImage: "url('" + product.image + "')" }} /><span className="home-market-artifact-copy"><strong>{product.name}</strong><small>{product.detail}</small></span><Icon name="arrow" size={13} /></Link>)}
+                  {products.map((product, index) => <Link key={product.name} href={product.href} className="home-market-artifact-card"><span className="home-market-artifact-number">0{index + 1}</span><div className="home-market-artifact-image"><Image src={product.image} alt="" fill sizes="(max-width: 760px) 100vw, 33vw" /></div><span className="home-market-artifact-copy"><strong>{product.name}</strong><small>{product.detail}</small></span><Icon name="arrow" size={13} /></Link>)}
                 </div>
                 <p className="home-market-archive-note"><span /> Where the river became a kingdom, and stone learned to speak.</p>
               </div>
@@ -613,9 +615,9 @@ export default function Home() {
               <div className="home-review-grid" key={reviewSlide} aria-live="polite">
               {visibleReviews.map((review, index) => (
                 <article className={`home-review-card home-review-card-${index + 1}`} key={review.id ?? `${review.name}-${reviewStart + index}`}>
-                  <div className="home-review-card-top"><span className="home-review-stars" aria-label={`${review.rating} out of 5 stars`}>{"★".repeat(review.rating)}</span><span className="home-review-card-actions">{review.status === "pending" && <span className="home-review-pending">Pending review</span>}<button type="button" className={`home-review-like ${review.liked ? "liked" : ""}`} onClick={() => void likeReview(review, reviewStart + index)} disabled={review.status === "pending" || Boolean(review.id && likingReviewIds.includes(review.id))} aria-label={review.status === "pending" ? "Review is awaiting moderation" : `${review.liked ? "Unlike" : "Like"} ${review.name}'s review`} aria-pressed={review.liked}><span aria-hidden="true">♥</span> {review.likes}</button></span></div>
+                  <div className="home-review-card-top"><span className="home-review-stars" aria-label={`${review.rating} out of 5 stars`}>{"★".repeat(review.rating)}</span><span className="home-review-card-actions">{review.status === "pending" && <span className="home-review-pending">Pending review</span>}<button type="button" className={`home-review-like ${review.liked ? "liked" : ""}`} onClick={() => void likeReview(review, reviewStart + index)} disabled={review.status === "pending" || Boolean(review.id && likingReviewIds.includes(review.id))} aria-label={review.status === "pending" ? "Review is awaiting moderation" : `${review.liked ? "Unlike" : "Like"} ${review.name}'s review — ${review.likes} likes`} aria-pressed={review.liked}><span aria-hidden="true">♥</span> {review.likes}</button></span></div>
                   <blockquote>“{review.quote}”</blockquote>
-                  <div className="home-review-author"><img src={review.avatar} alt={`${review.name} avatar`} loading="lazy" /><span><strong>{review.name}</strong><small>{review.city} · {review.trip}</small></span></div>
+                  <div className="home-review-author"><Image src={review.avatar} alt={`${review.name} avatar`} width={48} height={48} sizes="48px" loading="lazy" /><span><strong>{review.name}</strong><small>{review.city} · {review.trip}</small></span></div>
                 </article>
               ))}
               </div>
@@ -643,7 +645,7 @@ export default function Home() {
         </section>
 
         {!isAdmin && <section className="home-car-section" id="car-booking">
-          <div className="home-car-background" aria-hidden="true" />
+          <div className="home-car-background" aria-hidden="true"><Image className="home-car-background-image" src="/alpnile-cars-v2.webp" alt="" fill sizes="100vw" /></div>
           <div className="home-car-shade" aria-hidden="true" />
           <div className="home-car-content">
              <div className="home-car-copy"><p className="home-redesign-eyebrow">Your road, your rhythm</p><h2>Move through Egypt<br /><em>with ease.</em></h2><p>Book a comfortable tourist car and keep the day open for the moments that were not on the itinerary.</p><div className="home-car-points"><span><Icon name="car" size={16} /> Comfortable cars</span><span><Icon name="pin" size={16} /> Local route support</span><span><Icon name="spark" size={16} /> Flexible days</span></div><Link className="home-car-transport-link" href="/travel-transport">Explore Travel &amp; Transport</Link></div>

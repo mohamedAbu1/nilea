@@ -1,4 +1,58 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/cormorant-garamond-500.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/cormorant-garamond-600.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Cormorant Garamond";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/cormorant-garamond-700.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/manrope-400.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/manrope-500.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/manrope-600.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/manrope-700.ttf") format("truetype");
+}
 
 @tailwind base;
 @tailwind components;
@@ -6046,9 +6100,8 @@ h4,
 }
 
 .home-redesign-hero-media {
-  background-image: url("/alpnile-hero-v3.webp");
-  background-position: center 55%;
-  background-size: cover;
+  object-fit: cover;
+  object-position: center 55%;
   filter: saturate(.88) contrast(1.08);
   transform: none;
   animation: home-hero-reveal 900ms ease both;
@@ -6302,6 +6355,11 @@ h4,
   background-size: cover;
   transition: transform 700ms var(--motion-spring), filter 500ms ease;
 }
+.home-category-image,
+.home-city-image,
+.home-stay-feature-image,
+.home-concierge-image,
+.home-car-background-image { object-fit: cover; }
 .home-category-card:hover .home-category-image,
 .home-city-card:hover .home-city-image,
 .home-product-card:hover .home-product-image { filter: saturate(1.13) brightness(1.06); transform: scale(1.07); }
@@ -6359,7 +6417,8 @@ h4,
 .home-trip-category-card { position: relative; display: block; min-height: 190px; overflow: hidden; padding: 0; border: 1px solid rgba(241,198,120,.25); border-radius: 20px; color: #f6efdf; background: #0a202d; box-shadow: 10px 16px 28px rgba(0,0,0,.18); text-align: start; cursor: pointer; isolation: isolate; transition: transform 240ms var(--motion-spring), border-color 180ms ease, box-shadow 220ms ease; }
 .home-trip-category-card:hover,
 .home-trip-category-card:focus-visible { border-color: color-mix(in srgb, var(--home-tone) 78%, white 10%); box-shadow: 0 18px 34px rgba(0,0,0,.3), 0 0 0 1px color-mix(in srgb, var(--home-tone) 42%, transparent); transform: translateY(-5px); }
-.home-trip-category-card-image { position: absolute; inset: 0; z-index: -2; background-position: center; background-size: cover; transition: transform 600ms var(--motion-spring), filter 300ms ease; }
+.home-trip-category-card-image { position: absolute; inset: 0; z-index: -2; overflow: hidden; transition: transform 600ms var(--motion-spring), filter 300ms ease; }
+.home-trip-category-card-image img { object-fit: cover; }
 .home-trip-category-card:hover .home-trip-category-card-image,
 .home-trip-category-card:focus-visible .home-trip-category-card-image { filter: saturate(1.08); transform: scale(1.06); }
 .home-trip-category-card-overlay { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(4,13,20,.2), rgba(4,13,20,.42) 40%, rgba(4,13,20,.96)); }
@@ -6382,7 +6441,7 @@ h4,
   background: #091b28;
   box-shadow: 22px 30px 55px rgba(0,0,0,.25);
 }
-.home-stay-feature-media { position: relative; min-height: 630px; }
+.home-stay-feature-media { position: relative; min-height: 630px; overflow: hidden; }
 .home-stay-feature-media::after { position: absolute; inset: 0; content: ""; background: linear-gradient(90deg, rgba(4,13,20,.05), rgba(4,13,20,.78)); }
 .home-stay-feature-copy { position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center; padding: clamp(34px, 5vw, 72px); }
 .home-stay-feature-copy h2,
@@ -6396,7 +6455,8 @@ h4,
 .home-stay-mini-list a:last-child { border-bottom: 1px solid rgba(241,198,120,.17); }
 .home-stay-mini-list a:hover { color: #f5cf87; transform: translateX(4px); }
 .home-stay-mini-list > a > svg { margin-left: auto; color: #f5cf87; }
-.home-stay-mini-image { display: block; width: 41px; height: 41px; flex: 0 0 41px; border-radius: 11px; background-position: center; background-size: cover; }
+.home-stay-mini-image { position: relative; display: block; width: 41px; height: 41px; flex: 0 0 41px; overflow: hidden; border-radius: 11px; }
+.home-stay-mini-image img { object-fit: cover; }
 .home-stay-mini-list strong,
 .home-stay-mini-list small { display: block; }
 .home-stay-mini-list strong { font-family: Georgia, "Times New Roman", serif; font-size: 15px; font-weight: 400; }
@@ -6426,7 +6486,8 @@ h4,
 }
 .home-market-archive-bg,
 .home-market-archive-bg::after { position: absolute; inset: 0; }
-.home-market-archive-bg { background: center / cover url('/alpnile-artifacts-3d.webp'); filter: saturate(.68) contrast(1.05); }
+.home-market-archive-bg { overflow: hidden; }
+.home-market-archive-bg-image { object-fit: cover; filter: saturate(.68) contrast(1.05); }
 .home-market-archive-bg::after { content: ""; background: linear-gradient(90deg, rgba(3,12,19,.94) 0%, rgba(3,12,19,.76) 43%, rgba(3,12,19,.25) 74%, rgba(3,12,19,.75) 100%), linear-gradient(0deg, rgba(3,12,19,.85), transparent 42%); }
 .home-market-archive-panel { position: relative; display: grid; min-height: 560px; grid-template-columns: minmax(270px,.8fr) minmax(0,1.2fr); gap: clamp(32px, 7vw, 100px); padding: clamp(28px, 5vw, 64px); }
 .home-market-archive-copy { display: flex; flex-direction: column; align-items: flex-start; }
@@ -6455,7 +6516,8 @@ h4,
 .home-market-artifact-card { position: relative; min-width: 0; overflow: hidden; border: 1px solid rgba(241,198,120,.28); border-radius: 14px; background: rgba(4,15,24,.76); transition: border-color 180ms ease, transform 220ms var(--motion-spring); }
 .home-market-artifact-card:hover { border-color: rgba(241,198,120,.78); transform: translateY(-5px); }
 .home-market-artifact-number { position: absolute; top: 10px; right: 10px; z-index: 1; color: rgba(246,239,223,.72); font-size: 9px; letter-spacing: .14em; }
-.home-market-artifact-image { height: 174px; background-position: center; background-size: cover; filter: saturate(.76); transition: transform 500ms var(--motion-spring), filter 400ms ease; }
+.home-market-artifact-image { position: relative; height: 174px; overflow: hidden; filter: saturate(.76); transition: transform 500ms var(--motion-spring), filter 400ms ease; }
+.home-market-artifact-image img { object-fit: cover; }
 .home-market-artifact-card:hover .home-market-artifact-image { filter: saturate(1); transform: scale(1.06); }
 .home-market-artifact-copy { display: grid; gap: 5px; min-height: 86px; padding: 13px 12px 12px; }
 .home-market-artifact-copy strong { color: #f5cf87; font-family: Georgia, "Times New Roman", serif; font-size: 16px; font-weight: 400; line-height: 1.08; }
@@ -6467,7 +6529,8 @@ h4,
 .home-car-section { position: relative; min-height: 650px; margin-top: clamp(105px, 14vw, 185px); overflow: hidden; border: 1px solid rgba(241,198,120,.27); border-radius: 27px; background: #07151f; box-shadow: 22px 30px 55px rgba(0,0,0,.28); }
 .home-car-background,
 .home-car-shade { position: absolute; inset: 0; }
-.home-car-background { background-image: url("/alpnile-cars-v2.webp"); background-position: center; background-size: cover; filter: saturate(.87) contrast(1.08); }
+.home-car-background { filter: saturate(.87) contrast(1.08); }
+.home-car-background-image { object-position: center; }
 .home-car-shade { background: linear-gradient(90deg, rgba(4,14,22,.93) 0%, rgba(4,14,22,.72) 38%, rgba(4,14,22,.18) 75%, rgba(4,14,22,.65)); }
 .home-car-content { position: relative; display: grid; min-height: 650px; align-items: center; gap: 40px; padding: clamp(35px, 7vw, 88px); grid-template-columns: minmax(0, 1fr) minmax(340px, .72fr); }
 .home-car-copy { max-width: 590px; }
@@ -6589,7 +6652,7 @@ h4,
   .home-redesign-body { width: calc(100% - 28px); }
   .home-redesign-hero { min-height: 820px; }
   .home-redesign-hero-inner { min-height: 820px; padding: 60px 20px 28px; }
-  .home-redesign-hero-media { background-position: 62% center; }
+  .home-redesign-hero-media { object-position: 62% center; }
   .home-redesign-hero-shade { background: linear-gradient(180deg, rgba(3,13,21,.8), rgba(3,13,21,.24) 42%, rgba(3,13,21,.95) 78%); }
   .home-redesign-hero-copy { align-self: start; padding-bottom: 0; }
   .home-redesign-kicker { font-size: 8px; letter-spacing: .17em; }
@@ -7906,6 +7969,7 @@ h4,
   background-position: center;
   background-size: cover;
 }
+.home-concierge-image { position: absolute; inset: 0; }
 
 .home-concierge-visual-overlay {
   position: absolute;

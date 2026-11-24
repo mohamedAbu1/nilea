@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 type BrandLogoProps = {
   href?: string;
@@ -8,15 +9,15 @@ type BrandLogoProps = {
 export function BrandLogo({ href = "/", className = "" }: BrandLogoProps) {
   return (
     <Link href={href} className={`brand-logo-link ${className}`.trim()} aria-label="AlpNile home">
-      <img
-        src="/alpnile-logo.webp"
+      <Image
+        src="/alpnile-logo-optimized.webp"
         alt="AlpNile"
         className="brand-logo"
-        width={2175}
-        height={723}
-        loading="eager"
+        width={640}
+        height={213}
+        sizes="(max-width: 640px) 142px, 190px"
+        preload
         fetchPriority="high"
-        decoding="async"
         draggable={false}
       />
     </Link>

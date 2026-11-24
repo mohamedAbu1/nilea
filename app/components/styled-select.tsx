@@ -49,6 +49,7 @@ export function StyledSelect({
   const selectedValue = isControlled ? value : internalValue;
   const selectedIndex = options.findIndex((option) => option.value === selectedValue);
   const selectedOption = selectedIndex >= 0 ? options[selectedIndex] : undefined;
+  const selectedLabel = selectedOption?.label ?? placeholder;
 
   useEffect(() => {
     if (!isControlled) return;
@@ -117,7 +118,7 @@ export function StyledSelect({
       <button
         type="button"
         className="alpnile-select-trigger"
-        aria-label={ariaLabel}
+        aria-label={ariaLabel ? `${ariaLabel}: ${selectedLabel}` : undefined}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}

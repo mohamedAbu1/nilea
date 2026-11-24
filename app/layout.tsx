@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [SITE_SOCIAL_IMAGE],
   },
-  icons: { icon: "/alpnile-logo.webp" },
+  icons: { icon: "/alpnile-logo-optimized.webp" },
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
     : undefined,

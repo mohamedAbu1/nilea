@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { StyledSelect } from "./styled-select";
 import { AdminDashboardIcon } from "./admin-dashboard-icon";
@@ -66,7 +67,17 @@ export function HomeHero({ onSubmit, secondaryHref = "/#categories", isAdmin = f
 
   return (
     <section className="home-redesign-hero" id="top" onMouseEnter={() => setHeroPaused(true)} onMouseLeave={() => setHeroPaused(false)} onFocusCapture={() => setHeroPaused(true)} onBlurCapture={() => setHeroPaused(false)}>
-      <div key={currentHero.image} className="home-redesign-hero-media" style={{ backgroundImage: `url('${currentHero.image}')` }} aria-hidden="true" />
+      <Image
+        key={currentHero.image}
+        className="home-redesign-hero-media"
+        src={currentHero.image}
+        alt=""
+        fill
+        sizes="100vw"
+        preload={heroSlide === 0}
+        fetchPriority={heroSlide === 0 ? "high" : "auto"}
+        aria-hidden="true"
+      />
       <div className="home-redesign-hero-shade" aria-hidden="true" />
       <div className="home-redesign-hero-orbit" aria-hidden="true" />
       <div className="home-redesign-hero-inner">
@@ -85,7 +96,7 @@ export function HomeHero({ onSubmit, secondaryHref = "/#categories", isAdmin = f
             <div className="home-redesign-booker-field"><span><Icon name="compass" size={14} /> I want to arrange</span><StyledSelect name="heroIntent" value={heroIntent} onChange={(nextValue) => setHeroIntent(nextValue as "trip" | "stay" | "car")} ariaLabel="I want to arrange" options={[{ value: "trip", label: "A trip or experience" }, { value: "stay", label: "A villa or home" }, { value: "car", label: "A tourist car" }]} /></div>
             <div className="home-redesign-booker-field"><span><Icon name="pin" size={14} /> Where in Egypt</span><StyledSelect name="heroCity" defaultValue="open" ariaLabel="Where in Egypt" options={[{ value: "open", label: "Help me choose" }, ...bookingLocations.map(([value, label]) => ({ value, label }))]} /></div>
             <div className="home-redesign-booker-field"><span><Icon name="calendar" size={14} /> Timing</span><StyledSelect name="heroTiming" defaultValue="flexible" ariaLabel="Timing" options={[{ value: "flexible", label: "I am flexible" }, { value: "soon", label: "Next 30 days" }, { value: "season", label: "This season" }]} /></div>
-            <button type="submit" className="home-redesign-booker-submit" aria-label="Open smart journey form"><span className="home-papyrus-glyph" aria-hidden="true">𓂀</span><span className="home-booker-submit-label">Open smart form</span><Icon name="arrow" size={15} /></button>
+            <button type="submit" className="home-redesign-booker-submit"><span className="home-papyrus-glyph" aria-hidden="true">𓂀</span><span className="home-booker-submit-label">Open smart form</span><Icon name="arrow" size={15} /></button>
           </div>
         </form>}
         <div className="home-redesign-hero-metric"><strong>0{heroSlide + 1}</strong><span>Curated<br />chapter</span></div>

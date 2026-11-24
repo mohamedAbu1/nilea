@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import Image from "next/image";
 import { detectDeviceType, dispatchAuthChanged, requestPasswordReset, signIn, signUp, type AccountProfile, updatePassword } from "../lib/auth-client";
 import { getSubmissionErrorMessage } from "../lib/submissions";
 import { useDialogA11y } from "./dialog";
@@ -172,7 +173,7 @@ export default function AccountDialog({ open, initialMode, initialError = "", on
     <div className="account-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
       <section ref={dialogRef} className="account-dialog" role="dialog" aria-modal="true" aria-labelledby="account-dialog-title">
           <div className="account-dialog-visual">
-          <img className="account-dialog-pharaoh" src="/alpnile-welcome-pharaoh.png" alt="" aria-hidden="true" />
+          <Image className="account-dialog-pharaoh" src="/alpnile-welcome-pharaoh.webp" alt="" width={900} height={1200} sizes="(max-width: 760px) 80vw, 45vw" aria-hidden="true" />
           <div className="account-dialog-pharaoh-glow" aria-hidden="true" />
           <div className="account-dialog-orbit account-dialog-orbit-one" />
           <div className="account-dialog-orbit account-dialog-orbit-two" />

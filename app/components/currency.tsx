@@ -126,7 +126,7 @@ export function CurrencySwitcher() {
   const { currency, setCurrency } = useCurrency();
   const [open, setOpen] = useState(false);
   return <div className="site-currency-picker" data-no-translate>
-    <button type="button" className="site-currency-trigger" aria-label="Currency" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((value) => !value)}><span>{currency}</span><small>⌄</small></button>
+    <button type="button" className="site-currency-trigger" aria-label={`Currency: ${currency}`} aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((value) => !value)}><span>{currency}</span><small aria-hidden="true">⌄</small></button>
     {open && <div className="site-currency-menu" role="listbox" aria-label="Currency">
       {currencyOptions.map((option) => <button type="button" role="option" aria-selected={currency === option.currency_code} className={currency === option.currency_code ? "active" : ""} key={option.currency_code} onClick={() => { setCurrency(option.currency_code); setOpen(false); }}><span>{option.currency_code}</span><small>{option.symbol} {option.currency_name}</small></button>)}
     </div>}
