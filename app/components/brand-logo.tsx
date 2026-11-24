@@ -18,6 +18,7 @@ export function BrandLogo({ href = "/", className = "" }: BrandLogoProps) {
         sizes="(max-width: 640px) 142px, 190px"
         preload
         fetchPriority="high"
+        quality={50}
         draggable={false}
       />
     </Link>

@@ -62,7 +62,7 @@ export function HomeWelcomeGate() {
           <div className="welcome-visual-halo" aria-hidden="true" />
           <div className="welcome-visual-frame">
             <span className="welcome-visual-chip">THE NILE / 01</span>
-            <Image src="/alpnile-welcome-pharaoh.webp" alt="Golden and deep blue pharaoh sculpture" width={900} height={1200} sizes="(max-width: 760px) 82vw, 44vw" preload quality={60} />
+            <Image src="/alpnile-welcome-pharaoh.webp" alt="Golden and deep blue pharaoh sculpture" width={900} height={1200} sizes="(max-width: 760px) 82vw, 44vw" preload quality={50} />
             <div className="welcome-visual-reflection" aria-hidden="true" />
           </div>
           <div className="welcome-visual-caption"><span>EGYPT / TIMELESS</span><strong>Begin with wonder.</strong><p>One river. A thousand stories.</p></div>
