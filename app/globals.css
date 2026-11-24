@@ -11165,6 +11165,16 @@ footer.site-market-chrome .site-footer-newsletter-success { color: #abd9b2; }
 .admin-notification-delete:hover { border-color: #ffb2a8; background: rgba(255, 126, 126, .16); }
 .admin-catalog-card-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .admin-catalog-card .admin-danger-button { border-bottom-color: rgba(255, 126, 126, .6); color: #ffb2a8; }
+.admin-review-moderation-list { display: grid; gap: 14px; }
+.admin-review-moderation-card { display: grid; gap: 15px; border: 1px solid rgba(121, 217, 203, .16); border-radius: 15px; padding: 17px; background: rgba(6, 27, 36, .72); }
+.admin-review-moderation-card-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.admin-review-moderation-card-head > div { display: grid; gap: 5px; min-width: 0; }
+.admin-review-moderation-card-head strong { color: #f4eee1; font-size: 14px; }
+.admin-review-moderation-card-head small { overflow: hidden; color: rgba(244, 238, 225, .52); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.admin-review-moderation-card-head > span { flex: 0 0 auto; color: #f4c577; font-size: 12px; }
+.admin-review-moderation-card blockquote { margin: 0; color: rgba(244, 238, 225, .86); font-family: inherit; font-size: 17px; line-height: 1.45; }
+.admin-review-moderation-card-meta { display: flex; flex-wrap: wrap; gap: 9px 16px; color: rgba(244, 238, 225, .47); font-size: 10px; }
+.admin-review-moderation-card-meta span:first-child { color: #79d9cb; text-transform: capitalize; }
 .admin-user-files { display: grid; grid-template-columns: minmax(260px, .7fr) minmax(0, 1.3fr); gap: 15px; align-items: start; }
 .admin-user-list, .admin-user-detail { min-width: 0; padding: 16px; }
 .admin-user-search { display: flex; align-items: center; gap: 8px; margin: 14px 0; border: 1px solid rgba(121, 217, 203, .18); border-radius: 10px; padding: 0 10px; color: #79d9cb; background: rgba(121, 217, 203, .04); }

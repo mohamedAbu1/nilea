@@ -37,6 +37,11 @@ export async function GET(request: Request) {
       ].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
       return Response.json({ data: rows });
     }
+    if (action === "reviews") {
+      if (user.accessRole !== "admin") throw new Error("Administrator access required.");
+      const rows = await query("SELECT id, full_name, city_country, rating, journey, body, avatar_url, status, like_count, created_at FROM reviews ORDER BY created_at DESC LIMIT 500");
+      return Response.json({ data: rows });
+    }
     if (action === "stats") {
       const tables = ["inquiries", "car_bookings", "trip_bookings", "stay_bookings", "chat_conversations", "stays", "trips", "products", "vehicles"];
       const counts = await Promise.all(tables.map(async (table) => { const rows = await query<{ count: number }[]>(`SELECT COUNT(*) AS count FROM \`${table}\``); return [table, Number(rows[0]?.count ?? 0)] as const; }));
@@ -206,6 +211,12 @@ export async function POST(request: Request) {
       if (!catalogTables.includes(collection) || !input.id) throw new Error("Invalid catalog record.");
       await query(`UPDATE \`${collection}\` SET is_active = 0, updated_at = UTC_TIMESTAMP(6) WHERE id = ?`, [input.id]);
       return Response.json({ data: { archived: true } });
+    }
+    if (input.action === "delete-review") {
+      if (user.accessRole !== "admin") throw new Error("Administrator access required.");
+      if (!input.id || !/^[a-f0-9-]{36}$/i.test(input.id)) throw new Error("Invalid review.");
+      await query("DELETE FROM reviews WHERE id = ?", [input.id]);
+      return Response.json({ data: { deleted: true } });
     }
     if (input.action === "mark-notifications-read") {
       if (input.markAll) await query("UPDATE admin_notifications SET is_read = 1 WHERE is_read = 0");

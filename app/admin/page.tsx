@@ -17,7 +17,7 @@ import {
   type ChatMessage,
   type ChatStatus,
 } from "../lib/chat";
-import { deleteAdminCatalog, deleteAdminNotifications, getAdminCatalog, getAdminCustomJourneys, getAdminManagedUsers, getAdminNotifications, getAdminProfiles, getAdminRates, getAdminRequests, getAdminSession, getAdminStats, getAdminUserFile, getAdminUsers, markAdminNotificationsRead, saveAdminCatalog, saveAdminRates, updateAdminStatus, updateAdminUserRole, type AdminCustomJourney, type AdminManagedUser, type AdminNotification, type AdminUserFile, type AdminUserSummary } from "../lib/admin-client";
+import { deleteAdminCatalog, deleteAdminNotifications, deleteAdminReview, getAdminCatalog, getAdminCustomJourneys, getAdminManagedUsers, getAdminNotifications, getAdminProfiles, getAdminRates, getAdminRequests, getAdminReviews, getAdminSession, getAdminStats, getAdminUserFile, getAdminUsers, markAdminNotificationsRead, saveAdminCatalog, saveAdminRates, updateAdminStatus, updateAdminUserRole, type AdminCustomJourney, type AdminManagedUser, type AdminNotification, type AdminReview, type AdminUserFile, type AdminUserSummary } from "../lib/admin-client";
 import { getAuthSession, signOut } from "../lib/auth-client";
 import { currencyOptions, type CurrencyCode, type ExchangeRate } from "../components/currency";
 import { CurrencyCoin } from "../components/currency-coin";
@@ -28,7 +28,7 @@ import { getVehicle } from "../travel-transport/vehicle-data";
 import ChatAttachment from "../components/chat-attachment";
 
 type AccessRole = "traveler" | "driver" | "property_owner" | "support" | "editor" | "admin";
-type DashboardSection = "overview" | "inbox" | "requests" | "users" | "people" | "journeys" | "stays" | "trips" | "market" | "vehicles" | "currency";
+type DashboardSection = "overview" | "inbox" | "requests" | "reviews" | "users" | "people" | "journeys" | "stays" | "trips" | "market" | "vehicles" | "currency";
 type CatalogCollection = "stays" | "trips" | "products" | "vehicles";
 type Row = Record<string, unknown>;
 
@@ -68,6 +68,7 @@ const navItems: { id: DashboardSection; label: string; caption: string; icon: st
   { id: "overview", label: "Overview", caption: "Control room", icon: "⌂" },
   { id: "inbox", label: "Live inbox", caption: "Chat with guests", icon: "◌" },
   { id: "requests", label: "Requests", caption: "Bookings & leads", icon: "▣" },
+  { id: "reviews", label: "Reviews", caption: "Moderation", icon: "★" },
   { id: "users", label: "User files", caption: "Insights & activity", icon: "◎" },
   { id: "people", label: "Users & roles", caption: "Access control", icon: "♙" },
   { id: "journeys", label: "Custom journeys", caption: "Trip builder requests", icon: "⌁" },
@@ -181,6 +182,8 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [stats, setStats] = useState<Record<string, number>>({});
   const [requests, setRequests] = useState<RequestRow[]>([]);
+  const [reviews, setReviews] = useState<AdminReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [catalog, setCatalog] = useState<Row[]>([]);
   const [catalogCollection, setCatalogCollection] = useState<CatalogCollection>("stays");
   const [catalogLoading, setCatalogLoading] = useState(false);
@@ -219,7 +222,10 @@ export default function AdminPage() {
     if (!needle) return users;
     return users.filter((user) => `${user.full_name} ${user.email} ${user.phone ?? ""}`.toLowerCase().includes(needle));
   }, [users, userSearch]);
-  const visibleNavItems = useMemo(() => role === "support" ? navItems.filter((item) => ["overview", "inbox", "requests"].includes(item.id)) : role === "editor" ? navItems.filter((item) => !["currency", "users", "people", "journeys"].includes(item.id)) : role === "admin" ? navItems.filter((item) => isSuperAdminUser || !["people", "journeys"].includes(item.id)) : navItems.filter((item) => !["users", "people", "journeys"].includes(item.id)), [isSuperAdminUser, role]);
+  const visibleNavItems = useMemo(() => {
+    const items = role === "support" ? navItems.filter((item) => ["overview", "inbox", "requests"].includes(item.id)) : role === "editor" ? navItems.filter((item) => !["currency", "users", "people", "journeys"].includes(item.id)) : role === "admin" ? navItems.filter((item) => isSuperAdminUser || !["people", "journeys"].includes(item.id)) : navItems.filter((item) => !["users", "people", "journeys"].includes(item.id));
+    return items.filter((item) => item.id !== "reviews" || role === "admin");
+  }, [isSuperAdminUser, role]);
 
   const loadNotifications = async () => {
     try {
@@ -265,6 +271,14 @@ export default function AdminPage() {
     const rows = await getAdminRequests();
     setRequests(rows.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)));
     setStats((current) => ({ ...current, requests: rows.filter((row) => ["new", "in_progress", "contacted"].includes(row.status)).length }));
+  };
+
+  const loadReviews = async (allowed = role === "admin") => {
+    if (!allowed) return;
+    setReviewsLoading(true);
+    try { setReviews(await getAdminReviews()); }
+    catch (error) { setError(getSubmissionErrorMessage(error, "Reviews could not be loaded.")); }
+    setReviewsLoading(false);
   };
 
   const loadStats = async () => {
@@ -315,7 +329,7 @@ export default function AdminPage() {
         setRole(identity.user.accessRole as AccessRole);
         setIsSuperAdminUser(identity.is_super_admin);
         setCheckingAccess(false);
-        await Promise.all([loadStats(), loadRequests(), loadConversations(), loadCurrencyRates(), loadNotifications(), loadUsers(true), loadManagedUsers(identity.is_super_admin), loadCustomJourneys()]);
+        await Promise.all([loadStats(), loadRequests(), loadReviews(identity.user.accessRole === "admin"), loadConversations(), loadCurrencyRates(), loadNotifications(), loadUsers(true), loadManagedUsers(identity.is_super_admin), loadCustomJourneys()]);
       } catch (error) {
         if (!active) return;
         setAccessError(getSubmissionErrorMessage(error, "Sign in with a staff account to enter the control room."));
@@ -341,6 +355,10 @@ export default function AdminPage() {
     const collection = section === "market" ? "products" : section;
     setCatalogCollection(collection as CatalogCollection);
     void loadCatalog(collection as CatalogCollection);
+  }, [section, role]);
+
+  useEffect(() => {
+    if (section === "reviews" && role === "admin") void loadReviews(true);
   }, [section, role]);
 
   useEffect(() => {
@@ -381,6 +399,17 @@ export default function AdminPage() {
     catch (error) { setError(getSubmissionErrorMessage(error, "The status could not be updated.")); return; }
     setRequests((current) => current.map((item) => item.id === row.id && item.table === row.table ? { ...item, status } : item));
     setNotice("Request status updated.");
+  };
+
+  const deleteReview = async (review: AdminReview) => {
+    if (role !== "admin") return;
+    if (!window.confirm(`Delete the review from “${review.full_name}”? This cannot be undone.`)) return;
+    setError("");
+    try { await deleteAdminReview(review.id); }
+    catch (error) { setError(getSubmissionErrorMessage(error, "The review could not be deleted.")); return; }
+    setReviews((current) => current.filter((item) => item.id !== review.id));
+    setNotice("Review deleted from the public site.");
+    void loadStats();
   };
 
   const saveCatalog = async (event: FormEvent<HTMLFormElement>) => {
@@ -484,7 +513,12 @@ export default function AdminPage() {
       void loadConversations(textValue(event, "entity_id"));
       return;
     }
-    if (["inquiry", "trip_booking", "stay_booking", "car_booking", "review"].includes(entityType) || ["inquiry", "booking", "review"].includes(eventType)) {
+    if (role === "admin" && (entityType === "review" || eventType === "review")) {
+      setSection("reviews");
+      void loadReviews(true);
+      return;
+    }
+    if (["inquiry", "trip_booking", "stay_booking", "car_booking"].includes(entityType) || ["inquiry", "booking"].includes(eventType)) {
       setSection("requests");
       void loadRequests();
       return;
@@ -506,7 +540,10 @@ export default function AdminPage() {
     } else if (item.entity_type === "conversation") {
       setSection("inbox");
       await loadConversations(item.entity_id ?? undefined);
-    } else if (["review", "inquiry", "trip_booking", "stay_booking", "car_booking"].includes(item.entity_type ?? "")) {
+    } else if (item.entity_type === "review" && role === "admin") {
+      setSection("reviews");
+      await loadReviews(true);
+    } else if (["inquiry", "trip_booking", "stay_booking", "car_booking"].includes(item.entity_type ?? "")) {
       setSection("requests");
       await loadRequests();
     } else if (item.event_type === "planner_complete") {
@@ -594,6 +631,8 @@ export default function AdminPage() {
           </section>}
 
           {section === "requests" && <section className="admin-panel admin-full-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Guest operations</p><h2>Every request, one clear next step.</h2></div><button type="button" onClick={() => { void loadRequests(); void loadStats(); }}>Refresh ↻</button></div><div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Guest</th><th>Route / request</th><th>Contact</th><th>Type</th><th>Status</th><th>Received</th></tr></thead><tbody>{requests.map((row) => <tr key={row.table + row.id}><td><strong>{row.name}</strong></td><td>{row.summary}</td><td>{row.contact}</td><td><span className={"admin-request-type " + row.source}>{row.source}</span></td><td><select value={row.status} onChange={(event) => void updateRequestStatus(row, event.target.value)} aria-label={"Update status for " + row.name}>{statusOptions.map((status) => <option key={status}>{status}</option>)}</select></td><td>{formatDate(row.created_at)}</td></tr>)}</tbody></table></div>{!requests.length && <div className="admin-empty">No requests found.</div>}</section>}
+
+          {section === "reviews" && role === "admin" && <section className="admin-panel admin-full-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Guest voice</p><h2>Reviews & moderation</h2><p>Manage every comment that appears in the public review carousel.</p></div><button type="button" onClick={() => void loadReviews(true)}>Refresh ↻</button></div>{reviewsLoading ? <div className="admin-empty">Loading reviews…</div> : <div className="admin-review-moderation-list">{reviews.map((review) => <article className="admin-review-moderation-card" key={review.id}><div className="admin-review-moderation-card-head"><div><strong>{review.full_name}</strong><small>{review.city_country} · {review.journey}</small></div><span>★ {review.rating}</span></div><blockquote>“{review.body}”</blockquote><div className="admin-review-moderation-card-meta"><span>{review.status}</span><span>{review.like_count} likes</span><time>{formatDate(review.created_at)}</time></div><div className="admin-catalog-card-actions"><button type="button" className="admin-danger-button" onClick={() => void deleteReview(review)}>Delete comment</button></div></article>)}{!reviews.length && <div className="admin-empty">No reviews found.</div>}</div>}</section>}
 
           {section === "inbox" && <section className="admin-inbox"><div className="admin-inbox-list admin-panel"><div className="admin-panel-head"><div><p className="admin-eyebrow">Live support</p><h2>Guest inbox</h2></div><button type="button" onClick={() => void loadConversations()}>Refresh ↻</button></div>{conversations.map((conversation) => <button type="button" key={conversation.id} className={"admin-conversation-row " + (selectedConversationId === conversation.id ? "active" : "")} onClick={() => setSelectedConversationId(conversation.id)}><img className="admin-avatar-image" src={conversation.user_avatar || chatUserAvatars[conversation.user_id] || DEFAULT_CHAT_AVATAR} alt="" /><span><strong>{chatUserNames[conversation.user_id] || conversation.user_name || "Guest traveler"}</strong><small>{conversation.subject}</small><em>{conversation.status}</em></span><time>{formatDate(conversation.last_message_at)}</time></button>)}{!conversations.length && <div className="admin-empty">No chat channels yet. New conversations will appear here.</div>}</div><div className="admin-chat-panel admin-panel">{selectedConversation ? <><div className="admin-panel-head"><div><p className="admin-eyebrow">Conversation</p><h2>{chatUserNames[selectedConversation.user_id] || selectedConversation.user_name || "Guest traveler"}</h2><small>Official AlpNile support · {selectedConversation.id}</small></div><select value={selectedConversation.status} onChange={(event) => void changeChatStatus(event.target.value as ChatStatus)} aria-label="Conversation status">{(["open", "pending", "resolved", "closed"] as ChatStatus[]).map((status) => <option key={status}>{status}</option>)}</select></div><div className="admin-chat-messages">{chatMessages.map((message) => { const isStaff = message.sender_role === "staff"; const avatar = isStaff ? OFFICIAL_ADMIN_AVATAR : message.sender_avatar || chatUserAvatars[selectedConversation.user_id] || DEFAULT_CHAT_AVATAR; return <article key={message.id} className={"admin-chat-message " + (isStaff ? "staff" : "guest")}><img className="admin-chat-avatar" src={avatar} alt="" /><div><small className="admin-chat-message-author" dir="auto">{isStaff ? "AlpNile support" : message.sender_name || chatUserNames[selectedConversation.user_id] || "Guest traveler"}</small>{message.body && <p dir="auto">{message.body}</p>}<ChatAttachment message={message} imageClassName="admin-chat-attachment-image" fileClassName="admin-chat-file" /><time>{formatDate(message.created_at)}</time></div></article>; })}</div><form className="admin-chat-composer" onSubmit={sendReply}><textarea rows={2} value={chatDraft} onChange={(event) => setChatDraft(event.target.value)} placeholder="Reply with care…" aria-label="Reply message" /><div><label className="admin-attach-button">Attach file<input type="file" accept="image/*,.pdf,.txt,.doc,.docx" hidden onChange={(event) => setChatFile(event.target.files?.[0] ?? null)} /></label><span>{chatFile?.name || "Images and files up to 10 MB"}</span><button type="submit" className="admin-button" disabled={chatSending}>{chatSending ? "Sending…" : "Send reply ↗"}</button></div></form></> : <div className="admin-empty">Select a conversation to reply.</div>}</div></section>}
 
