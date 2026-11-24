@@ -7,6 +7,7 @@ import { LocalizedPrice } from "../../components/currency";
 import { catalogGalleryLabel, readCatalogGalleryState } from "../../lib/catalog-gallery";
 import { getAuthSession } from "../../lib/auth-client";
 import { getCatalogFavorites, toggleCatalogFavorite } from "../../lib/intelligence-client";
+import { SITE_CONTACT } from "../../lib/site-config";
 
 type Props = {
   product: BazaarProduct;
@@ -113,7 +114,7 @@ export default function ProductDetailClient({ product, gallery }: Props) {
             <p className="bazaar-detail-description">{product.description}</p>
             <div className="bazaar-detail-price"><span>Starting price</span><strong><LocalizedPrice amount={product.price} /></strong></div>
             <dl className="bazaar-detail-specs"><div><dt>Made in</dt><dd>{product.origin}</dd></div><div><dt>Material</dt><dd>{product.material}</dd></div><div><dt>Collection</dt><dd>AlpNile Bazaar</dd></div></dl>
-            <div className="bazaar-detail-actions">{canUseTravelerTools && <button type="button" className="bazaar-favorite-button modal-favorite" onClick={() => void toggleSaved()}><span aria-hidden="true">{saved ? "♥" : "♡"}</span> {saved ? "Saved" : "Save"}</button>}{!isAdmin && <button type="button" className="bazaar-primary-button" onClick={addToBag}>{added ? "Added to bag ✓" : "Add to bag"} <Arrow /></button>}<a className="bazaar-secondary-link" href={`mailto:hello@alpnile.com?subject=${encodeURIComponent(`Bazaar request: ${product.name}`)}`}>Ask about this piece <Arrow /></a></div>
+            <div className="bazaar-detail-actions">{canUseTravelerTools && <button type="button" className="bazaar-favorite-button modal-favorite" onClick={() => void toggleSaved()}><span aria-hidden="true">{saved ? "♥" : "♡"}</span> {saved ? "Saved" : "Save"}</button>}{!isAdmin && <button type="button" className="bazaar-primary-button" onClick={addToBag}>{added ? "Added to bag ✓" : "Add to bag"} <Arrow /></button>}<a className="bazaar-secondary-link" href={`mailto:${SITE_CONTACT.email}?subject=${encodeURIComponent(`Bazaar request: ${product.name}`)}`}>Ask about this piece <Arrow /></a></div>
             <p className="bazaar-detail-support"><span aria-hidden="true">✦</span> Handmade in Egypt · availability and shipping confirmed personally by AlpNile.</p>
           </section>
         </div>

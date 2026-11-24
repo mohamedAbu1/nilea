@@ -8,6 +8,7 @@ import { categories, products, type BazaarProduct, type CartLine, type ProductCa
 import { LocalizedPrice, useCurrency } from "../components/currency";
 import { getAuthSession } from "../lib/auth-client";
 import { getCatalogFavorites, toggleCatalogFavorite } from "../lib/intelligence-client";
+import { SITE_CONTACT } from "../lib/site-config";
 const pageSize = 9;
 
 function Arrow() {
@@ -128,8 +129,8 @@ export default function MarketPage() {
 
   const removeFromCart = (slug: string) => setCartLines((lines) => lines.filter((line) => line.slug !== slug));
 
-  const requestLink = selected ? `mailto:hello@alpnile.com?subject=${encodeURIComponent(`Bazaar request: ${selected.name}`)}&body=${encodeURIComponent(`Hello AlpNile, I would like to ask about the ${selected.name}.`)}` : "#";
-  const checkoutLink = `mailto:hello@alpnile.com?subject=${encodeURIComponent("Bazaar order request")}&body=${encodeURIComponent(`Hello AlpNile, I would like to request checkout for:\n${cartItems.map((item) => `- ${item.product.name} × ${item.quantity} = ${format(item.product.price * item.quantity)}`).join("\n")}\n\nEstimated subtotal: ${format(cartSubtotal)}`)}`;
+  const requestLink = selected ? `mailto:${SITE_CONTACT.email}?subject=${encodeURIComponent(`Bazaar request: ${selected.name}`)}&body=${encodeURIComponent(`Hello AlpNile, I would like to ask about the ${selected.name}.`)}` : "#";
+  const checkoutLink = `mailto:${SITE_CONTACT.email}?subject=${encodeURIComponent("Bazaar order request")}&body=${encodeURIComponent(`Hello AlpNile, I would like to request checkout for:\n${cartItems.map((item) => `- ${item.product.name} × ${item.quantity} = ${format(item.product.price * item.quantity)}`).join("\n")}\n\nEstimated subtotal: ${format(cartSubtotal)}`)}`;
 
   return (
     <main className="bazaar-page">

@@ -12,6 +12,7 @@ import { subscribeToNewsletter } from "../lib/submissions";
 import { CurrencySwitcher } from "./currency";
 import { AdminDashboardIcon } from "./admin-dashboard-icon";
 import AdminHeaderTools from "./admin-header-tools";
+import { SITE_CONTACT } from "../lib/site-config";
 
 type NavKey = "home" | "about" | "contact" | "trips";
 
@@ -44,9 +45,9 @@ const searchItems = [
 ];
 
 const footerContact = {
-  phone: "+20 100 271 2064",
-  secondaryPhone: "+41 76 508 2885",
-  email: "hello@alpnile.com",
+  phone: SITE_CONTACT.phoneDisplay,
+  phoneTel: SITE_CONTACT.phoneTel,
+  email: SITE_CONTACT.email,
   address: "Luxor, Egypt",
   hours: "Open 24 hours",
 };
@@ -54,7 +55,7 @@ const footerContact = {
 const socialLinks = [
   { label: "Instagram", handle: "@alpnile", href: "https://www.instagram.com/alpnile/", kind: "instagram" },
   { label: "Facebook", handle: "AlpNile", href: "https://www.facebook.com/profile.php?id=61596060581090", kind: "facebook" },
-  { label: "Gmail", handle: "hello@alpnile.com", href: "mailto:hello@alpnile.com", kind: "gmail" },
+  { label: "Email", handle: SITE_CONTACT.email, href: `mailto:${SITE_CONTACT.email}`, kind: "gmail" },
   { label: "Tripadvisor", handle: "AlpNile", href: "https://www.tripadvisor.com/Search?q=AlpNile", kind: "tripadvisor" },
   { label: "TikTok", handle: "@alpnile", href: "https://www.tiktok.com/@alpnile", kind: "tiktok" },
 ] as const;
@@ -354,8 +355,7 @@ export function SiteFooter() {
         </div>
         <div className="site-footer-contact">
           <p className="site-footer-label">Talk to us</p>
-          <a href={`tel:${footerContact.phone.replace(/\s/g, "")}`} className="site-footer-contact-phone">{footerContact.phone}</a>
-          <a href={`tel:${footerContact.secondaryPhone.replace(/\s/g, "")}`} className="site-footer-contact-secondary">{footerContact.secondaryPhone}</a>
+          <a href={`tel:${footerContact.phoneTel}`} className="site-footer-contact-phone">{footerContact.phone}</a>
           <a href={`mailto:${footerContact.email}`} className="site-footer-contact-email">{footerContact.email}</a>
           <span>{footerContact.address} · {footerContact.hours}</span>
           <Link href="/trip-planner" className="site-footer-plan">Plan a journey <span aria-hidden="true">↗</span></Link>

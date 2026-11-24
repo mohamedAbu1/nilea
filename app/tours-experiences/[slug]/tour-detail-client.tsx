@@ -8,11 +8,12 @@ import { getOptionalExcursions, getSimilarTours, getTourGallery, type TourDetail
 import { catalogGalleryLabel, readCatalogGalleryState } from "../../lib/catalog-gallery";
 import { useCurrency, type CurrencyCode } from "../../components/currency";
 import { trackCatalogEvent } from "../../lib/intelligence-client";
+import { SITE_CONTACT } from "../../lib/site-config";
 
 type BookingStep = "details" | "payment" | "success";
 type PaymentMethod = "visa" | "paypal" | "reservation" | "arrival";
 
-const whatsAppNumber = "41765082885";
+const whatsAppNumber = SITE_CONTACT.whatsappNumber;
 
 function addDays(date: string, days: number) {
   const result = new Date(`${date}T12:00:00`);

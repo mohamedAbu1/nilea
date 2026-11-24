@@ -11,6 +11,7 @@ import { slugifyTourName } from "../lib/tour-details";
 import { catalogTripFixes, cleanCatalogText, normalizeCatalogCity } from "../lib/tour-fixes";
 import { useCurrency } from "../components/currency";
 import { trackCatalogEvent } from "../lib/intelligence-client";
+import { SITE_CONTACT } from "../lib/site-config";
 
 type IconName = "search" | "menu" | "close" | "arrow" | "pin" | "calendar" | "users" | "heart" | "clock" | "heritage" | "desert" | "nile" | "food" | "family" | "all";
 type CuratedCategory = "Heritage" | "Desert" | "Nile" | "Food" | "Family";
@@ -223,7 +224,7 @@ const categories: { label: FilterCategory; icon: IconName }[] = [
 const destinationOptions = ["All Egypt", "Safaga", ...Array.from(new Set([...legacyCatalog.cities.map((city) => normalizeCatalogCity(city.name)), ...addedTours.flatMap((tour) => tour.city.split(" · ")), "Hurghada"]))];
 const destinationQueryMap: Record<string, string> = { safaga: "Safaga", "marsa-alam": "Marsa Alam", fayoum: "Fayoum", luxor: "Luxor", aswan: "Aswan", cairo: "Cairo", hurghada: "Hurghada", hurgada: "Hurghada", alexandria: "Alexandria", "sharm-el-sheikh": "Sharm El Sheikh", siwa: "Siwa" };
 const experienceQueryMap: Record<string, string> = { "temples-after-dark": "A Night at the Temple", "food-walk": "Cairo Food Walk", "nile-sunset": "Nile Sunset Cruise" };
-const whatsAppNumber = "41765082885";
+const whatsAppNumber = SITE_CONTACT.whatsappNumber;
 const PAGE_SIZE = 9;
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {

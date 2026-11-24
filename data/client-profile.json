@@ -1,20 +1,15 @@
 {
   "client": {
     "nameAr": "محمود محمد شحاته",
-    "email": "alpnile@gmail.com",
+    "email": "info@alpnile.com",
     "businessName": "alpnile",
     "address": "Luxor, Egypt",
     "hours": "Open 24 hours",
     "phones": [
       {
         "label": "Egypt",
-        "display": "٠١٠٠٢٧١٢٠٦٤",
-        "international": "+201002712064"
-      },
-      {
-        "label": "Switzerland",
-        "display": "٠٠٤١٧٦٥٠٨٢٨٨٥",
-        "international": "+41765082885"
+        "display": "01018539889",
+        "international": "+201018539889"
       }
     ]
   },

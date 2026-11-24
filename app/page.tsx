@@ -9,6 +9,7 @@ import { getSubmissionErrorMessage, insertCarBooking, insertInquiry, insertRevie
 import { getAuthSession } from "./lib/auth-client";
 import type { AccountProfile } from "./lib/auth-client";
 import { AdminDashboardIcon } from "./components/admin-dashboard-icon";
+import { SITE_CONTACT } from "./lib/site-config";
 
 type Category = {
   title: string;
@@ -43,8 +44,8 @@ type Review = {
 
 type InquiryMode = "trip" | "stay" | "car" | "market" | "contact";
 
-const whatsAppNumber = "41765082885";
-const whatsAppDisplayNumber = "+41 76 508 2885";
+const whatsAppNumber = SITE_CONTACT.whatsappNumber;
+const whatsAppDisplayNumber = SITE_CONTACT.phoneDisplay;
 const inquiryModes: { key: InquiryMode; label: string; eyebrow: string; title: string; button: string }[] = [
   { key: "trip", label: "Plan a trip", eyebrow: "TRIP CONCIERGE", title: "Shape the journey around you.", button: "Send trip brief" },
   { key: "stay", label: "Find a stay", eyebrow: "STAY CONCIERGE", title: "Find a place that feels like yours.", button: "Check stay options" },

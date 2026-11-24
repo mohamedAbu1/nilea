@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SITE_CONTACT } from "../lib/site-config";
 
 type PolicySection = {
   id: string;
@@ -27,7 +28,7 @@ export function PolicyPage({ eyebrow, title, intro, updated, sections, accent }:
         </aside>
         <article className="policy-content">
           {sections.map((section, index) => <section key={section.id} id={section.id} className={`policy-section policy-section-${index + 1}`}><div className="policy-section-seal" aria-hidden="true"><span>𓂀</span><small>0{index + 1}</small></div><div className="policy-section-heading"><p>Chapter 0{index + 1}</p><h2>{section.title}</h2></div>{section.body && <p>{section.body}</p>}{section.items && <ul>{section.items.map((item) => <li key={item}>{item}</li>)}</ul>}</section>)}
-          <div className="policy-contact"><span className="policy-contact-icon" aria-hidden="true">✦</span><div><strong>Need a clearer answer?</strong><p>We keep every journey human. Reach out before you book and our team will help you understand the details.</p></div><a href="mailto:hello@alpnile.com" aria-label="Email AlpNile">Contact us <span aria-hidden="true">↗</span></a></div>
+          <div className="policy-contact"><span className="policy-contact-icon" aria-hidden="true">✦</span><div><strong>Need a clearer answer?</strong><p>We keep every journey human. Reach out before you book and our team will help you understand the details.</p></div><a href={`mailto:${SITE_CONTACT.email}`} aria-label="Email AlpNile">Contact us <span aria-hidden="true">↗</span></a></div>
         </article>
       </div>
     </main>
