@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const principles = [
   {
@@ -66,7 +67,7 @@ export default function AboutPage() {
         <div className="collection-art" aria-label="3D pharaonic AlpNile avatar">
           <div className="collection-art-ring collection-art-ring-one" />
           <div className="collection-art-ring collection-art-ring-two" />
-          <img className="collection-art-avatar" src="/alpnile-avatar-woman-queen-v1.webp" alt="3D pharaonic woman avatar" />
+          <Image className="collection-art-avatar" src="/alpnile-avatar-woman-queen-v1.webp" alt="3D pharaonic woman avatar" width={1254} height={1254} sizes="(max-width: 760px) 76vw, 33vw" quality={60} />
           <div className="collection-art-core"><span>𓂀</span></div>
           <div className="collection-art-label">ALPNILE / 2026</div>
         </div>
