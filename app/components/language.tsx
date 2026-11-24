@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { additionalTranslations } from "./additional-translations";
 import { remainingTranslations } from "./remaining-translations";
 import { completeTranslations } from "./complete-translations";
@@ -609,7 +609,7 @@ function translateExact(text: string, locale: LocaleCode) {
   return `${leading}${translated}${trailing}`;
 }
 
-function translateDocument(locale: LocaleCode) {
+function translateDocument(locale: LocaleCode, observe = true) {
   if (typeof document === "undefined" || !document.body) return () => undefined;
   let translating = false;
   let frame = 0;
@@ -646,6 +646,7 @@ function translateDocument(locale: LocaleCode) {
     });
   };
   apply();
+  if (!observe) return () => undefined;
   const observer = new MutationObserver(() => {
     if (translating || scheduled) return;
     scheduled = true;
@@ -663,6 +664,7 @@ function translateDocument(locale: LocaleCode) {
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<LocaleCode>("en");
   const [hydrated, setHydrated] = useState(false);
+  const hasHydratedLocale = useRef(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("alpnile-locale") as LocaleCode | null;
@@ -678,7 +680,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const pageTitles: Record<string, string> = { "/": "A Thousand Stories", "/about": "About", "/destinations": "Destinations", "/market": "Travel Market", "/stays-hotels": "Stays & Hotels", "/tours-experiences": "Tours & Experiences", "/travel-transport": "Travel & Transport", "/trip-planner": "Smart Trip Planner", "/contact": "Contact", "/site-policy": "Site Policy", "/financial-policy": "Financial Policy", "/404": "404", "/500": "500" };
     const title = pageTitles[window.location.pathname] ?? "A Thousand Stories";
     document.title = `AlpNile — ${translateExact(title, locale)}`;
-    return translateDocument(locale);
+    const isInitialEnglishRender = !hasHydratedLocale.current && locale === "en";
+    hasHydratedLocale.current = true;
+    if (isInitialEnglishRender) return undefined;
+    return translateDocument(locale, locale !== "en");
   }, [locale, hydrated]);
 
   const value = useMemo(() => ({ locale, setLocale: (next: LocaleCode) => setLocaleState(next), t: (text: string) => translateExact(text, locale) }), [locale]);
