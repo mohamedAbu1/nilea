@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   allowedDevOrigins: ["localhost", "127.0.0.1"],
+  images: {
+    qualities: [50, 60, 75],
+  },
   experimental: {
     inlineCss: true,
   },
