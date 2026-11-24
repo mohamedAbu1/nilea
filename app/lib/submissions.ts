@@ -34,8 +34,13 @@ export async function currentUserId() {
 }
 
 export async function insertInquiry(payload: InquiryPayload) {
-  try { await request("inquiry", payload as unknown as Record<string, unknown>); return { error: null }; }
-  catch (error) { return { error: error instanceof Error ? error : new Error("The inquiry could not be saved.") }; }
+  try { return { data: await request<{ id: string }>("inquiry", payload as unknown as Record<string, unknown>), error: null }; }
+  catch (error) { return { data: null, error: error instanceof Error ? error : new Error("The inquiry could not be saved.") }; }
+}
+
+export async function cancelInquiry(id: string) {
+  try { return { data: await request<{ cancelled: boolean }>("cancel-inquiry", { id }), error: null }; }
+  catch (error) { return { data: null, error: error instanceof Error ? error : new Error("The request could not be cancelled.") }; }
 }
 
 export type TripBookingPayload = {

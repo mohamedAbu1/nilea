@@ -9686,6 +9686,11 @@ form .site-select:focus,
 .villa-primary-button:disabled { cursor: wait; opacity: .6; transform: none; }
 .villa-outline-button { border: 1px solid #c4d9cd; color: #2e6459; background: #fff; }
 .villa-outline-button:hover { background: #f1f8f2; }
+.villa-success-actions { display: grid; width: 100%; gap: 9px; }
+.villa-success-actions .villa-primary-button, .villa-success-actions .villa-outline-button, .villa-cancel-button { width: 100%; }
+.villa-cancel-button { min-height: 40px; border: 1px solid #e5b4aa; border-radius: 999px; color: #a9493d; background: #fff8f6; font: inherit; font-size: 10px; font-weight: 800; cursor: pointer; }
+.villa-cancel-button:hover { border-color: #a9493d; background: #fff0ed; }
+.villa-cancel-button:disabled { cursor: wait; opacity: .6; }
 .villa-booking-error { margin: 0; color: #a9493d !important; font-size: 9px !important; line-height: 1.45 !important; }
 .villa-booking-note { display: flex; align-items: center; justify-content: center; gap: 5px; margin: 0 !important; color: #91a099 !important; font-size: 8px !important; line-height: 1.4 !important; text-align: center; }
 .villa-total-box { display: grid; gap: 9px; padding-top: 14px; border-top: 1px solid #e2eae3; }
@@ -10940,12 +10945,13 @@ footer.site-market-chrome .site-footer-newsletter-success { color: #abd9b2; }
 .alpnile-chat-composer { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 7px; border-top: 1px solid rgba(121, 217, 203, .14); padding: 10px; background: rgba(4, 15, 24, .88); }
 .alpnile-chat-composer textarea { width: 100%; min-height: 38px; max-height: 90px; resize: vertical; border: 1px solid rgba(121, 217, 203, .2); border-radius: 11px; padding: 10px; color: #f4eee1; background: rgba(121, 217, 203, .05); font: inherit; font-size: 12px; outline: none; }
 .alpnile-chat-composer textarea:focus { border-color: #f4c577; }
-.alpnile-chat-tools { position: relative; display: flex; gap: 3px; }
-.alpnile-chat-tools > button { border: 0; color: rgba(244, 238, 225, .64); background: transparent; font-size: 19px; cursor: pointer; }
+.alpnile-chat-tools { position: relative; z-index: 2; display: flex; gap: 3px; }
+.alpnile-chat-tools > button { display: grid; width: 31px; height: 38px; place-items: center; border: 0; border-radius: 9px; color: rgba(244, 238, 225, .64); background: transparent; font-size: 19px; cursor: pointer; }
+.alpnile-chat-tools > button:hover, .alpnile-chat-tools > button[aria-expanded="true"] { color: #f4c577; background: rgba(244, 197, 119, .11); }
 .alpnile-chat-send { width: 38px; height: 38px; border: 0; border-radius: 11px; color: #24180b; background: #f4c577; font-size: 17px; cursor: pointer; }
 .alpnile-chat-send:disabled { cursor: not-allowed; opacity: .45; }
-.alpnile-chat-emoji-menu { position: absolute; right: -3px; bottom: 37px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; width: 174px; border: 1px solid rgba(121, 217, 203, .24); border-radius: 12px; padding: 7px; background: #0b2934; box-shadow: 0 14px 40px rgba(0, 0, 0, .35); }
-.alpnile-chat-emoji-menu button { border: 0; border-radius: 6px; padding: 5px; background: transparent; font-size: 17px; cursor: pointer; }
+.alpnile-chat-emoji-menu { position: absolute; left: 0; bottom: calc(100% + 8px); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; width: min(198px, calc(100vw - 56px)); border: 1px solid rgba(121, 217, 203, .3); border-radius: 14px; padding: 8px; background: #0b2934; box-shadow: 0 14px 40px rgba(0, 0, 0, .42); }
+.alpnile-chat-emoji-menu button { display: grid; min-width: 0; aspect-ratio: 1; place-items: center; border: 0; border-radius: 8px; padding: 3px; background: transparent; font-size: 19px; line-height: 1; cursor: pointer; }
 .alpnile-chat-emoji-menu button:hover { background: rgba(244, 197, 119, .14); }
 .alpnile-chat-file-preview, .alpnile-chat-error { margin: 0; padding: 8px 12px; font-size: 10px; }
 .alpnile-chat-file-preview { color: #79d9cb; background: rgba(121, 217, 203, .08); }

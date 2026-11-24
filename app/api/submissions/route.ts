@@ -35,12 +35,24 @@ export async function POST(request: Request) {
     const action = String(input.action ?? "");
     const user = await getCurrentUser();
     if (["inquiry", "trip-booking", "car-booking", "review"].includes(action) && !user) throw new Error("Please sign in before sending this request.");
+    if (action === "cancel-inquiry") {
+      if (!user) throw new Error("Please sign in before cancelling this request.");
+      const inquiryId = String(input.id ?? "").trim();
+      if (!/^[a-f0-9-]{36}$/i.test(inquiryId)) throw new Error("Invalid request reference.");
+      const rows = await query<{ id: string; status: string }[]>("SELECT id, status FROM inquiries WHERE id = ? AND user_id = ? AND request_type = 'stay' LIMIT 1", [inquiryId, user.id]);
+      if (!rows[0]) throw new Error("This stay request could not be found in your account.");
+      if (rows[0].status !== "cancelled") {
+        await query("UPDATE inquiries SET status = 'cancelled' WHERE id = ? AND user_id = ?", [inquiryId, user.id]);
+        notifyAdmins({ eventType: "inquiry_cancelled", title: "Stay request cancelled", body: `${user.name} cancelled a stay request.`, userId: user.id, entityType: "inquiry", entityId: inquiryId, metadata: { requestType: "stay" } });
+      }
+      return Response.json({ data: { cancelled: true } });
+    }
     if (action === "inquiry") {
       const id = randomUUID();
       await query("INSERT INTO inquiries (id, user_id, request_type, full_name, email, phone, message, details, source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [id, user?.id ?? null, input.request_type, input.full_name, input.email || null, input.phone || null, input.message || null, JSON.stringify(input.details ?? {}), input.source || "website"]);
       recordUserEvent(user?.id, "inquiry", "site", id, { requestType: input.request_type, source: input.source || "website" });
       notifyAdmins({ eventType: "inquiry_created", title: "New guest request", body: `${String(input.full_name || user?.name || "A traveler")} sent a new ${String(input.request_type || "site")} request.`, userId: user?.id, entityType: "inquiry", entityId: id, metadata: { source: input.source || "website" } });
-      return Response.json({ data: { saved: true } });
+      return Response.json({ data: { id, saved: true } });
     }
     if (action === "trip-booking") {
       const id = randomUUID();

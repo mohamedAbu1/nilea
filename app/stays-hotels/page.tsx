@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
-import { getSubmissionErrorMessage, insertInquiry } from "../lib/submissions";
+import { cancelInquiry, getSubmissionErrorMessage, insertInquiry } from "../lib/submissions";
 import { getAuthSession } from "../lib/auth-client";
 import { getDestinationLabel, normalizeDestinationId } from "../lib/travel-availability";
 import { LocalizedPrice, useCurrency } from "../components/currency";
@@ -470,6 +470,9 @@ function VillaDetailPage({ slug }: { slug: string }) {
   const [bookingStep, setBookingStep] = useState<1 | 2>(1);
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [bookingReference, setBookingReference] = useState("");
+  const [bookingRequestId, setBookingRequestId] = useState("");
+  const [bookingCancelled, setBookingCancelled] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: "", email: "", phone: "" });
   const [bookingMessage, setBookingMessage] = useState("");
   const [bookingSavedLocally, setBookingSavedLocally] = useState(false);
   const [bookingError, setBookingError] = useState("");
@@ -482,7 +485,12 @@ function VillaDetailPage({ slug }: { slug: string }) {
   const externalListings = externalListingLinks(activeStay);
 
   useEffect(() => {
-    void getAuthSession().then((session) => { setAccountRole(session?.user.accessRole ?? null); setAccountLoaded(true); });
+    void getAuthSession().then((session) => {
+      const user = session?.user;
+      setAccountRole(user?.accessRole ?? null);
+      setAccountLoaded(true);
+      if (user) setContactForm((current) => ({ name: current.name || user.name, email: current.email || user.email, phone: current.phone || user.phone || "" }));
+    });
   }, []);
 
   useEffect(() => {
@@ -505,6 +513,29 @@ function VillaDetailPage({ slug }: { slug: string }) {
     setCheckOut(nextRange.checkOut);
     setCalendarMonth(monthStart(nextRange.checkIn));
     setShareOpen(false);
+    setBookingError("");
+    setBookingCancelled(false);
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(`alpnile-${activeStay.slug}-last-booking`) ?? "null") as { id?: string; reference?: string; checkIn?: string; checkOut?: string; guests?: number; name?: string; status?: string } | null;
+      if (stored?.reference) {
+        setBookingReference(stored.reference);
+        setBookingRequestId(stored.id ?? "");
+        setBookingCancelled(stored.status === "cancelled");
+        setBookingSavedLocally(stored.status === "draft");
+        if (stored.checkIn) setCheckIn(stored.checkIn);
+        if (stored.checkOut) setCheckOut(stored.checkOut);
+        if (stored.guests) setGuests(stored.guests);
+        if (stored.name) setContactForm((current) => ({ ...current, name: current.name || stored.name || "" }));
+      } else {
+        setBookingReference("");
+        setBookingRequestId("");
+        setBookingSavedLocally(false);
+      }
+    } catch {
+      setBookingReference("");
+      setBookingRequestId("");
+      setBookingSavedLocally(false);
+    }
   }, [activeStay.slug]);
 
   useEffect(() => {
@@ -606,10 +637,9 @@ function VillaDetailPage({ slug }: { slug: string }) {
     setBookingError("");
     setBookingSavedLocally(false);
     setSubmitting(true);
-    const form = new FormData(event.currentTarget);
-    const name = String(form.get("name") ?? "").trim();
-    const email = String(form.get("email") ?? "").trim();
-    const phone = String(form.get("phone") ?? "").trim();
+    const name = contactForm.name.trim();
+    const email = contactForm.email.trim();
+    const phone = contactForm.phone.trim();
     if (!name || !email || !phone) {
       setBookingError("Please complete your name, email and WhatsApp number.");
       setSubmitting(false);
@@ -617,8 +647,11 @@ function VillaDetailPage({ slug }: { slug: string }) {
     }
     const reference = `HABU-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     const result = await insertInquiry({ request_type: "stay", full_name: name, email, phone, message: `Booking request for ${activeStay.title} from ${checkIn} to ${checkOut}.`, details: { property: activeStay.title, checkIn, checkOut, guests, nights, extras: selectedExtras, total, reference }, source: activeStay.slug });
+    const requestId = result.data?.id ?? "";
+    setBookingRequestId(requestId);
+    setBookingCancelled(false);
     try {
-      window.localStorage.setItem(`alpnile-${activeStay.slug}-last-booking`, JSON.stringify({ reference, checkIn, checkOut, guests, total, name }));
+      window.localStorage.setItem(`alpnile-${activeStay.slug}-last-booking`, JSON.stringify({ id: requestId, reference, checkIn, checkOut, guests, total, name, status: result.error ? "draft" : "active" }));
     } catch {
       // The confirmation still explains the status when browser storage is unavailable.
     }
@@ -628,6 +661,30 @@ function VillaDetailPage({ slug }: { slug: string }) {
       ? getSubmissionErrorMessage(result.error, "We couldn’t send this request. It is saved on this device as a draft, not confirmed with the AlpNile stays team.")
       : "Your request has been sent to the AlpNile stays team. We will confirm availability shortly.");
     setSubmitting(false);
+  };
+
+  const cancelBooking = async () => {
+    if (!bookingRequestId) {
+      setBookingError("This older request has no account reference to cancel. Please contact the AlpNile team.");
+      return;
+    }
+    setBookingError("");
+    setSubmitting(true);
+    const result = await cancelInquiry(bookingRequestId);
+    if (result.error) {
+      setBookingError(getSubmissionErrorMessage(result.error, "We couldn’t cancel this request. Please try again."));
+      setSubmitting(false);
+      return;
+    }
+    setBookingCancelled(true);
+    setBookingMessage("Your stay request has been cancelled. The AlpNile team has been notified.");
+    setSubmitting(false);
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(`alpnile-${activeStay.slug}-last-booking`) ?? "{}") as Record<string, unknown>;
+      window.localStorage.setItem(`alpnile-${activeStay.slug}-last-booking`, JSON.stringify({ ...stored, status: "cancelled" }));
+    } catch {
+      // The server record is already cancelled even if local storage is unavailable.
+    }
   };
 
   return (
@@ -647,7 +704,7 @@ function VillaDetailPage({ slug }: { slug: string }) {
           <section className="villa-section villa-activities-section"><div className="villa-section-heading"><div><p className="villa-eyebrow">Local experiences · {activeStay.location}</p><h2>Make the stay yours</h2></div><span className="villa-section-count">{activeStay.activities.length} options</span></div><div className="villa-activities-grid">{activeStay.activities.map((activity) => <article className="villa-activity-card" key={activity.id}><span className="villa-activity-icon"><Icon name={activity.icon} size={19} /></span><div><span className="villa-activity-duration">{activity.duration}</span><h3>{activity.title}</h3><p>{activity.detail}</p></div><strong>From <LocalizedPrice amount={activity.price} /></strong></article>)}</div><p className="villa-activities-note">Add any experience to your request and the local AlpNile team will confirm availability with your stay.</p></section>
           <section className="villa-section villa-policy-section"><div><p className="villa-eyebrow">Good to know</p><h2>Before you book</h2></div><div className="villa-policies"><div><strong>Check-in</strong><span>From 15:00 · self check-in support available</span></div><div><strong>Check-out</strong><span>Before 11:00</span></div><div><strong>House rules</strong><span>No parties · no smoking indoors · quiet hours after 22:00</span></div><div><strong>Cancellation</strong><span>Flexible request review before confirmation</span></div></div></section>
         </div>
-        {isAdmin ? <aside className="villa-booking-rail admin-public-booking-gate" id="villa-booking-card"><span className="admin-public-gate-icon">✦</span><p className="villa-eyebrow">ALPNILE CONTROL ROOM</p><h2>Guest stay requests are hidden in admin view.</h2><p>Use the requests workspace to review bookings and the traveler profile behind each route.</p><Link href="/admin" className="villa-primary-button">Open admin requests <Icon name="arrow" size={16} /></Link></aside> : <aside className="villa-booking-rail" id="villa-booking-card"><div className="villa-booking-card"><div className="villa-booking-card-head"><div><p className="villa-eyebrow">Book direct with AlpNile</p><h2>Make it yours</h2></div><div className="villa-price"><strong><LocalizedPrice amount={nightlyRate} /></strong><span>starting rate · per night</span></div></div><div className="villa-booking-steps"><span className={bookingStep === 1 ? "active" : "done"}><b>{bookingStep === 1 ? "1" : "✓"}</b> Dates</span><i /><span className={bookingStep === 2 ? "active" : ""}><b>2</b> Details</span></div>{bookingReference ? <div className="villa-booking-success"><span className="villa-success-icon"><Icon name={bookingSavedLocally ? "lock" : "check"} size={23} /></span><p className="villa-eyebrow">{bookingSavedLocally ? "Saved locally · not sent" : "Request received"}</p><h3>{bookingSavedLocally ? "Your request is ready to send." : "We&apos;re on it."}</h3><p>{bookingMessage}</p><div className="villa-reference"><span>Reference</span><strong>{bookingReference}</strong></div><div className="villa-success-summary"><span>{formatDate(checkIn)} → {formatDate(checkOut)}</span><span>{guests} guests · {nights} nights</span><strong><LocalizedPrice amount={total} /></strong></div><button type="button" className="villa-outline-button" onClick={() => { setBookingReference(""); setBookingStep(1); }}>Start another request</button></div> : <form onSubmit={submitBooking} className="villa-booking-form"><div className="villa-calendar-shell"><div className="villa-calendar-header"><button type="button" onClick={() => moveCalendar(-1)} disabled={calendarMonth <= monthStart(todayKey)} aria-label="Previous month">‹</button><strong>{calendarMonth.toLocaleDateString("en", { month: "long", year: "numeric" })}</strong><button type="button" onClick={() => moveCalendar(1)} aria-label="Next month">›</button></div><div className="villa-calendar-weekdays">{["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => <span key={day}>{day}</span>)}</div><div className="villa-calendar-grid">{cells.map((day, index) => { if (!day) return <span className="villa-calendar-empty" key={`empty-${index}`} />; const value = dateKey(day); const isPast = value < todayKey; const isBlocked = blockedDates.includes(value); const isUnavailable = isPast || isBlocked; const isStart = value === checkIn; const isEnd = value === checkOut; const isRange = Boolean(checkIn && checkOut && value > checkIn && value < checkOut); return <button type="button" key={value} disabled={isUnavailable} className={[isStart ? "selected start" : "", isEnd ? "selected end" : "", isRange ? "in-range" : "", isPast ? "past" : "", isBlocked ? "blocked" : ""].filter(Boolean).join(" ")} onClick={() => selectCalendarDate(value)} aria-label={isBlocked ? `${formatDate(value)} · booked` : formatDate(value)} aria-pressed={isStart || isEnd}>{day.getDate()}</button>; })}</div><div className="villa-calendar-selection"><span><small>Check-in</small><strong>{formatDate(checkIn)}</strong></span><span><small>Check-out</small><strong>{formatDate(checkOut)}</strong></span></div><div className="villa-calendar-legend"><span><i className="available" /> Available</span><span><i className="booked" /> Booked</span></div></div><label className="villa-field"><span>Guests</span><div><Icon name="users" size={16} /><select value={guests} onChange={(event) => setGuests(Number(event.target.value))}><option value={1}>1 guest</option><option value={2}>2 guests</option><option value={3}>3 guests</option><option value={4}>4 guests</option></select></div></label>{bookingStep === 2 && <div className="villa-contact-fields"><label className="villa-field"><span>Full name</span><input name="name" placeholder="Your name" required /></label><label className="villa-field"><span>Email address</span><input name="email" type="email" placeholder="you@example.com" required /></label><label className="villa-field"><span>WhatsApp number</span><input name="phone" placeholder="+20 ..." required /></label></div>}<div className="villa-extras"><div className="villa-form-label">Optional add-ons &amp; local experiences</div>{bookingExtras.map((extra) => <label className={`villa-extra ${selectedExtras.includes(extra.id) ? "selected" : ""}`} key={extra.id}><input type="checkbox" checked={selectedExtras.includes(extra.id)} onChange={() => setSelectedExtras((items) => items.includes(extra.id) ? items.filter((item) => item !== extra.id) : [...items, extra.id])} /><span><strong>{extra.label}</strong><small>{extra.detail}</small></span><b>+<LocalizedPrice amount={extra.price} /></b></label>)}</div>{bookingError && <p className="villa-booking-error" role="alert">{bookingError}</p>}{bookingStep === 1 ? <button type="button" className="villa-primary-button" onClick={continueToDetails}>Continue with dates <Icon name="arrow" size={16} /></button> : <button type="submit" className="villa-primary-button" disabled={submitting}>{submitting ? "Sending request…" : "Request to book"} <Icon name="arrow" size={16} /></button>}<p className="villa-booking-note"><Icon name="lock" size={13} /> You won&apos;t be charged. We confirm the home and final total with you.</p><div className="villa-total-box"><div><span>{format(nightlyRate)} × {Math.max(nights, 1)} nights</span><strong><LocalizedPrice amount={nightlyRate * Math.max(nights, 1)} /></strong></div><div><span>Cleaning fee</span><strong><LocalizedPrice amount={cleaningFee} /></strong></div><div><span>Service fee</span><strong><LocalizedPrice amount={serviceFee} /></strong></div>{extrasTotal > 0 && <div><span>Add-ons</span><strong><LocalizedPrice amount={extrasTotal} /></strong></div>}<div className="total"><span>Total before confirmation</span><strong><LocalizedPrice amount={total} /></strong></div></div></form>}<div className="villa-booking-trust"><span><Icon name="check" size={15} /></span><p><strong>Direct support</strong><small>One local team for your arrival, stay and questions.</small></p></div></div></aside>}
+        {isAdmin ? <aside className="villa-booking-rail admin-public-booking-gate" id="villa-booking-card"><span className="admin-public-gate-icon">✦</span><p className="villa-eyebrow">ALPNILE CONTROL ROOM</p><h2>Guest stay requests are hidden in admin view.</h2><p>Use the requests workspace to review bookings and the traveler profile behind each route.</p><Link href="/admin" className="villa-primary-button">Open admin requests <Icon name="arrow" size={16} /></Link></aside> : <aside className="villa-booking-rail" id="villa-booking-card"><div className="villa-booking-card"><div className="villa-booking-card-head"><div><p className="villa-eyebrow">Book direct with AlpNile</p><h2>Make it yours</h2></div><div className="villa-price"><strong><LocalizedPrice amount={nightlyRate} /></strong><span>starting rate · per night</span></div></div><div className="villa-booking-steps"><span className={bookingStep === 1 ? "active" : "done"}><b>{bookingStep === 1 ? "1" : "✓"}</b> Dates</span><i /><span className={bookingStep === 2 ? "active" : ""}><b>2</b> Details</span></div>{bookingReference ? <div className="villa-booking-success"><span className="villa-success-icon"><Icon name={bookingCancelled ? "close" : bookingSavedLocally ? "lock" : "check"} size={23} /></span><p className="villa-eyebrow">{bookingCancelled ? "Request cancelled" : bookingSavedLocally ? "Saved locally · not sent" : "Request received"}</p><h3>{bookingCancelled ? "Your stay request is cancelled." : bookingSavedLocally ? "Your request is ready to send." : "We&apos;re on it."}</h3><p>{bookingMessage}</p><div className="villa-reference"><span>Reference</span><strong>{bookingReference}</strong></div><div className="villa-success-summary"><span>{formatDate(checkIn)} → {formatDate(checkOut)}</span><span>{guests} guests · {nights} nights</span><strong><LocalizedPrice amount={total} /></strong></div>{bookingError && <p className="villa-booking-error" role="alert">{bookingError}</p>}<div className="villa-success-actions">{!bookingCancelled && !bookingSavedLocally && bookingRequestId && <button type="button" className="villa-cancel-button" onClick={() => void cancelBooking()} disabled={submitting}>{submitting ? "Cancelling…" : "Cancel booking request"}</button>}<button type="button" className="villa-outline-button" onClick={() => { setBookingReference(""); setBookingRequestId(""); setBookingCancelled(false); setBookingError(""); setBookingStep(1); }}>Start another request</button><Link className="villa-primary-button" href={`/tours-experiences?destination=${normalizeDestinationId(activeStay.location.split(",").pop()?.trim())}`}>Explore {activeStay.location.split(",").pop()?.trim() ?? "city"} experiences <Icon name="arrow" size={16} /></Link></div></div> : <form onSubmit={submitBooking} className="villa-booking-form"><div className="villa-calendar-shell"><div className="villa-calendar-header"><button type="button" onClick={() => moveCalendar(-1)} disabled={calendarMonth <= monthStart(todayKey)} aria-label="Previous month">‹</button><strong>{calendarMonth.toLocaleDateString("en", { month: "long", year: "numeric" })}</strong><button type="button" onClick={() => moveCalendar(1)} aria-label="Next month">›</button></div><div className="villa-calendar-weekdays">{["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => <span key={day}>{day}</span>)}</div><div className="villa-calendar-grid">{cells.map((day, index) => { if (!day) return <span className="villa-calendar-empty" key={`empty-${index}`} />; const value = dateKey(day); const isPast = value < todayKey; const isBlocked = blockedDates.includes(value); const isUnavailable = isPast || isBlocked; const isStart = value === checkIn; const isEnd = value === checkOut; const isRange = Boolean(checkIn && checkOut && value > checkIn && value < checkOut); return <button type="button" key={value} disabled={isUnavailable} className={[isStart ? "selected start" : "", isEnd ? "selected end" : "", isRange ? "in-range" : "", isPast ? "past" : "", isBlocked ? "blocked" : ""].filter(Boolean).join(" ")} onClick={() => selectCalendarDate(value)} aria-label={isBlocked ? `${formatDate(value)} · booked` : formatDate(value)} aria-pressed={isStart || isEnd}>{day.getDate()}</button>; })}</div><div className="villa-calendar-selection"><span><small>Check-in</small><strong>{formatDate(checkIn)}</strong></span><span><small>Check-out</small><strong>{formatDate(checkOut)}</strong></span></div><div className="villa-calendar-legend"><span><i className="available" /> Available</span><span><i className="booked" /> Booked</span></div></div><label className="villa-field"><span>Guests</span><div><Icon name="users" size={16} /><select value={guests} onChange={(event) => setGuests(Number(event.target.value))}><option value={1}>1 guest</option><option value={2}>2 guests</option><option value={3}>3 guests</option><option value={4}>4 guests</option></select></div></label>{bookingStep === 2 && <div className="villa-contact-fields"><label className="villa-field"><span>Full name</span><input name="name" value={contactForm.name} onChange={(event) => setContactForm({ ...contactForm, name: event.target.value })} autoComplete="name" placeholder="Your name" required /></label><label className="villa-field"><span>Email address</span><input name="email" type="email" value={contactForm.email} onChange={(event) => setContactForm({ ...contactForm, email: event.target.value })} autoComplete="email" placeholder="you@example.com" required /></label><label className="villa-field"><span>WhatsApp number</span><input name="phone" value={contactForm.phone} onChange={(event) => setContactForm({ ...contactForm, phone: event.target.value })} autoComplete="tel" placeholder="+20 ..." required /></label></div>}<div className="villa-extras"><div className="villa-form-label">Optional add-ons &amp; local experiences</div>{bookingExtras.map((extra) => <label className={`villa-extra ${selectedExtras.includes(extra.id) ? "selected" : ""}`} key={extra.id}><input type="checkbox" checked={selectedExtras.includes(extra.id)} onChange={() => setSelectedExtras((items) => items.includes(extra.id) ? items.filter((item) => item !== extra.id) : [...items, extra.id])} /><span><strong>{extra.label}</strong><small>{extra.detail}</small></span><b>+<LocalizedPrice amount={extra.price} /></b></label>)}</div>{bookingError && <p className="villa-booking-error" role="alert">{bookingError}</p>}{bookingStep === 1 ? <button type="button" className="villa-primary-button" onClick={continueToDetails}>Continue with dates <Icon name="arrow" size={16} /></button> : <button type="submit" className="villa-primary-button" disabled={submitting}>{submitting ? "Sending request…" : "Request to book"} <Icon name="arrow" size={16} /></button>}<p className="villa-booking-note"><Icon name="lock" size={13} /> You won&apos;t be charged. We confirm the home and final total with you.</p><div className="villa-total-box"><div><span>{format(nightlyRate)} × {Math.max(nights, 1)} nights</span><strong><LocalizedPrice amount={nightlyRate * Math.max(nights, 1)} /></strong></div><div><span>Cleaning fee</span><strong><LocalizedPrice amount={cleaningFee} /></strong></div><div><span>Service fee</span><strong><LocalizedPrice amount={serviceFee} /></strong></div>{extrasTotal > 0 && <div><span>Add-ons</span><strong><LocalizedPrice amount={extrasTotal} /></strong></div>}<div className="total"><span>Total before confirmation</span><strong><LocalizedPrice amount={total} /></strong></div></div></form>}<div className="villa-booking-trust"><span><Icon name="check" size={15} /></span><p><strong>Direct support</strong><small>One local team for your arrival, stay and questions.</small></p></div></div></aside>}
         </div>
       </div>
       <div className="villa-mobile-cta"><div><strong><LocalizedPrice amount={nightlyRate} /></strong><span>per night</span></div><button type="button" onClick={scrollToBooking}>Check availability <Icon name="arrow" size={15} /></button></div>
