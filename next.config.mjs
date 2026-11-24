@@ -9,6 +9,7 @@ const nextConfig = {
 
     return [
       { source: "/:asset(alpnile-.*)", headers: immutableHeaders },
+      { source: "/alpnile-pharaonic-ui-icons-optimized.webp", headers: immutableHeaders },
       { source: "/catalog/:asset*", headers: immutableHeaders },
       { source: "/chat/:asset*", headers: immutableHeaders },
       { source: "/fonts/:asset*", headers: immutableHeaders },

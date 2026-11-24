@@ -4,7 +4,7 @@ import { LanguageProvider } from "./components/language";
 import { CurrencyProvider } from "./components/currency";
 import { HomeWelcomeGate } from "./components/home-welcome-gate";
 import { BackToTop, SiteFooter, SiteHeader } from "./components/site-chrome";
-import ChatWidget from "./components/chat-widget";
+import DeferredChatWidget from "./components/deferred-chat-widget";
 import { SITE_CONTACT } from "./lib/site-config";
 import { absoluteUrl, serializeJsonLd, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_SOCIAL_IMAGE, SITE_SOCIAL_LINKS, SITE_URL } from "./lib/seo";
 
@@ -99,7 +99,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             {children}
             <SiteFooter />
             <BackToTop />
-            <ChatWidget />
+            <DeferredChatWidget />
           </CurrencyProvider>
         </LanguageProvider>
       </body>
