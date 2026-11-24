@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import "./globals.css";
 import { LanguageProvider } from "./components/language";
 import { CurrencyProvider } from "./components/currency";
@@ -7,6 +8,31 @@ import { BackToTop, SiteFooter, SiteHeader } from "./components/site-chrome";
 import DeferredChatWidget from "./components/deferred-chat-widget";
 import { SITE_CONTACT } from "./lib/site-config";
 import { absoluteUrl, serializeJsonLd, SITE_DESCRIPTION, SITE_KEYWORDS, SITE_NAME, SITE_SOCIAL_IMAGE, SITE_SOCIAL_LINKS, SITE_URL } from "./lib/seo";
+
+const cormorantGaramond = localFont({
+  src: [
+    { path: "../public/fonts/cormorant-garamond-500.ttf", weight: "500" },
+    { path: "../public/fonts/cormorant-garamond-600.ttf", weight: "600" },
+    { path: "../public/fonts/cormorant-garamond-700.ttf", weight: "700" },
+  ],
+  variable: "--font-cormorant",
+  display: "swap",
+  adjustFontFallback: "Times New Roman",
+  preload: false,
+});
+
+const manrope = localFont({
+  src: [
+    { path: "../public/fonts/manrope-400.ttf", weight: "400" },
+    { path: "../public/fonts/manrope-500.ttf", weight: "500" },
+    { path: "../public/fonts/manrope-600.ttf", weight: "600" },
+    { path: "../public/fonts/manrope-700.ttf", weight: "700" },
+  ],
+  variable: "--font-manrope",
+  display: "swap",
+  adjustFontFallback: "Arial",
+  preload: false,
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -89,7 +115,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   };
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${manrope.variable} ${cormorantGaramond.variable}`}>
       <body>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
         <LanguageProvider>

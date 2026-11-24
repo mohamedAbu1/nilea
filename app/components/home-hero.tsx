@@ -76,6 +76,7 @@ export function HomeHero({ onSubmit, secondaryHref = "/#categories", isAdmin = f
         sizes="100vw"
         preload={heroSlide === 0}
         fetchPriority={heroSlide === 0 ? "high" : "auto"}
+        quality={60}
         aria-hidden="true"
       />
       <div className="home-redesign-hero-shade" aria-hidden="true" />

@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   allowedDevOrigins: ["localhost", "127.0.0.1"],
+  experimental: {
+    inlineCss: true,
+  },
   async headers() {
     const immutableHeaders = [
       { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
